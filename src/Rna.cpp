@@ -341,10 +341,10 @@ static int myGetHardFunc(const bam1_t *b) {
         ht.mtid = b->core.mtid;
         ht.mpos = b->core.mpos;
 
-        bool added = false;
+        // bool added = false;
 
         if (strand == 0 and opn == BAM_CHARD_CLIP) {
-            added = true;
+            // added = true;
             ht.clipped = cpn;
             for (int aa = 0; aa < b->core.l_qseq; aa++) {
                 int reada = bam_seqi(bam_get_seq(b), aa);
@@ -354,7 +354,7 @@ static int myGetHardFunc(const bam1_t *b) {
         }
 
         if (strand == 1 and op1 == BAM_CHARD_CLIP) {
-            added = true;
+            // added = true;
             ht.clipped = cp1;
             for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
                 int reada = bam_seqi(bam_get_seq(b), aa);
@@ -384,7 +384,7 @@ int Rna::getHardClipReads(Gene &g, MyBamWrap &mbw, TidHandler &th) {
         hardVec.clear();
         mbw.myFetchWrap(rg_h, myGetHardFunc);
 
-        int rg_ref_tid_h = gt->tid;
+        // int rg_ref_tid_h = gt->tid;
 
         for (int j = 0; j < hardVec.size(); j++) {
             // cout<<"j="<<j<<endl;
@@ -1681,10 +1681,10 @@ int clusterType(Gene &g, split_rna_t &st, int minIntra) {
     int gStrand2;
 
     uint32_t l1;
-    uint32_t r1;
+    // uint32_t r1;
 
     uint32_t l2;
-    uint32_t r2;
+    // uint32_t r2;
 
     int geneId1;
     int geneId2;
@@ -1696,10 +1696,10 @@ int clusterType(Gene &g, split_rna_t &st, int minIntra) {
         gStrand2 = g.getStrand(st.geneId2);
 
         l1 = g.getLimitLeft(st.geneId1);
-        r1 = g.getLimitRight(st.geneId1);
+        // r1 = g.getLimitRight(st.geneId1);
 
         l2 = g.getLimitLeft(st.geneId2);
-        r2 = g.getLimitRight(st.geneId2);
+        // r2 = g.getLimitRight(st.geneId2);
 
         geneId1 = st.geneId1;
         geneId2 = st.geneId2;
@@ -1709,10 +1709,10 @@ int clusterType(Gene &g, split_rna_t &st, int minIntra) {
         gStrand2 = g.getStrand(st.geneId1);
 
         l1 = g.getLimitLeft(st.geneId2);
-        r1 = g.getLimitRight(st.geneId2);
+        // r1 = g.getLimitRight(st.geneId2);
 
         l2 = g.getLimitLeft(st.geneId1);
-        r2 = g.getLimitRight(st.geneId1);
+        // r2 = g.getLimitRight(st.geneId1);
 
         geneId1 = st.geneId2;
         geneId2 = st.geneId1;
@@ -2023,7 +2023,7 @@ int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &
     sort(tmp.begin(), tmp.end(), mySortSplit);
 
     vector<int> ids;
-    int id = 0;
+    // int id = 0;
 
     int cn = 0;
 
@@ -2923,9 +2923,9 @@ struct ComputeWeights {
         return true;
     }
 
+    ALGraph<int, FusionEdge> &graph;
     vector<encompass_rna_t> const &enrna; // encompassing
     vector<split_rna_t> const &sprna;     // encompassing
-    ALGraph<int, FusionEdge> &graph;
 };
 
 struct ComputeWeights1 { // works with or without star
@@ -2952,9 +2952,9 @@ struct ComputeWeights1 { // works with or without star
         return true;
     }
 
+    ALGraph<int, FusionEdge> &graph;
     vector<encompass_rna_t> const &enrna; // encompassing
     vector<split_rna_t> const &sprna;     // encompassing
-    ALGraph<int, FusionEdge> &graph;
 };
 
 int Rna::computeWeights(Gene &g) {
@@ -3571,9 +3571,9 @@ struct TraverseCluster {
     }
 
     Gene &g;
-    Rna &rna;
     int cfn;
     int bacc;
+    Rna &rna;
 };
 
 int Rna::traverseCluster(Gene &g, int cfn, int bacc) {
@@ -3611,8 +3611,8 @@ struct TraversePrint {
         return true;
     }
 
-    FusionGraph &rnafg;
     Gene &g;
+    FusionGraph &rnafg;
     Reference &ref;
     Result &objRst;
     int minIntra;
@@ -3651,21 +3651,21 @@ int Rna::printSome(Gene &g, vector<int> const &spIds, Reference &ref, result_t &
 
     for (int j = 0; j < spIds.size(); j++) {
 
-        uint32_t pp1 = sprna[spIds[j]].pos1;
-        if (sprna[spIds[j]].bkLeft1 == 0)
-            pp1 += sprna[spIds[j]].len1 - 1;
+        // uint32_t pp1 = sprna[spIds[j]].pos1;
+        // if (sprna[spIds[j]].bkLeft1 == 0)
+        //     pp1 += sprna[spIds[j]].len1 - 1;
 
-        uint32_t pp2 = sprna[spIds[j]].pos2;
-        if (sprna[spIds[j]].bkLeft2 == 0)
-            pp2 += sprna[spIds[j]].len2 - 1;
+        // uint32_t pp2 = sprna[spIds[j]].pos2;
+        // if (sprna[spIds[j]].bkLeft2 == 0)
+        //     pp2 += sprna[spIds[j]].len2 - 1;
 
-        uint32_t ppm1 = sprna[spIds[j]].pos1;
-        if (sprna[spIds[j]].bkLeft1 == 0)
-            ppm1 += sprna[spIds[j]].len1 - 1;
+        // uint32_t ppm1 = sprna[spIds[j]].pos1;
+        // if (sprna[spIds[j]].bkLeft1 == 0)
+        //     ppm1 += sprna[spIds[j]].len1 - 1;
 
-        uint32_t ppm2 = sprna[spIds[j]].pos2;
-        if (sprna[spIds[j]].bkLeft2 == 0)
-            ppm2 += sprna[spIds[j]].len2 - 1;
+        // uint32_t ppm2 = sprna[spIds[j]].pos2;
+        // if (sprna[spIds[j]].bkLeft2 == 0)
+        //     ppm2 += sprna[spIds[j]].len2 - 1;
 
         if (j > 0 && sprna[spIds[j]].clusterId > sprna[spIds[j - 1]].clusterId) {
             cn++;
@@ -3720,7 +3720,7 @@ int Rna::printSome(Gene &g, vector<int> const &spIds, Reference &ref, result_t &
 
         // cout<<endl;
     }
-    int numberHere;
+    // int numberHere;
     rt.numOfsps.push_back(spIds.size() - lastlast);
     rt.numOfSpRna = spIds.size();
     rt.numOfClusters = rt.types.size();
@@ -3740,8 +3740,8 @@ int Rna::homoTest2(Gene &g, split_rna_t &st, myFind2 &mf2) {
     int strand1 = st.strand1;
     int isLeft1 = st.bkLeft1;
 
-    int strand2 = st.strand2;
-    int isLeft2 = st.bkLeft2;
+    // int strand2 = st.strand2;
+    // int isLeft2 = st.bkLeft2;
 
     int gid1 = (int)st.geneId1;
     int gid2 = (int)st.geneId2;
@@ -4973,7 +4973,7 @@ int Rna::readTopHat2(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &
 
 bool isMIM(const bam1_t *b) {
     uint32_t *cigar = bam_get_cigar(b);
-    int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+    // int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
     int nc = b->core.n_cigar;
     // cout<<"nc="<<nc<<endl;
     if (nc != 3) {
@@ -5122,18 +5122,18 @@ bool isMBad(const bam1_t *b) {
 
 bool isLgClip(const bam1_t *b) {
     uint32_t *cigar = bam_get_cigar(b);
-    int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+    // int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
     int nc = b->core.n_cigar;
 
     int op;
-    int posM = -1;
+    // int posM = -1;
     int largeClip = 0;
     for (int i = 0; i < nc; i++) {
         op = cigar[i] & 0xf;
         if (op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP) {
             int len = cigar[nc - 1] >> 4;
             if (len > largeClip) {
-                posM = i;
+                // posM = i;
                 largeClip = len;
             }
         }
@@ -5147,18 +5147,18 @@ bool isLgClip(const bam1_t *b) {
 
 bool isHardClip(const bam1_t *b) {
     uint32_t *cigar = bam_get_cigar(b);
-    int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+    // int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
     int nc = b->core.n_cigar;
 
     int op;
-    int posM = -1;
+    // int posM = -1;
     int largeClip = 0;
     for (int i = 0; i < nc; i++) {
         op = cigar[i] & 0xf;
         if (op == BAM_CHARD_CLIP) {
             int len = cigar[nc - 1] >> 4;
             if (len > largeClip) {
-                posM = i;
+                // posM = i;
                 largeClip = len;
             }
         }
@@ -5608,7 +5608,7 @@ struct ReduceOne {
             encompass_rna_t en = enrna[ens[index]];
 
             int geneId = en.geneId1;
-            int pass;
+            // int pass;
             int isSmall;
             vector<map_emt_t2> mets;
             vector<map_emt_t2> metsM;
@@ -5617,7 +5617,7 @@ struct ReduceOne {
             vector<char> theseq;
             getRightRead(en.seq1, en.strand1, theseq);
             // cout<<"map1"<<endl;
-            pass = al.runBWTSplitMap2(g, geneId, theseq, 1 - en.strand1, mets, metsM, mf2, isSmall, 2);
+            al.runBWTSplitMap2(g, geneId, theseq, 1 - en.strand1, mets, metsM, mf2, isSmall, 2);
 
             if (mets.size() <= 5) {
                 for (int x = 0; x < mets.size(); x++) {
@@ -5634,7 +5634,7 @@ struct ReduceOne {
                 vector<char> theseq2;
                 getRightRead(en.seq2, 1 - en.strand1, theseq2);
                 // cout<<"map2"<<endl;
-                pass = al.runBWTSplitMap2(g, geneId, theseq2, en.strand1, mets2, metsM2, mf2, isSmall, 2);
+                al.runBWTSplitMap2(g, geneId, theseq2, en.strand1, mets2, metsM2, mf2, isSmall, 2);
                 if (mets.size() <= 5) {
                     for (int x = 0; x < mets2.size(); x++) {
                         int len = mets2[x].b - mets2[x].a + 1;
@@ -5653,7 +5653,7 @@ struct ReduceOne {
                 continue;
             } else {
                 int geneId = en.geneId2;
-                int pass;
+                // int pass;
                 int isSmall;
                 vector<map_emt_t2> mets;
                 vector<map_emt_t2> metsM;
@@ -5662,7 +5662,7 @@ struct ReduceOne {
                 vector<char> theseq3;
                 getRightRead(en.seq2, en.strand2, theseq3);
                 // cout<<"map3"<<endl;
-                pass = al.runBWTSplitMap2(g, geneId, theseq3, 1 - en.strand2, mets, metsM, mf2, isSmall, 2);
+                al.runBWTSplitMap2(g, geneId, theseq3, 1 - en.strand2, mets, metsM, mf2, isSmall, 2);
 
                 if (mets.size() <= 5) {
                     for (int x = 0; x < mets.size(); x++) {
@@ -5679,7 +5679,7 @@ struct ReduceOne {
                     vector<char> theseq4;
                     getRightRead(en.seq1, 1 - en.strand2, theseq4);
                     // cout<<"map4"<<endl;
-                    pass = al.runBWTSplitMap2(g, geneId, theseq4, en.strand2, mets2, metsM2, mf2, isSmall, 2);
+                    al.runBWTSplitMap2(g, geneId, theseq4, en.strand2, mets2, metsM2, mf2, isSmall, 2);
                     if (mets.size() <= 5) {
                         for (int x = 0; x < mets2.size(); x++) {
                             int len = mets2[x].b - mets2[x].a + 1;

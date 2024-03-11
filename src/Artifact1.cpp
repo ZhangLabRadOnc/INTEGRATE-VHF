@@ -24,11 +24,8 @@ bool Artifact1::isAf1(Gene &g, split_rna_t &st, myFind2 &mf2) {
 
     Alignment al;
 
-    int bkleft1 = st.bkLeft1;
-    int strand1 = st.strand1;
-
     int thisIsOne = 0;
-    if ((bkleft1 == 0 && st.strand1 == 1) || (bkleft1 == 1 && st.strand1 == 0))
+    if ((st.bkLeft1 == 0 && st.strand1 == 1) || (st.bkLeft1 == 1 && st.strand1 == 0))
         thisIsOne = 1;
 
     vector<map_emt_t2> mets2;
@@ -54,11 +51,9 @@ bool Artifact1::isAf1(Gene &g, split_rna_t &st, myFind2 &mf2) {
     }
 
     // cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<endl;
-    int bkleft2 = st.bkLeft2;
-    int strand2 = st.strand2;
 
     thisIsOne = 0;
-    if ((bkleft2 == 0 && st.strand2 == 1) || (bkleft2 == 1 && st.strand2 == 0))
+    if ((st.bkLeft2 == 0 && st.strand2 == 1) || (st.bkLeft2 == 1 && st.strand2 == 0))
         thisIsOne = 1;
 
     vector<map_emt_t2> mets3;

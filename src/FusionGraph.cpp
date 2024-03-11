@@ -222,7 +222,7 @@ int FusionGraph::topoSplit(Gene & g) {
 
 int FusionGraph::getBWTs(Gene &gene, Reference &ref) {
 
-    int verNum = fg.getVertexCount();
+    // int verNum = fg.getVertexCount();
 
     for (const_vertex_iterator iter = fg.begin(); iter != fg.end(); ++iter) {
         int x1 = iter->first;

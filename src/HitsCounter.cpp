@@ -429,7 +429,7 @@ int HitsCounter::getHitsCount(char *seq, int len) {
     int k, l, mapped;
     // cout<<"AAAA"<<endl;
     int count1 = 0;
-    int mlen1 = 0;
+    // int mlen1 = 0;
     for (int i = 0; i < number; i++) {
         // cout<<"i="<<i<<endl;
         if (bwts[i].exactSplitMap(k, l, seq, len, mapped, 25) == 1) {
@@ -440,7 +440,7 @@ int HitsCounter::getHitsCount(char *seq, int len) {
     // cout<<"PPPPP"<<count1<<" "<<mlen1<<endl;
     // cout<<"AAAA2"<<endl;
     int count12 = 0;
-    int mlen12 = 0;
+    // int mlen12 = 0;
     for (int i = 0; i < number; i++) {
         // cout<<"i="<<i<<endl;
         if (rbwts[i].exactSplitMap(k, l, seq, len, mapped, 25) == 1) {
@@ -450,7 +450,7 @@ int HitsCounter::getHitsCount(char *seq, int len) {
     // cout<<"PPPPP"<<count12<<" "<<mlen12<<endl;
 
     int count2 = 0;
-    int mlen2 = 0;
+    // int mlen2 = 0;
 
     // cout<<"BBBB"<<endl;
     for (int i = 0; i < number; i++) {
@@ -461,7 +461,7 @@ int HitsCounter::getHitsCount(char *seq, int len) {
         }
     }
     int count22 = 0;
-    int mlen22 = 0;
+    // int mlen22 = 0;
     // cout<<"PPPPP"<<count2<<" "<<mlen2<<endl;
     // cout<<"BBBB2"<<endl;
     for (int i = 0; i < number; i++) {

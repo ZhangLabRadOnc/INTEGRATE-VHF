@@ -32,6 +32,8 @@ string getJuncString(int tid, int strand, int pos, int is5p, Reference &ref, int
         else
             left = 1;
         right = pos;
+    } else {
+        return res;
     }
 
     uint32_t aa = ref.to_ref_pos(tid, left);

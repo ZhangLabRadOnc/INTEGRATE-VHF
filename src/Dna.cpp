@@ -1134,7 +1134,7 @@ int Dna::traverseEncompass(const char *dnaFile, Gene &g, TidHandler &th, MyBamHe
     bw.mysam_open(dnaFile);
     bw.myGetIndex(dnaFile);
 
-    int size = g.getSize();
+    // int size = g.getSize();
 
     typedef FusionGraph::GraphType::const_iterator VIter;
     for (VIter viter = dnafg->fg.begin(); viter != dnafg->fg.end(); ++viter) {
@@ -1992,8 +1992,8 @@ int Dna::sortAndCombineEnDnaByNameLocal(Gene &g, result_t &rt, int min_deletion,
             uint32_t pos2 = entmp[i].pos2;
             int tid2 = entmp[i].tid2;
 
-            int gid1 = entmp[i].geneId1;
-            int gid2 = entmp[i].geneId2;
+            // int gid1 = entmp[i].geneId1;
+            // int gid2 = entmp[i].geneId2;
 
             for (int j = i + 1; j < entmp.size(); j++) {
                 if (entmp[i].name.compare(entmp[j].name) == 0) {
@@ -2006,8 +2006,8 @@ int Dna::sortAndCombineEnDnaByNameLocal(Gene &g, result_t &rt, int min_deletion,
                     uint32_t pos4 = entmp[j].pos2;
                     int tid4 = entmp[j].tid2;
 
-                    int gid3 = entmp[j].geneId1;
-                    int gid4 = entmp[j].geneId2;
+                    // int gid3 = entmp[j].geneId1;
+                    // int gid4 = entmp[j].geneId2;
 
                     // cout<<tid1<<" "<<pos1<<" "<<tid2<<" "<<pos2<<endl;
                     // cout<<tid3<<" "<<pos3<<" "<<tid4<<" "<<pos4<<endl;

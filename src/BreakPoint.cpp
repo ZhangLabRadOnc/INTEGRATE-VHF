@@ -114,8 +114,8 @@ int BreakPoint::getOneBKRNA(break_point_record_t &bkt, Reference &ref) {
     int rnaRdTid1;
     int rnaRdTid2;
 
-    int rnaRdstrand1;
-    int rnaRdstrand2;
+    // int rnaRdstrand1;
+    // int rnaRdstrand2;
 
     uint32_t rnaRdPos1;
     uint32_t rnaRdPos2;
@@ -129,8 +129,8 @@ int BreakPoint::getOneBKRNA(break_point_record_t &bkt, Reference &ref) {
         rnaRdTid1 = bkt.splitrna.tid1;
         rnaRdTid2 = bkt.splitrna.tid2;
 
-        rnaRdstrand1 = bkt.splitrna.strand1;
-        rnaRdstrand2 = bkt.splitrna.strand2;
+        // rnaRdstrand1 = bkt.splitrna.strand1;
+        // rnaRdstrand2 = bkt.splitrna.strand2;
 
         rnaRdPos1 = bkt.splitrna.pos1;
         rnaRdPos2 = bkt.splitrna.pos2;
@@ -141,8 +141,8 @@ int BreakPoint::getOneBKRNA(break_point_record_t &bkt, Reference &ref) {
         rnaRdTid1 = bkt.splitrna.tid2;
         rnaRdTid2 = bkt.splitrna.tid1;
 
-        rnaRdstrand1 = bkt.splitrna.strand2;
-        rnaRdstrand2 = bkt.splitrna.strand1;
+        // rnaRdstrand1 = bkt.splitrna.strand2;
+        // rnaRdstrand2 = bkt.splitrna.strand1;
 
         rnaRdPos1 = bkt.splitrna.pos2;
         rnaRdPos2 = bkt.splitrna.pos1;
@@ -151,8 +151,8 @@ int BreakPoint::getOneBKRNA(break_point_record_t &bkt, Reference &ref) {
         rnaRdLen2 = bkt.splitrna.len1;
     }
 
-    int seqTid1 = bkt.tid1;
-    int seqTid2 = bkt.tid2;
+    // int seqTid1 = bkt.tid1;
+    // int seqTid2 = bkt.tid2;
 
     int seqLeft1 = bkt.seqLeft1;
     int seqLeft2 = bkt.seqLeft2;
@@ -596,8 +596,8 @@ int BreakPoint::getOneBKDNA(break_point_record_t &bkt, Reference &ref) {
     int dnaRdTid1;
     int dnaRdTid2;
 
-    int dnaRdstrand1;
-    int dnaRdstrand2;
+    // int dnaRdstrand1;
+    // int dnaRdstrand2;
 
     uint32_t dnaRdPos1;
     uint32_t dnaRdPos2;
@@ -608,8 +608,8 @@ int BreakPoint::getOneBKDNA(break_point_record_t &bkt, Reference &ref) {
     dnaRdTid1 = bkt.splitdna.tid1;
     dnaRdTid2 = bkt.splitdna.tid2;
 
-    dnaRdstrand1 = bkt.splitdna.strand1;
-    dnaRdstrand2 = bkt.splitdna.strand2;
+    // dnaRdstrand1 = bkt.splitdna.strand1;
+    // dnaRdstrand2 = bkt.splitdna.strand2;
 
     dnaRdPos1 = bkt.splitdna.pos1;
     dnaRdPos2 = bkt.splitdna.pos2;
@@ -617,14 +617,14 @@ int BreakPoint::getOneBKDNA(break_point_record_t &bkt, Reference &ref) {
     dnaRdLen1 = bkt.splitdna.len1;
     dnaRdLen2 = bkt.splitdna.len2;
 
-    int seqTid1 = bkt.tid1;
-    int seqTid2 = bkt.tid2;
+    // int seqTid1 = bkt.tid1;
+    // int seqTid2 = bkt.tid2;
 
     int seqLeft1 = bkt.seqLeft1;
     int seqLeft2 = bkt.seqLeft2;
 
-    int gStrand1 = bkt.gStrand1;
-    int gStrand2 = bkt.gStrand2;
+    // int gStrand1 = bkt.gStrand1;
+    // int gStrand2 = bkt.gStrand2;
 
     vector<char> seq;
 

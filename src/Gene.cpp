@@ -840,14 +840,14 @@ int Gene::getBestExon2(int gid, int pos, int isbkLeft, vector<junction_t> &juncs
         int tranId = genes[gid].transIds[i];
         int count = transcripts[tranId].exonCount;
 
-        int seq_len = 0;
+        // int seq_len = 0;
 
         for (int j = 0; j < count; j++) {
 
             int pp1 = transcripts[tranId].exonStarts[j];
             int pp2 = transcripts[tranId].exonEnds[j];
 
-            seq_len += pp2 - pp1;
+            // seq_len += pp2 - pp1;
 
             if (isbkLeft == 1) {
                 if (abs(pos - pp1) == best) {

@@ -624,8 +624,8 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
 
     Result result;
 
-    int insert1, std1;
-    int insert2, std2;
+    // int insert1, std1;
+    // int insert2, std2;
 
     result.setIndi(2);
     if (argc - opStart == 7) {

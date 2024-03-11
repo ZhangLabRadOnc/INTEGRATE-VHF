@@ -30,8 +30,8 @@ using namespace std;
 class Dna {
   private:
     FusionGraph *dnafg;
-    int flankLength;
-    int isRG;
+    // int flankLength;
+    // int isRG;
     vector<encompass_dna_t> endna;
     vector<split_dna_t> spdna;
     vector<region_to_map_t> regions2Map;

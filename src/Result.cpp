@@ -1006,17 +1006,17 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
         split_rna_t st;
         bestSprnaGen(prt, st);
 
-        int p1;
-        if (st.bkLeft1 == 1)
-            p1 = st.pos1;
-        else
-            p1 = st.pos1 + st.len1 - 1;
+        // int p1;
+        // if (st.bkLeft1 == 1)
+        //     p1 = st.pos1;
+        // else
+        //     p1 = st.pos1 + st.len1 - 1;
 
-        int p2;
-        if (st.bkLeft2 == 1)
-            p2 = st.pos2;
-        else
-            p2 = st.pos2 + st.len2 - 1;
+        // int p2;
+        // if (st.bkLeft2 == 1)
+        //     p2 = st.pos2;
+        // else
+        //     p2 = st.pos2 + st.len2 - 1;
 
         int is5p;
         int tid;

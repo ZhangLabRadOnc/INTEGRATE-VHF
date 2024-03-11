@@ -1,7 +1,7 @@
 #pragma once
 
 #include <divsufsort.h>
-#include <divsufsort64.h>
+// #include <divsufsort64.h>
 
 #include <iostream>
 #include <stdexcept>
@@ -10,17 +10,17 @@
 
 // FIXME: pay attention to byte order in IO
 namespace {
-uint64_t endian_swap(uint64_t x) { return x; }
+// uint64_t endian_swap(uint64_t x) { return x; }
 
-uint32_t endian_swap(uint32_t x) { return x; }
+// uint32_t endian_swap(uint32_t x) { return x; }
 
-void divsufsort_wrapper(std::string const &seq, uint64_t *data) {
-    sauchar_t const *seqptr = reinterpret_cast<sauchar_t const *>(seq.data());
-    saidx64_t *arr = reinterpret_cast<saidx64_t *>(data);
-    if (divsufsort64(seqptr, arr, seq.size()) != 0) {
-        throw std::runtime_error("Failed to build suffix array!");
-    }
-}
+// void divsufsort_wrapper(std::string const &seq, uint64_t *data) {
+//     sauchar_t const *seqptr = reinterpret_cast<sauchar_t const *>(seq.data());
+//     saidx64_t *arr = reinterpret_cast<saidx64_t *>(data);
+//     if (divsufsort64(seqptr, arr, seq.size()) != 0) {
+//         throw std::runtime_error("Failed to build suffix array!");
+//     }
+// }
 
 void divsufsort_wrapper(std::string const &seq, uint32_t *data) {
     sauchar_t const *seqptr = reinterpret_cast<sauchar_t const *>(seq.data());

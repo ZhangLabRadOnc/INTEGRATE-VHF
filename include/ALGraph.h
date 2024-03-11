@@ -86,7 +86,7 @@ template <typename Object, typename Weight> class ALGraph {
 
   private:
     template <typename Callback> struct ForeachEdgeHelper {
-        ForeachEdgeHelper(ALGraph &graph, Callback &cb) : cb(cb), graph(graph) {}
+        ForeachEdgeHelper(ALGraph &graph, Callback &cb) : graph(graph), cb(cb) {}
 
         bool operator()(iterator const &v) { return graph.foreachEdge(v, cb); }
 

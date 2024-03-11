@@ -40,9 +40,9 @@ class Result {
     int searchResult(int geneId1, int geneId2, result_t &result);
     result_t *getOneResult(int index);
     int printOneResult(int index, ofstream &outFile, Reference &ref, int isRunningNormal);
-    int printAllResult(char *filename, Reference &ref, int isRunningNormal);
+    int printAllResult(const char *filename, Reference &ref, int isRunningNormal);
     int getTiers(double pn);
-    int printSummary(char *filename, Gene &g, int isRunningNormal, int largeNum);
+    int printSummary(const char *filename, Gene &g, int isRunningNormal, int largeNum);
     int checkALLPrime();
 
     int getSize();
@@ -54,13 +54,13 @@ class Result {
     int removeMultiple(Gene &g, int largeNum);
     int combineRecord(Gene &g);
 
-    int printExons(char *filename, Gene &g, Reference &ref, int isRunningNormal, char *bkfile, char *bkfileBEDPE, char *bkfileVCF, char *refname, char *sample_name);
+    int printExons(const char *filename, Gene &g, Reference &ref, int isRunningNormal, const char *bkfile, const char *bkfileBEDPE, const char *bkfileVCF, const char *refname, const char *sample_name);
 
     // copy and modified from printExons from 0.1.c and rm //bk and change
     int getAllJunctionsStep1(Gene &g, Reference &ref);
-    int getAllJunctionsStep2(char *filename, Gene &g, Reference &ref);
-    int getAllJunctionsStep3(char *filename, Gene &g, Reference &ref);
+    int getAllJunctionsStep2(const char *filename, Gene &g, Reference &ref);
+    int getAllJunctionsStep3(const char *filename, Gene &g, Reference &ref);
     int getAllJunctionsStep4(Gene &g, Reference &ref);
     int getAllJunctionsStep5(Gene &g, Reference &ref);
-    int getAllJunctionsStep6(char *filename, Gene &g, Reference &ref);
+    int getAllJunctionsStep6(const char *filename, Gene &g, Reference &ref);
 };

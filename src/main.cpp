@@ -36,7 +36,7 @@ int usage() {
     exit(0);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, const char *argv[]) {
 
     cout << "INTEGRATE version 0.2.6" << endl;
 

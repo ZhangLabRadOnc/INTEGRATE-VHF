@@ -25,12 +25,12 @@ class MyBamWrap {
 
   public:
     MyBamWrap();
-    int mysam_open(char *fileName);
-    int myGetIndex(char *fileName);
+    int mysam_open(const char *fileName);
+    int myGetIndex(const char *fileName);
     /*wrap*/
     int myFetchWrap(region_t &region, int (*func)(const bam1_t *b));
     int myPassRegion(region_t &region, const string chrName, int lpos, int rpos);
     virtual ~MyBamWrap();
 
-    void testFetch(char *fileName, string chrName, uint32_t lpos, uint32_t rpos);
+    void testFetch(const char *fileName, string chrName, uint32_t lpos, uint32_t rpos);
 };

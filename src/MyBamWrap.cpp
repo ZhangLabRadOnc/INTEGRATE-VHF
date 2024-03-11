@@ -32,7 +32,7 @@ MyBamWrap::~MyBamWrap()
     }
 }
 
-int MyBamWrap::mysam_open(char *fileName) {
+int MyBamWrap::mysam_open(const char *fileName) {
     f = sam_open(fileName, "rb");
     if (f == nullptr)
     {
@@ -63,7 +63,7 @@ int MyBamWrap::myFetchWrap(region_t &region, int (*func)(const bam1_t *b))
     return (ret == -1) ? 0 : ret;
 }
 
-int MyBamWrap::myGetIndex(char *fileName) {
+int MyBamWrap::myGetIndex(const char *fileName) {
     idx = bam_index_load(fileName);
     if (idx == 0) {
         cerr << "BAM indexing file is not available for " << fileName << endl;
@@ -91,7 +91,7 @@ static int fetch_func_test(const bam1_t *b) {
     return 0;
 }
 
-void MyBamWrap::testFetch(char *fileName, string chrName, uint32_t lpos, uint32_t rpos) {
+void MyBamWrap::testFetch(const char *fileName, string chrName, uint32_t lpos, uint32_t rpos) {
     mysam_open(fileName);
     myGetIndex(fileName);
     region_t region;

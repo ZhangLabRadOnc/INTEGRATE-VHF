@@ -35,10 +35,10 @@ class HitsCounter {
      */
     int getNumber() { return number; };
     int allocate(int size);
-    int getChromBWTs(Reference &ref, char *directory);
-    int getOne(char *refseq, uint32_t length, char *fileName);
-    int loadChromBWTs(Reference &ref, char *directory);
-    int loadOne(BWT *bwt, char *bwtfile);
+    int getChromBWTs(Reference &ref, const char *directory);
+    int getOne(char *refseq, uint32_t length, const char *fileName);
+    int loadChromBWTs(Reference &ref, const char *directory);
+    int loadOne(BWT *bwt, const char *bwtfile);
 
     int getHitsCount(char *seq, int len);
 

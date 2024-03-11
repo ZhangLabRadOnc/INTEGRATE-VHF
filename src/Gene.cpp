@@ -50,7 +50,7 @@ bool myTransSortFunc(transcript_t i, transcript_t j) {
         return false;
 }
 
-int Gene::loadGenesFromFile(char *file, TidHandler &th) {
+int Gene::loadGenesFromFile(const char *file, TidHandler &th) {
 
     uint32_t length = getFilelength(file);
     FILE *infile;

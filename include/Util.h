@@ -21,7 +21,7 @@
 
 using namespace std;
 
-uint32_t getFilelength(char *file);
+uint32_t getFilelength(const char *file);
 int readBlock(char *block, int length, FILE *infile);
 
 extern map<int, char> intChar;

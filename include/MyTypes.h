@@ -284,30 +284,30 @@ typedef struct {
 
 typedef struct {
     int min_seq_bwt;
-    char *directoryBWT;
+    const char *directoryBWT;
 
     int cfn;
     double rt;
     int minIntra;
     double minW;
 
-    char *fileRead;
-    char *fileSum;
-    char *fileEx;
-    char *bkFile;
-    char *bkFileBEDPE;
-    char *bkFileVCF;
+    const char *fileRead;
+    const char *fileSum;
+    const char *fileEx;
+    const char *bkFile;
+    const char *bkFileBEDPE;
+    const char *bkFileVCF;
 
-    char *fileJunction;
-    char *filePeptide;
-    char *fileSmcRna;
+    const char *fileJunction;
+    const char *filePeptide;
+    const char *fileSmcRna;
 
     int isRunningNormal;
 
     int bacc;
     int largeNum;
 
-    char *sample_name;
+    const char *sample_name;
 
     int minDel;
 

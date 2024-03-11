@@ -260,7 +260,7 @@ int Reference::addRef(char *seq, uint32_t len) {
 
 uint32_t blockSize = 10000000;
 
-int Reference::loadReference(char *filename, uint32_t length) {
+int Reference::loadReference(const char *filename, uint32_t length) {
     last = 0;
     numInRef = 0;
 
@@ -310,7 +310,7 @@ int Reference::loadReference(char *filename, uint32_t length) {
     return 0;
 }
 
-int Reference::loadRef(char *fileName) {
+int Reference::loadRef(const char *fileName) {
 
     // if exist reference, remove it;
     if (reference != nullptr) {
@@ -376,7 +376,7 @@ int Reference::loadRef(char *fileName) {
     return 0;
 }
 
-void Reference::test(char *filename) {
+void Reference::test(const char *filename) {
     loadRef(filename);
     /*
             cout<<getRefChar(1)<<endl;

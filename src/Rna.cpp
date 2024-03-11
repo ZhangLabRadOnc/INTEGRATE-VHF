@@ -57,7 +57,7 @@ Rna::Rna() {
     }
 }
 
-int Rna::getGraph(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc) {
+int Rna::getGraph(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc) {
     // cout<<"in getGraph"<<endl;
     samFile *f = sam_open(rnaFile, "r");
     if (f == nullptr)
@@ -2214,7 +2214,7 @@ typedef struct {
 
 vector<added_split_t> addspt;
 
-int Rna::mapPartialSplitBWT(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, myFind2 &mf2) {
+int Rna::mapPartialSplitBWT(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, myFind2 &mf2) {
 
     // sortTopHatSpByName();
 
@@ -2780,7 +2780,7 @@ int Rna::countEn(vector<int> &enIds, string name) {
     return count;
 }
 
-int Rna::reduceGraph(char *rnaFile, Gene &g, TidHandler &th) {
+int Rna::reduceGraph(const char *rnaFile, Gene &g, TidHandler &th) {
 
     MyHash mhh;
 
@@ -4268,7 +4268,7 @@ int Rna::readTopHat(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc) {
 
 bool isLgClip(const bam1_t *b);
 
-int Rna::readSTAR(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2) {
+int Rna::readSTAR(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2) {
 
     // cout<<"read all STAR good split reads"<<endl;
 
@@ -4913,7 +4913,7 @@ int Rna::handleTmpTopHatSplits(HitsCounter &hc, Gene &g) {
     return 0;
 }
 
-int Rna::readTopHat2(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2) {
+int Rna::readTopHat2(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2) {
 
     // cout<<"read all tophat good split reads"<<endl;
 

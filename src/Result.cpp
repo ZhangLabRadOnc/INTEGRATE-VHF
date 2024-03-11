@@ -266,7 +266,7 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
     return 0;
 }
 
-int Result::printAllResult(char *filename, Reference &ref, int isRunningNormal) {
+int Result::printAllResult(const char *filename, Reference &ref, int isRunningNormal) {
     ofstream outFile(filename);
     outIndex = 0;
     for (int i = 0; i < results.size(); i++) {
@@ -571,7 +571,7 @@ int Result::combineRecord(Gene &g) {
     return 0;
 }
 
-int Result::printSummary(char *filename, Gene &g, int isRunningNormal, int largeNum) {
+int Result::printSummary(const char *filename, Gene &g, int isRunningNormal, int largeNum) {
 
     sort(results.begin(), results.end(), my_sort_result_func);
 
@@ -657,9 +657,9 @@ int Result::printSummary(char *filename, Gene &g, int isRunningNormal, int large
             outFile << getType(t1) << "\t";
             //// for bk 2
             if (t1 == 2)
-                bkt.isRT == 1;
+                bkt.isRT = 1;
             else
-                bkt.isRT == 0;
+                bkt.isRT = 0;
             bkvec.push_back(bkt);
 
             outFile << rt.numOfEnRna << "\t" << rt.numOfSpRna << "\t";
@@ -821,7 +821,7 @@ int RefPrinter(Reference &ref, int tid, uint32_t aa, uint32_t bb, int strand, in
     return 0;
 }
 
-int Result::printExons(char *filename, Gene &g, Reference &ref, int isRunningNormal, char *bkfile, char *bkfileBEDPE, char *bkfileVCF, char *refname, char *sample_name) {
+int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunningNormal, const char *bkfile, const char *bkfileBEDPE, const char *bkfileVCF, const char *refname, const char *sample_name) {
 
     ofstream outFile(filename);
 
@@ -1233,7 +1233,7 @@ bool my_sort_for_in_frame(fusion_junction_t i, fusion_junction_t j) // id, junc5
     }
 }
 
-int Result::getAllJunctionsStep2(char *filename, Gene &g, Reference &ref) { return 0; }
+int Result::getAllJunctionsStep2(const char *filename, Gene &g, Reference &ref) { return 0; }
 
 bool my_sort_for_peptide(fusion_junction_t i, fusion_junction_t j) // id, junc5p, junc3p,!=-1, !=-1, base, base, short, short
 {
@@ -1307,7 +1307,7 @@ bool my_sort_for_peptide(fusion_junction_t i, fusion_junction_t j) // id, junc5p
     }
 }
 
-int Result::getAllJunctionsStep3(char *filename, Gene &g, Reference &ref) { return 0; }
+int Result::getAllJunctionsStep3(const char *filename, Gene &g, Reference &ref) { return 0; }
 
 // SMC-RNA
 
@@ -1579,7 +1579,7 @@ bool my_sort_for_smc(fusion_junction_2_t i, fusion_junction_2_t j) // id, junc5p
         return false;
     }
 }
-int Result::getAllJunctionsStep6(char *filename, Gene &g, Reference &ref) {
+int Result::getAllJunctionsStep6(const char *filename, Gene &g, Reference &ref) {
 
     Updator updator;
     sort(fjtvec2.begin(), fjtvec2.end(), my_sort_for_smc);

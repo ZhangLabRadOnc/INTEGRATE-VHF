@@ -43,12 +43,12 @@ class Dna {
     typedef GraphType::const_iterator const_vertex_iterator;
     typedef EdgeList::const_iterator const_edge_iterator;
 
-    int traverseFindDna(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh);
-    int onlyDNA(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref);
-    int traverseEncompass(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref);
-    int onlyDNA1(char *dnaFile, char *name1, char *name2, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref);
+    int traverseFindDna(const char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh);
+    int onlyDNA(const char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref);
+    int traverseEncompass(const char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref);
+    int onlyDNA1(const char *dnaFile, char *name1, char *name2, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref);
 
-    int onlyDNAByResult(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref, Result &result, int min_deletion, int isNormal);
+    int onlyDNAByResult(const char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref, Result &result, int min_deletion, int isNormal);
     int sortAndCombineEnDnaByNameLocal(Gene &g, result_t &rt, int min_deletion, int isNormal);
     int getSplitReadsAndRangesLocal(MyBamWrap &bw);
     // int mapSplitLocal(Gene& g, Reference& ref);
@@ -61,9 +61,9 @@ class Dna {
 
     void setDnafg(FusionGraph *dnafg) { this->dnafg = dnafg; }
 
-    int getCandFromDNA(char *tmpfile, Gene &g);
+    int getCandFromDNA(const char *tmpfile, Gene &g);
 
-    int getSplitReadsAndRanges(char *dnaFile);
+    int getSplitReadsAndRanges(const char *dnaFile);
 
     int tmpSpHandler();
     int regionAssign(region_t &rg, int enId);

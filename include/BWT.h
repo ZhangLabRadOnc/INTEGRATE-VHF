@@ -83,7 +83,7 @@ class BWT {
 
     int getLength();
 
-    int writeTofile(char *filename);
+    int writeTofile(const char *filename);
 
     int setLength(int length) {
         this->length = length;

@@ -593,7 +593,7 @@ int BWT::inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int mi
 
 int BWT::getLength() { return length; }
 
-int BWT::writeTofile(char *filename) {
+int BWT::writeTofile(const char *filename) {
 
     FILE *pFile;
     pFile = fopen(filename, "w");

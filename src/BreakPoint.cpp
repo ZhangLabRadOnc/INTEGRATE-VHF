@@ -48,7 +48,7 @@ bool my_vcf_func(vcf_t i, vcf_t j) {
         return false;
 }
 
-int BreakPoint::getBreakPoints(vector<break_point_record_t> &bkvec, char *filename, char *filename1, char *filename2, char *refname, Reference &ref, char *sample_name) {
+int BreakPoint::getBreakPoints(vector<break_point_record_t> &bkvec, const char *filename, const char *filename1, const char *filename2, const char *refname, Reference &ref, const char *sample_name) {
 
     // cout<<"here 1"<<endl;
     ofstream outFile(filename);

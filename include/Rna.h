@@ -74,7 +74,7 @@ class Rna {
 
     encompass_rna_t getEnRna(int index) { return enrna[index]; };
 
-    int getGraph(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
+    int getGraph(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
 
     int cbEncompassRcs(Gene &g);
     int combineOne(Gene &g, int gid1, int gid2, MyHash &mhh);
@@ -82,7 +82,7 @@ class Rna {
     int computeWeights(Gene &g);
     int computeWeights1(Gene &g); // added STAR secondary reads
 
-    int reduceGraph(char *rnaFile, Gene &g, TidHandler &th);
+    int reduceGraph(const char *rnaFile, Gene &g, TidHandler &th);
 
     int reduceGraph2(Gene &g, double minWeight);
 
@@ -98,7 +98,7 @@ class Rna {
     // int addHashTopHat(int hashValue,int tpId);
     // int lookUpHashTopHat(string name, MyHash & mhh, vector<int> & tpIds);
 
-    // int mapPartialSplit(char * rnaFile, TidHandler & th, Gene & g, Reference & ref);
+    // int mapPartialSplit(const char * rnaFile, TidHandler & th, Gene & g, Reference & ref);
     // int traverseSplit(Gene & g, MyBamWrap & mbw, MyBamHeader & mbh, TidHandler & th);
     // int matchSplit(Gene & g, int gid1, int gid2);
     int printSplits();
@@ -113,7 +113,7 @@ class Rna {
     void traverseRemove(Gene &g);
 
     // BWT
-    int mapPartialSplitBWT(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, myFind2 &mf2);
+    int mapPartialSplitBWT(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, myFind2 &mf2);
 
     // match
     int matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, vector<map_emt_t2> &mets2, vector<map_emt_t2> &metsM2, int count,
@@ -135,7 +135,7 @@ class Rna {
 
     int handleTmpTopHatSplits(HitsCounter &hc, Gene &g);
     int cigarInRegionTwo2(const bam1_t *b, TidHandler &th, Gene &g, HitsCounter &hc, MyHash &mhh, Reference &ref, myFind2 &mf2);
-    int readTopHat2(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2);
+    int readTopHat2(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2);
 
     int countEn(vector<int> &enIds, string name);
     int handleSpHits();
@@ -161,6 +161,6 @@ class Rna {
     int isGood(Gene &g, split_rna_t &rst, encompass_rna_t &ent);
     int hasGoodEncompass(Gene &g, split_rna_t &st, vector<int> enIds);
 
-    int readSTAR(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2);
+    int readSTAR(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2);
     int getHardClipReads(Gene &, MyBamWrap &, TidHandler &);
 };

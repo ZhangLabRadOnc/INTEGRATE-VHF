@@ -30,6 +30,6 @@ class RunCode {
     RunCode();
     virtual ~RunCode();
 
-    int runBuildBWTs(int argc, char *argv[]);
-    int runFindFusions(int argc, char *argv[]);
+    int runBuildBWTs(int argc, const char *argv[]);
+    int runFindFusions(int argc, const char *argv[]);
 };

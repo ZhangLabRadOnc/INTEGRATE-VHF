@@ -32,7 +32,7 @@ MyBamHeader::~MyBamHeader()
     }
 }
 
-int MyBamHeader::myBamOpen(char *fileName) {
+int MyBamHeader::myBamOpen(const char *fileName) {
     f = sam_open(fileName, "r");
     if (f == nullptr)
     {
@@ -160,7 +160,7 @@ int getMeanStd(vector<int> numbers, int &mean, int &std) {
     return 0;
 }
 
-int testInsertStd(char *fileName, string testRG, int &insert, int &std) {
+int testInsertStd(const char *fileName, string testRG, int &insert, int &std) {
     vector<int> inserts;
 
     samFile *f = sam_open(fileName, "r");
@@ -202,7 +202,7 @@ int testInsertStd(char *fileName, string testRG, int &insert, int &std) {
     return inserts.size() <= 0;
 }
 
-int testInsertStdAll(char *fileName, int &insert, int &std) {
+int testInsertStdAll(const char *fileName, int &insert, int &std) {
     vector<int> inserts;
 
     samFile *f = sam_open(fileName, "r");
@@ -238,7 +238,7 @@ int testInsertStdAll(char *fileName, int &insert, int &std) {
     return inserts.size() <= 0;
 }
 
-int MyBamHeader::getInsertStdFromBAM(char *filename) {
+int MyBamHeader::getInsertStdFromBAM(const char *filename) {
     if (rg.size() > 0) {
         isRG = 1;
         for (map<string, int>::iterator it = rg.begin(); it != rg.end(); ++it) {
@@ -294,7 +294,7 @@ string MyBamHeader::getChrName(int tid) {
 }
 
 /*
-int MyBamHeader::run(char * fileName) {
+int MyBamHeader::run(const char * fileName) {
 
         this->setMInsert(440);//this is lazy need parameter pass
         this->setMStd(52);
@@ -330,7 +330,7 @@ int MyBamHeader::printRGs() {
     return 0;
 }
 
-int MyBamHeader::run2(char *fileName) {
+int MyBamHeader::run2(const char *fileName) {
 
     // this->setMInsert(insert);
     // this->setMStd(std);

@@ -13,7 +13,7 @@
  *
  */
 
-uint32_t getFilelength(char *file) {
+uint32_t getFilelength(const char *file) {
     struct stat filestatus;
     stat(file, &filestatus);
     uint32_t length = filestatus.st_size;

@@ -33,7 +33,7 @@ void usageBuild() {
     exit(0);
 }
 
-int getOptForBuild(int argc, char *argv[], options_t &opt, int &optStart) {
+int getOptForBuild(int argc, const char *argv[], options_t &opt, int &optStart) {
 
     for (int i = 1; i < argc; i++) {
         string tmp = string(argv[i]);
@@ -89,7 +89,7 @@ int getOptForBuild(int argc, char *argv[], options_t &opt, int &optStart) {
     return 0;
 }
 
-int RunCode::runBuildBWTs(int argc, char *argv[]) {
+int RunCode::runBuildBWTs(int argc, const char *argv[]) {
 
     options_t opt;
     opt.min_seq_bwt = 10000000;
@@ -185,7 +185,7 @@ void usageFusion() {
     exit(0);
 }
 
-int getOptForFusion(int argc, char *argv[], options_t &opt, int &opStart) {
+int getOptForFusion(int argc, const char *argv[], options_t &opt, int &opStart) {
 
     for (int i = 1; i < argc; i++) {
 
@@ -571,7 +571,7 @@ int getOptForFusion(int argc, char *argv[], options_t &opt, int &opStart) {
     return 0;
 }
 
-int RunCode::runFindFusions(int argc, char *argv[]) {
+int RunCode::runFindFusions(int argc, const char *argv[]) {
 
     options_t opt;
     int opStart = 2;

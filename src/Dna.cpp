@@ -429,7 +429,7 @@ static int my_local_func_4(const bam1_t *b) {
     return 0;
 }
 
-int Dna::traverseFindDna(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh) {
+int Dna::traverseFindDna(const char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh) {
 
     dna_th = &th;
     dna_mbh = &mbh;
@@ -657,7 +657,7 @@ bool nodeVisited(int nd) {
     return false;
 }
 
-int Dna::onlyDNA(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref) {
+int Dna::onlyDNA(const char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref) {
 
     dna_th = &th;
     dna_mbh = &mbh;
@@ -914,7 +914,7 @@ int mapSplitLocal(Gene &g, Reference &ref) {
     return 0;
 }
 
-int Dna::onlyDNAByResult(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref, Result &result, int min_deletion, int isNormal) {
+int Dna::onlyDNAByResult(const char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref, Result &result, int min_deletion, int isNormal) {
 
     // cout<<"in only DNA by Result"<<endl;
 
@@ -1015,7 +1015,7 @@ int Dna::onlyDNAByResult(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mb
     return 0;
 }
 
-int Dna::onlyDNA1(char *dnaFile, char *name1, char *name2, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref) {
+int Dna::onlyDNA1(const char *dnaFile, char *name1, char *name2, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref) {
 
     dna_th = &th;
     dna_mbh = &mbh;
@@ -1125,7 +1125,7 @@ int Dna::pushBackEncompass() {
     return 0;
 }
 
-int Dna::traverseEncompass(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref) {
+int Dna::traverseEncompass(const char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Reference &ref) {
 
     dna_th = &th;
     dna_mbh = &mbh;
@@ -1466,7 +1466,7 @@ int Dna::sortAndCombineEnDnaByName(Gene &g) {
     return 0;
 }
 
-int Dna::getCandFromDNA(char *tmpfile, Gene &g) {
+int Dna::getCandFromDNA(const char *tmpfile, Gene &g) {
 
     cout << "in getCand" << endl;
 
@@ -1829,7 +1829,7 @@ int Dna::regionAssign(region_t &rg, int enId) {
     return 0;
 }
 
-int Dna::getSplitReadsAndRanges(char *dnaFile) {
+int Dna::getSplitReadsAndRanges(const char *dnaFile) {
 
     cout << "get split reads and ranges" << endl;
 

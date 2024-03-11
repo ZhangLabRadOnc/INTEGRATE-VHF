@@ -37,15 +37,15 @@ class MyBamHeader {
     map<string, int> tidM;
 
     MyBamHeader();
-    int myBamOpen(char *fileName);
+    int myBamOpen(const char *fileName);
     int getRGs();
     int getRGStd(int std);
     int getPI(char *rgp);
     int getStd(char *rgp);
     int setTidM();
     int getTid(string &chrName);
-    // int run(char * fileName);
-    int run2(char *fileName);
+    // int run(const char * fileName);
+    int run2(const char *fileName);
     string getChrName(int tid);
     int computeMax();
 
@@ -71,6 +71,6 @@ class MyBamHeader {
 
     void setNumTids(int numTids) { this->numTids = numTids; }
 
-    int getInsertStdFromBAM(char *filename);
+    int getInsertStdFromBAM(const char *filename);
     int printRGs();
 };

@@ -103,7 +103,7 @@ int HitsCounter::allocate(int size) {
     return 0;
 }
 
-int HitsCounter::getChromBWTs(Reference &ref, char *directory) {
+int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
 
     // cout<<"in get ChromeBWTS"<<endl;
     struct stat sb;
@@ -215,7 +215,7 @@ int HitsCounter::getChromBWTs(Reference &ref, char *directory) {
     return 0;
 }
 
-int HitsCounter::getOne(char *refseq, uint32_t length, char *fileName) {
+int HitsCounter::getOne(char *refseq, uint32_t length, const char *fileName) {
 
     //	cout<<"in getOne "<<fileName<<endl;
 
@@ -241,7 +241,7 @@ int HitsCounter::getOne(char *refseq, uint32_t length, char *fileName) {
     return 0;
 }
 
-int HitsCounter::loadChromBWTs(Reference &ref, char *directory) {
+int HitsCounter::loadChromBWTs(Reference &ref, const char *directory) {
 
     int size = ref.getListSize();
     char fileDirectory[1024];
@@ -299,7 +299,7 @@ int HitsCounter::loadChromBWTs(Reference &ref, char *directory) {
     return 0;
 }
 
-int HitsCounter::loadOne(BWT *bwt, char *bwtfile) {
+int HitsCounter::loadOne(BWT *bwt, const char *bwtfile) {
 
     FILE *pFile;
     pFile = fopen(bwtfile, "r");

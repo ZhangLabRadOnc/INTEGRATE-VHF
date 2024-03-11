@@ -44,12 +44,12 @@ class Reference {
     int parseBlock(char *block, uint32_t &c_number, uint32_t length, int final);
     int addRef(char *seq, uint32_t len);
     int chrNameToIndex(string chrname);
-    int loadReference(char *filename, uint32_t length); // function to load reference
+    int loadReference(const char *filename, uint32_t length); // function to load reference
 
   public:
     Reference();
-    int loadRef(char *fileName);
-    void test(char *file); // test
+    int loadRef(const char *fileName);
+    void test(const char *file); // test
 
     string getCharName(int i);
     uint32_t getPosLeft(int i);

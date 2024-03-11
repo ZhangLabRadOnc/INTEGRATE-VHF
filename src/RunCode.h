@@ -8,34 +8,31 @@
 #ifndef RUNCODE_H_
 #define RUNCODE_H_
 
-#include <iostream>
-#include <ctime>
 #include <cstring>
+#include <ctime>
+#include <iostream>
 #include <string>
 
 using namespace std;
 
-#include "Reference.h"
-#include "TidHandler.h"
-#include "Gene.h"
+#include "Dna.h"
 #include "FusionGraph.h"
+#include "Gene.h"
+#include "HitsCounter.h"
 #include "MyBamWrap.h"
+#include "Reference.h"
+#include "Result.h"
 #include "Rna.h"
 #include "SuffixArray2.h"
-#include "HitsCounter.h"
-#include "Dna.h"
-#include "Result.h"
-
-
+#include "TidHandler.h"
 
 class RunCode {
-public:
-	RunCode();
-	virtual ~RunCode();
+  public:
+    RunCode();
+    virtual ~RunCode();
 
-	int runBuildBWTs(int argc, char * argv[]);
-	int runFindFusions(int argc, char * argv[]);
+    int runBuildBWTs(int argc, char *argv[]);
+    int runFindFusions(int argc, char *argv[]);
 };
-
 
 #endif /* RUNCODE_H_ */

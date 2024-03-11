@@ -19,35 +19,26 @@ using namespace std;
 /**
  * constructors and destructor
  */
-template<typename Object, typename Weight>
-ALGraph<Object,Weight>::ALGraph()
-    : edgeCount(0)
-{
-}
+template <typename Object, typename Weight> ALGraph<Object, Weight>::ALGraph() : edgeCount(0) {}
 
-template<typename Object, typename Weight>
-template<typename Callback>
-void ALGraph<Object, Weight>::removeEdgesIf(iterator v, Callback& cb) {
-    EdgeList& elist = v->second;
+template <typename Object, typename Weight> template <typename Callback> void ALGraph<Object, Weight>::removeEdgesIf(iterator v, Callback &cb) {
+    EdgeList &elist = v->second;
     for (edge_iterator e = elist.begin(); e != elist.end(); /* empty */) {
         if (cb(e)) {
             // remove symmetric edge
             removeEdgeImpl(e->first, v->first);
             elist.erase(e++);
             --edgeCount;
-        }
-        else {
+        } else {
             ++e;
         }
     }
 }
 
 /*
-* remove edge if
-*/
-template<typename Object, typename Weight>
-template<typename Callback>
-void ALGraph<Object, Weight>::removeEdgesIf(Callback& cb) {
+ * remove edge if
+ */
+template <typename Object, typename Weight> template <typename Callback> void ALGraph<Object, Weight>::removeEdgesIf(Callback &cb) {
     for (iterator v = begin(); v != end(); /* empty */) {
         removeEdgesIf(v, cb);
         if (v->second.empty())
@@ -58,12 +49,10 @@ void ALGraph<Object, Weight>::removeEdgesIf(Callback& cb) {
 }
 
 /*
-* for each vertex
-*/
+ * for each vertex
+ */
 
-template<typename Object, typename Weight>
-template<typename Callback>
-bool ALGraph<Object, Weight>::foreachVertex(Callback& cb) {
+template <typename Object, typename Weight> template <typename Callback> bool ALGraph<Object, Weight>::foreachVertex(Callback &cb) {
     for (iterator v = begin(); v != end(); /* empty */) {
         if (!cb(v++))
             return false;
@@ -72,13 +61,11 @@ bool ALGraph<Object, Weight>::foreachVertex(Callback& cb) {
 }
 
 /*
-* for each edge
-*/
+ * for each edge
+ */
 
-template<typename Object, typename Weight>
-template<typename Callback>
-bool ALGraph<Object, Weight>::foreachEdge(iterator v, Callback& cb) {
-    EdgeList& elist = v->second;
+template <typename Object, typename Weight> template <typename Callback> bool ALGraph<Object, Weight>::foreachEdge(iterator v, Callback &cb) {
+    EdgeList &elist = v->second;
     for (edge_iterator e = elist.begin(); e != elist.end(); /* empty */) {
         edge_iterator next = e;
         ++next;
@@ -91,75 +78,48 @@ bool ALGraph<Object, Weight>::foreachEdge(iterator v, Callback& cb) {
     return true;
 }
 
-template<typename Object, typename Weight>
-template<typename Callback>
-bool ALGraph<Object, Weight>::foreachEdge(Callback& callback) {
+template <typename Object, typename Weight> template <typename Callback> bool ALGraph<Object, Weight>::foreachEdge(Callback &callback) {
     ForeachEdgeHelper<Callback> helper(*this, callback);
     return foreachVertex(helper);
 }
 
 /*
-* for each unique edge
-*/
+ * for each unique edge
+ */
 
-template<typename Object, typename Weight>
-template<typename Callback>
-bool ALGraph<Object, Weight>::foreachUniqueEdge(Callback& callback) {
+template <typename Object, typename Weight> template <typename Callback> bool ALGraph<Object, Weight>::foreachUniqueEdge(Callback &callback) {
     UniqueEdgeFilter<Callback> filter(callback);
     return foreachEdge(filter);
 }
 
-template<typename Object, typename Weight>
-typename ALGraph<Object, Weight>::iterator ALGraph<Object, Weight>::begin() {
-    return graph.begin();
-}
+template <typename Object, typename Weight> typename ALGraph<Object, Weight>::iterator ALGraph<Object, Weight>::begin() { return graph.begin(); }
 
-template<typename Object, typename Weight>
-typename ALGraph<Object, Weight>::iterator ALGraph<Object, Weight>::end() {
-    return graph.end();
-}
+template <typename Object, typename Weight> typename ALGraph<Object, Weight>::iterator ALGraph<Object, Weight>::end() { return graph.end(); }
 
-template<typename Object, typename Weight>
-typename ALGraph<Object, Weight>::const_iterator ALGraph<Object, Weight>::begin() const {
-    return graph.begin();
-}
+template <typename Object, typename Weight> typename ALGraph<Object, Weight>::const_iterator ALGraph<Object, Weight>::begin() const { return graph.begin(); }
 
-template<typename Object, typename Weight>
-typename ALGraph<Object, Weight>::const_iterator ALGraph<Object, Weight>::end() const {
-    return graph.end();
-}
+template <typename Object, typename Weight> typename ALGraph<Object, Weight>::const_iterator ALGraph<Object, Weight>::end() const { return graph.end(); }
 
-template<typename Object, typename Weight>
-bool ALGraph<Object, Weight>::empty() const {
-    return graph.empty();
-}
+template <typename Object, typename Weight> bool ALGraph<Object, Weight>::empty() const { return graph.empty(); }
 
 /*
-* vertex exists
-*/
+ * vertex exists
+ */
 
-template<typename Object, typename Weight>
-bool ALGraph<Object, Weight>::vertexExists(Object const& obj) const {
-    return graph.count(obj) != 0;
-}
+template <typename Object, typename Weight> bool ALGraph<Object, Weight>::vertexExists(Object const &obj) const { return graph.count(obj) != 0; }
 
 /*
-* edge exists
-*/
+ * edge exists
+ */
 
-template<typename Object, typename Weight>
-bool ALGraph<Object, Weight>::edgeExists(Object const& x1, Object const& x2) const {
-    return getEdgeList(x1).count(x2) != 0;
-}
+template <typename Object, typename Weight> bool ALGraph<Object, Weight>::edgeExists(Object const &x1, Object const &x2) const { return getEdgeList(x1).count(x2) != 0; }
 
 /*
-* neighboring vertexes
-*/
+ * neighboring vertexes
+ */
 
-template<typename Object, typename Weight>
-template<typename FWIter>
-void ALGraph<Object, Weight>::neighboringVertexes(const Object& x, FWIter iter) {
-    EdgeList const& el = getEdgeList(x);
+template <typename Object, typename Weight> template <typename FWIter> void ALGraph<Object, Weight>::neighboringVertexes(const Object &x, FWIter iter) {
+    EdgeList const &el = getEdgeList(x);
 
     typedef typename EdgeList::const_iterator TIter;
     for (TIter i = el.begin(); i != el.end(); ++i)
@@ -169,29 +129,18 @@ void ALGraph<Object, Weight>::neighboringVertexes(const Object& x, FWIter iter) 
 /**
  * Get the vertex number of the graph.
  */
-template<typename Object, typename Weight>
-int ALGraph<Object,Weight>::getVertexCount() const
-{
-    return graph.size();
-}
-
+template <typename Object, typename Weight> int ALGraph<Object, Weight>::getVertexCount() const { return graph.size(); }
 
 /**
  * Get the edge number of the graph.
  */
-template<typename Object, typename Weight>
-int ALGraph<Object,Weight>::getEdgeCount() const
-{
-    return edgeCount;
-}
+template <typename Object, typename Weight> int ALGraph<Object, Weight>::getEdgeCount() const { return edgeCount; }
 
 /**
  * Return weight on the edge between vertex "x1" and "x2".
  */
-template<typename Object, typename Weight>
-Weight const* ALGraph<Object,Weight>::getWeight( const Object &x1, const Object &x2 ) const
-{
-    EdgeList* elist = getEdgeListImpl(x1);
+template <typename Object, typename Weight> Weight const *ALGraph<Object, Weight>::getWeight(const Object &x1, const Object &x2) const {
+    EdgeList *elist = getEdgeListImpl(x1);
     if (!elist)
         return 0;
 
@@ -203,14 +152,11 @@ Weight const* ALGraph<Object,Weight>::getWeight( const Object &x1, const Object 
     return &edge_found->second;
 }
 
-
 /**
  * Return weight on the edge between vertex "x1" and "x2".
  */
-template<typename Object, typename Weight>
-Weight * ALGraph<Object,Weight>::getWeight( const Object &x1, const Object &x2 )
-{
-    EdgeList* elist = getEdgeListImpl(x1);
+template <typename Object, typename Weight> Weight *ALGraph<Object, Weight>::getWeight(const Object &x1, const Object &x2) {
+    EdgeList *elist = getEdgeListImpl(x1);
     if (!elist)
         return 0;
 
@@ -221,7 +167,6 @@ Weight * ALGraph<Object,Weight>::getWeight( const Object &x1, const Object &x2 )
 
     return &edge_found->second;
 }
-
 
 #if 0
 /**
@@ -240,7 +185,7 @@ int ALGraph<Object,Weight>::getNextDst( const Object &x ) const
     else
     {
         Edge<Weight> *p = vertexArray[i].adj;
-        if( p != NULL )
+        if( p != nullptr )
             return p->dst;
         else
             return -1;
@@ -266,10 +211,10 @@ int ALGraph<Object,Weight>::getNextDst( const Object &x1, const Object &x2 ) con
     else
     {
         Edge<Weight> *p = vertexArray[v1].adj;
-        while( p != NULL && p->dst != v2 )
+        while( p != nullptr && p->dst != v2 )
             p = p->next;
 
-        if( p != NULL && p->next != NULL )
+        if( p != nullptr && p->next != nullptr )
             return p->next->dst;
         else
             return -1;
@@ -286,7 +231,7 @@ int ALGraph<Object,Weight>::insertVertex( const Object &x )
 {
     if( curSize < maxSize )
     {
-        vertexArray[curSize++] = Vertex<Object,Weight>( x, NULL );
+        vertexArray[curSize++] = Vertex<Object,Weight>( x, nullptr );
         indexMap.insert(pair<Object,int>(x,curSize-1));
         return curSize - 1;
         //cout<<"insert "<<x<<" "<<curSize-1<<"\n";
@@ -313,17 +258,17 @@ void ALGraph<Object,Weight>::removeVertex( const Object &x )
           indexMap.erase(vertexArray[curSize-1].data);
           vertexArray[v] = vertexArray[curSize-1];
           vertexArray[v].adj=vertexArray[curSize-1].adj;
-          vertexArray[curSize-1].adj=NULL;
+          vertexArray[curSize-1].adj=nullptr;
           indexMap.insert(pair<int,int>(vertexArray[v].data,v));
 
           Edge<Weight> * e=vertexArray[v].adj;
-          while(e!=NULL)
+          while(e!=nullptr)
           {
               int i = e->dst;
 
               Edge<Weight> * t=vertexArray[i].adj;
 
-              while(t!=NULL)
+              while(t!=nullptr)
               {
                   if(t->dst==curSize-1)
               {
@@ -340,14 +285,11 @@ void ALGraph<Object,Weight>::removeVertex( const Object &x )
 }
 #endif
 
-
 /**
  * Insert an edge (x1,x2) with weight "c". If the edge already exist then
  * return false, else return true.
  */
-template<typename Object, typename Weight>
-void ALGraph<Object,Weight>::insertEdgeImpl( const Object &x1, const Object &x2, const Weight& c )
-{
+template <typename Object, typename Weight> void ALGraph<Object, Weight>::insertEdgeImpl(const Object &x1, const Object &x2, const Weight &c) {
     EdgeList el;
     std::pair<typename EdgeList::iterator, bool> inserted = graph[x1].insert(std::make_pair(x2, c));
 
@@ -363,13 +305,11 @@ void ALGraph<Object,Weight>::insertEdgeImpl( const Object &x1, const Object &x2,
 /**
  * Remove the edge (x1,x2).
  */
-template<typename Object, typename Weight>
-bool ALGraph<Object,Weight>::removeEdgeImpl( const Object &x1, const Object &x2 )
-{
+template <typename Object, typename Weight> bool ALGraph<Object, Weight>::removeEdgeImpl(const Object &x1, const Object &x2) {
     typename GraphType::iterator vfound = graph.find(x1);
 
     if (vfound != graph.end()) {
-        EdgeList& elist = vfound->second;
+        EdgeList &elist = vfound->second;
         typename EdgeList::iterator found = elist.find(x2);
         if (found != elist.end()) {
             elist.erase(found);
@@ -382,9 +322,7 @@ bool ALGraph<Object,Weight>::removeEdgeImpl( const Object &x1, const Object &x2 
     return false;
 }
 
-template<typename Object, typename Weight>
-typename ALGraph<Object, Weight>::EdgeList const&
-ALGraph<Object, Weight>::getEdgeList(const Object& x) const {
+template <typename Object, typename Weight> typename ALGraph<Object, Weight>::EdgeList const &ALGraph<Object, Weight>::getEdgeList(const Object &x) const {
     typename GraphType::const_iterator found = graph.find(x);
     if (found == graph.end())
         return emptyEdgeList;
@@ -392,29 +330,24 @@ ALGraph<Object, Weight>::getEdgeList(const Object& x) const {
     return found->second;
 }
 
-template<typename Object, typename Weight>
-void ALGraph<Object, Weight>::insertEdge( const Object &x1, const Object &x2, Weight const& c ) {
+template <typename Object, typename Weight> void ALGraph<Object, Weight>::insertEdge(const Object &x1, const Object &x2, Weight const &c) {
     insertEdgeImpl(x1, x2, c);
     insertEdgeImpl(x2, x1, c);
     ++edgeCount;
 }
 
-template<typename Object, typename Weight>
-void ALGraph<Object, Weight>::removeEdge( const Object &x1, const Object &x2 ) {
+template <typename Object, typename Weight> void ALGraph<Object, Weight>::removeEdge(const Object &x1, const Object &x2) {
     if (removeEdgeImpl(x1, x2) && removeEdgeImpl(x2, x1))
         --edgeCount;
 }
-
 
 /*
  * update Edge
  *
  */
 
-template<typename Object, typename Weight>
-void ALGraph<Object,Weight>::updateWeight( const Object &x1, const Object &x2, const Weight& c )
-{
-    Weight* w = getWeight(x1, x2);
+template <typename Object, typename Weight> void ALGraph<Object, Weight>::updateWeight(const Object &x1, const Object &x2, const Weight &c) {
+    Weight *w = getWeight(x1, x2);
     if (!w) {
         std::stringstream ss;
         ss << "updateEdge called with non existing edge '" << x1 << "' <-> '" << x2 << "'";

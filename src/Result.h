@@ -8,79 +8,62 @@
 #ifndef RESULT_H_
 #define RESULT_H_
 
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <string>
-#include <cstring>
 #include "sam.h"
+#include <algorithm>
+#include <cstring>
 #include <fstream>
-
+#include <iostream>
+#include <string>
+#include <vector>
 
 using namespace std;
 
-
+#include "BreakPoint.h"
+#include "FocalRegionHandler.h"
+#include "Gene.h"
 #include "MyTypes.h"
 #include "Reference.h"
-#include "Gene.h"
-#include "FocalRegionHandler.h"
-#include "BreakPoint.h"
-#include "Util.h"
 #include "Updator.h"
+#include "Util.h"
 
 class Result {
-private:
-	vector<result_t> results;
-	int indi;
+  private:
+    vector<result_t> results;
+    int indi;
 
-public:
-
-	
+  public:
     vector<break_point_record_t> bkvec;
-    
-    
+
     Result();
-	virtual ~Result();
-    
-    
+    virtual ~Result();
 
+    int addResult(result_t result);
+    int searchResult(int geneId1, int geneId2, result_t &result);
+    result_t *getOneResult(int index);
+    int printOneResult(int index, ofstream &outFile, Reference &ref, int isRunningNormal);
+    int printAllResult(char *filename, Reference &ref, int isRunningNormal);
+    int getTiers(double pn);
+    int printSummary(char *filename, Gene &g, int isRunningNormal, int largeNum);
+    int checkALLPrime();
 
-	int addResult(result_t result);
-	int searchResult(int geneId1,int geneId2,result_t & result);
-	result_t * getOneResult(int index);
-	int	printOneResult(int index, ofstream & outFile, Reference & ref, int isRunningNormal);
-	int printAllResult(char * filename, Reference & ref,int isRunningNormal);
-	int getTiers(double pn);
-	int printSummary(char * filename, Gene & g, int isRunningNormal, int largeNum);
-	int checkALLPrime();
+    int getSize();
 
+    int getIndi() const { return indi; }
 
-	int getSize();
+    void setIndi(int indi) { this->indi = indi; }
 
-	int getIndi() const {
-		return indi;
-	}
+    int removeMultiple(Gene &g, int largeNum);
+    int combineRecord(Gene &g);
 
-	void setIndi(int indi) {
-		this->indi = indi;
-	}
+    int printExons(char *filename, Gene &g, Reference &ref, int isRunningNormal, char *bkfile, char *bkfileBEDPE, char *bkfileVCF, char *refname, char *sample_name);
 
-	int removeMultiple(Gene & g, int largeNum);
-	int combineRecord(Gene & g);
-
-
-	int printExons(char * filename, Gene & g, Reference & ref, int isRunningNormal, char * bkfile, char * bkfileBEDPE, char * bkfileVCF, char * refname, char * sample_name);
-	
-	//copy and modified from printExons from 0.1.c and rm //bk and change
-        int getAllJunctionsStep1(Gene& g, Reference & ref);
-        int getAllJunctionsStep2(char * filename, Gene& g, Reference & ref);
-        int getAllJunctionsStep3(char * filename, Gene& g, Reference & ref);
-        int getAllJunctionsStep4(Gene& g, Reference & ref);
-        int getAllJunctionsStep5(Gene& g, Reference & ref);
-        int getAllJunctionsStep6(char * filename, Gene& g, Reference & ref);
+    // copy and modified from printExons from 0.1.c and rm //bk and change
+    int getAllJunctionsStep1(Gene &g, Reference &ref);
+    int getAllJunctionsStep2(char *filename, Gene &g, Reference &ref);
+    int getAllJunctionsStep3(char *filename, Gene &g, Reference &ref);
+    int getAllJunctionsStep4(Gene &g, Reference &ref);
+    int getAllJunctionsStep5(Gene &g, Reference &ref);
+    int getAllJunctionsStep6(char *filename, Gene &g, Reference &ref);
 };
-
-
-
 
 #endif /* RESULT_H_ */

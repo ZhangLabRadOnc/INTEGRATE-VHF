@@ -13,44 +13,36 @@ using namespace std;
 
 FusionGraph::FusionGraph() {
     // TODO Auto-generated constructor stub
-
 }
 
-ostream& operator<<( ostream &out,  FusionEdge &et )
-{
-    out<<et.getSize()<<" "<<et.weight;
+ostream &operator<<(ostream &out, FusionEdge &et) {
+    out << et.getSize() << " " << et.weight;
     return out;
 }
 
-ostream& operator<<( ostream &out, const ALGraph<int,FusionEdge> &g)
-{
+ostream &operator<<(ostream &out, const ALGraph<int, FusionEdge> &g) {
 
-    int verNum = g.getVertexCount(),
-        edgeNum = g.getEdgeCount();
+    int verNum = g.getVertexCount(), edgeNum = g.getEdgeCount();
 
     out << "This graph has " << verNum << " vertexes and " << edgeNum << " edges." << endl;
 #if PRINTME
-    for( int i=0; i<verNum; ++i )
-    {
+    for (int i = 0; i < verNum; ++i) {
         int x1 = g.getData(i);
         out << x1 << " :    ";
         int j = g.getNextDst(x1);
-        if( j != -1 )
-        {
+        if (j != -1) {
             int x2 = g.getData(j);
-            out << "( " << x1 << ", " << x2 << ", " <<*(g.getWeight(x1,x2)) << " )" << "    ";
-            do
-            {
-                j = g.getNextDst( x1, x2 );
-                if( j != -1 )
-                {
+            out << "( " << x1 << ", " << x2 << ", " << *(g.getWeight(x1, x2)) << " )"
+                << "    ";
+            do {
+                j = g.getNextDst(x1, x2);
+                if (j != -1) {
                     x2 = g.getData(j);
-                    out << "( " << x1 << ", " << x2 << ", " << *(g.getWeight(x1,x2)) << " )" << "    ";
-                }
-                else
+                    out << "( " << x1 << ", " << x2 << ", " << *(g.getWeight(x1, x2)) << " )"
+                        << "    ";
+                } else
                     break;
-            }
-            while( j != -1 );
+            } while (j != -1);
         }
         out << endl;
     }
@@ -58,114 +50,97 @@ ostream& operator<<( ostream &out, const ALGraph<int,FusionEdge> &g)
     return out;
 }
 
+int FusionGraph::printFg(Gene &g) {
 
-
-int FusionGraph::printFg(Gene & g) {
-
-    int verNum = fg.getVertexCount(),
-        edgeNum = fg.getEdgeCount();
+    int verNum = fg.getVertexCount(), edgeNum = fg.getEdgeCount();
 
     cout << "This graph has " << verNum << " vertexes and " << edgeNum << " edges." << endl;
 
 #ifdef PRINTME
 
-    for( int i=0; i<verNum; ++i )
-    {
+    for (int i = 0; i < verNum; ++i) {
         int x1 = fg.getData(i);
-        cout << (g.getGene(x1))->name2<<"("<<(g.getGene(x1))->fakeId<<")"<< " :    ";
+        cout << (g.getGene(x1))->name2 << "(" << (g.getGene(x1))->fakeId << ")"
+             << " :    ";
         int j = fg.getNextDst(x1);
-        if( j != -1 )
-        {
+        if (j != -1) {
             int x2 = fg.getData(j);
 
-    cout << "( " << (g.getGene(x1))->name2<<"("<<(g.getGene(x1))->fakeId<<")" << ", " << (g.getGene(x2))->name2<<"("<<(g.getGene(x2))->fakeId<<")" << ", " <<*(fg.getWeight(x1,x2)) << " )" << "    ";
-            do
-            {
-                j = fg.getNextDst( x1, x2 );
-                if( j != -1 )
-                {
+            cout << "( " << (g.getGene(x1))->name2 << "(" << (g.getGene(x1))->fakeId << ")"
+                 << ", " << (g.getGene(x2))->name2 << "(" << (g.getGene(x2))->fakeId << ")"
+                 << ", " << *(fg.getWeight(x1, x2)) << " )"
+                 << "    ";
+            do {
+                j = fg.getNextDst(x1, x2);
+                if (j != -1) {
                     x2 = fg.getData(j);
-                    cout << "( " << (g.getGene(x1))->name2<<"("<<(g.getGene(x1))->fakeId<<")" << ", " << (g.getGene(x2))->name2<<"("<<(g.getGene(x2))->fakeId<<")" << ", " << *(fg.getWeight(x1,x2)) << " )" << "    ";
-                }
-                else
+                    cout << "( " << (g.getGene(x1))->name2 << "(" << (g.getGene(x1))->fakeId << ")"
+                         << ", " << (g.getGene(x2))->name2 << "(" << (g.getGene(x2))->fakeId << ")"
+                         << ", " << *(fg.getWeight(x1, x2)) << " )"
+                         << "    ";
+                } else
                     break;
-            }
-            while( j != -1 );
+            } while (j != -1);
         }
-        cout<<endl;
+        cout << endl;
     }
 
 #endif // PRINTME
     return 0;
 }
 
-int FusionGraph::addGene(int & g) {
-    //fg.insertVertex(g);
+int FusionGraph::addGene(int &g) {
+    // fg.insertVertex(g);
     return 0;
 }
 
+int FusionGraph::addEncompass(int &g1, int &g2, int index) {
 
-int FusionGraph::addEncompass(int & g1, int & g2, int index) {
+    FusionEdge *pt = fg.getWeight(g1, g2);
+    FusionEdge *pt2 = fg.getWeight(g2, g1);
 
-    FusionEdge *pt = fg.getWeight(g1,g2);
-    FusionEdge *pt2 = fg.getWeight(g2,g1);
-
-    if(pt==NULL && pt2==NULL)
-    {
+    if (pt == nullptr && pt2 == nullptr) {
         FusionEdge eet;
         eet.addIndex(index);
-        eet.weight=1.0;
-        fg.insertEdge(g1,g2,eet);
+        eet.weight = 1.0;
+        fg.insertEdge(g1, g2, eet);
         return 0;
-    }
-    else
-    {
+    } else {
         pt->addIndex(index);
-        pt->weight+=1.0;
-        //fg.updateEdge(g1,g2,pt);
+        pt->weight += 1.0;
+        // fg.updateEdge(g1,g2,pt);
         pt2->addIndex(index);
-        pt2->weight+=1.0;
-        //fg.updateEdge(g2,g1,pt2);
+        pt2->weight += 1.0;
+        // fg.updateEdge(g2,g1,pt2);
         return 0;
     }
-
-
 
     return 0;
 }
 
+int FusionGraph::addSTARweight(int &g1, int &g2) {
 
-int FusionGraph::addSTARweight(int & g1, int & g2) {
+    FusionEdge *pt = fg.getWeight(g1, g2);
+    FusionEdge *pt2 = fg.getWeight(g2, g1);
 
-    FusionEdge *pt = fg.getWeight(g1,g2);
-    FusionEdge *pt2 = fg.getWeight(g2,g1);
-
-    if(pt==NULL && pt2==NULL)
-    {
+    if (pt == nullptr && pt2 == nullptr) {
         FusionEdge eet;
-        eet.weight=0.0;
-        eet.w_star=1.0;
-        fg.insertEdge(g1,g2,eet);
+        eet.weight = 0.0;
+        eet.w_star = 1.0;
+        fg.insertEdge(g1, g2, eet);
+        return 0;
+    } else {
+        pt->w_star += 1.0;
+        pt2->w_star += 1.0;
         return 0;
     }
-    else
-    {
-        pt->w_star+=1.0;
-        pt2->w_star+=1.0;
-        return 0;
-    }
-
-
 
     return 0;
 }
 
+bool FusionGraph::isGeneIn(int &gIndex) { return fg.vertexExists(gIndex); }
 
-bool FusionGraph::isGeneIn(int& gIndex) {
-    return fg.vertexExists(gIndex);
-}
-
-int FusionGraph::getNeighbors(int geneId, vector<int> & neis) {
+int FusionGraph::getNeighbors(int geneId, vector<int> &neis) {
     fg.neighboringVertexes(geneId, back_inserter(neis));
     return 0;
 }
@@ -245,69 +220,59 @@ int FusionGraph::topoSplit(Gene & g) {
 }
 */
 
-int FusionGraph::getBWTs(Gene & gene, Reference & ref) {
-
+int FusionGraph::getBWTs(Gene &gene, Reference &ref) {
 
     int verNum = fg.getVertexCount();
 
-    for(const_vertex_iterator iter = fg.begin(); iter != fg.end(); ++iter)
-    {
-            int x1 = iter->first;
-            gene.buildOneSuffix(x1,1,ref);
-            gene.buildOneSuffix(x1,0,ref);
+    for (const_vertex_iterator iter = fg.begin(); iter != fg.end(); ++iter) {
+        int x1 = iter->first;
+        gene.buildOneSuffix(x1, 1, ref);
+        gene.buildOneSuffix(x1, 0, ref);
     }
     return 0;
 }
 
-int FusionGraph::updateEncompass(int& gIndex1, int& gIndex2, vector<int> & ens) {
+int FusionGraph::updateEncompass(int &gIndex1, int &gIndex2, vector<int> &ens) {
 
-    FusionEdge * pedge = fg.getWeight(gIndex1,gIndex2);
+    FusionEdge *pedge = fg.getWeight(gIndex1, gIndex2);
 
-    pedge->encompass=ens;
-
-    return 0;
-}
-int FusionGraph::updateSpanning(int& gIndex1, int& gIndex2, vector<int> & spIds) {
-
-    FusionEdge * pedge = fg.getWeight(gIndex1,gIndex2);
-
-    pedge->spannings=spIds;
+    pedge->encompass = ens;
 
     return 0;
 }
+int FusionGraph::updateSpanning(int &gIndex1, int &gIndex2, vector<int> &spIds) {
 
+    FusionEdge *pedge = fg.getWeight(gIndex1, gIndex2);
 
+    pedge->spannings = spIds;
+
+    return 0;
+}
 
 int FusionGraph::removeEncompass(int gIndex1, int gIndex2, int index) {
 
+    // cout<<"in remove edge"<<endl;
 
-//cout<<"in remove edge"<<endl;
-
-    FusionEdge* pedge = fg.getWeight(gIndex1, gIndex2);
-    if (pedge)
-    {
-        int size=pedge->encompass.size();
-        if(size>=1)
-        {
+    FusionEdge *pedge = fg.getWeight(gIndex1, gIndex2);
+    if (pedge) {
+        int size = pedge->encompass.size();
+        if (size >= 1) {
             vector<int>::iterator it;
-                    for(it=pedge->encompass.begin();it!=pedge->encompass.end();it++)
-                       {
-                            if(*it==index)
-                                    break;
-                       }
-            if(it!=pedge->encompass.end())
+            for (it = pedge->encompass.begin(); it != pedge->encompass.end(); it++) {
+                if (*it == index)
+                    break;
+            }
+            if (it != pedge->encompass.end())
                 pedge->encompass.erase(it);
 
-            size=pedge->encompass.size();
+            size = pedge->encompass.size();
 
+            FusionEdge *pedge2 = fg.getWeight(gIndex2, gIndex1);
 
-            FusionEdge * pedge2 = fg.getWeight(gIndex2,gIndex1);
+            pedge2->encompass = pedge->encompass;
 
-            pedge2->encompass=pedge->encompass;
-
-            if(size==0)
-            {
-                fg.removeEdge(gIndex1,gIndex2);
+            if (size == 0) {
+                fg.removeEdge(gIndex1, gIndex2);
             }
         }
     }
@@ -315,47 +280,41 @@ int FusionGraph::removeEncompass(int gIndex1, int gIndex2, int index) {
     return 0;
 }
 
-int FusionGraph::cleanVertex()
-{
-/*
-    cout<<"in clean"<<endl;
-    int i=0;
-    while(i<fg.getVertexCount())
-    {
-        int x=fg.getData(i);
-        vector<int> nb;
-        getNeighbors(x,nb);
-        if(nb.size()==0)
+int FusionGraph::cleanVertex() {
+    /*
+        cout<<"in clean"<<endl;
+        int i=0;
+        while(i<fg.getVertexCount())
         {
-            fg.removeEMPVertex(x);
+            int x=fg.getData(i);
+            vector<int> nb;
+            getNeighbors(x,nb);
+            if(nb.size()==0)
+            {
+                fg.removeEMPVertex(x);
+            }
+            else
+            {
+                i++;
+            }
         }
-        else
-        {
-            i++;
-        }
-    }
-*/
+    */
     return 0;
 }
 
-int FusionGraph::addSpanning(int& gIndex1, int& gIndex2, int index) 
-{
+int FusionGraph::addSpanning(int &gIndex1, int &gIndex2, int index) {
 
-    FusionEdge *pt = fg.getWeight(gIndex1,gIndex2);
-    FusionEdge *pt2 = fg.getWeight(gIndex2,gIndex1);
+    FusionEdge *pt = fg.getWeight(gIndex1, gIndex2);
+    FusionEdge *pt2 = fg.getWeight(gIndex2, gIndex1);
 
-    if(pt==NULL && pt2==NULL)
-    {
+    if (pt == nullptr && pt2 == nullptr) {
         FusionEdge eet;
-        fg.insertEdge(gIndex1,gIndex2,eet);
-    }
-    else
-    { 
+        fg.insertEdge(gIndex1, gIndex2, eet);
+    } else {
 
+        pt->spannings.push_back(index);
 
-    pt->spannings.push_back(index);
-
-    pt2->spannings.push_back(index);
+        pt2->spannings.push_back(index);
 
         return 0;
     }
@@ -363,30 +322,27 @@ int FusionGraph::addSpanning(int& gIndex1, int& gIndex2, int index)
 }
 
 int FusionGraph::removeEdge(int gIndex1, int gIndex2) {
-    fg.removeEdge(gIndex1,gIndex2);
+    fg.removeEdge(gIndex1, gIndex2);
     return 0;
 }
 
 int FusionGraph::removeSpanning(int gIndex1, int gIndex2, int index) {
 
-    FusionEdge * pedge = fg.getWeight(gIndex1,gIndex2);
-    if(pedge)
-    {
-        int size=pedge->spannings.size();
-        if(size>=1)
-        {
+    FusionEdge *pedge = fg.getWeight(gIndex1, gIndex2);
+    if (pedge) {
+        int size = pedge->spannings.size();
+        if (size >= 1) {
             vector<int>::iterator it;
-            for(it=pedge->spannings.begin();it!=pedge->spannings.end();it++)
-            {
-                if(*it==index)
-                break;
+            for (it = pedge->spannings.begin(); it != pedge->spannings.end(); it++) {
+                if (*it == index)
+                    break;
             }
-            if(it!=pedge->spannings.end())
+            if (it != pedge->spannings.end())
                 pedge->spannings.erase(it);
 
-            size=pedge->spannings.size();
+            size = pedge->spannings.size();
 
-            FusionEdge* pedge2 = fg.getWeight(gIndex2,gIndex1);
+            FusionEdge *pedge2 = fg.getWeight(gIndex2, gIndex1);
             pedge2->spannings = pedge->spannings;
         }
     }
@@ -394,24 +350,18 @@ int FusionGraph::removeSpanning(int gIndex1, int gIndex2, int index) {
     return 0;
 }
 
-
-int FusionEdge::addIndex(int index)
-{
+int FusionEdge::addIndex(int index) {
     encompass.push_back(index);
     return 0;
 }
 
-int FusionEdge::getSize()
-{
-    return encompass.size();
-}
+int FusionEdge::getSize() { return encompass.size(); }
 
 int FusionGraph::getEncompassNum(int gIndex1, int gIndex2) {
-	int size=0;
-    FusionEdge * pedge = fg.getWeight(gIndex1,gIndex2);
-    if(pedge)
-    {
-        size=pedge->encompass.size();
+    int size = 0;
+    FusionEdge *pedge = fg.getWeight(gIndex1, gIndex2);
+    if (pedge) {
+        size = pedge->encompass.size();
     }
     return size;
 }

@@ -8,21 +8,21 @@
 #ifndef SUFFIXARRAY2_H_
 #define SUFFIXARRAY2_H_
 
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
 #include <stdint.h>
 
 using namespace std;
 
-
 class SuffixArray2 {
-private:
-	int * array;
-public:
-	SuffixArray2();
-	int builtArray(char * tmp, uint32_t length);
-	int getSA(int i);
-	virtual ~SuffixArray2();
+  private:
+    int *array;
+
+  public:
+    SuffixArray2();
+    int builtArray(char *tmp, uint32_t length);
+    int getSA(int i);
+    virtual ~SuffixArray2();
 };
 
 #endif /* SUFFIXARRAY2_H_ */

@@ -8,24 +8,22 @@
 #ifndef LOWCOMPLEXFINDER_H_
 #define LOWCOMPLEXFINDER_H_
 
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <string>
-#include <cstring>
 #include "sam.h"
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <vector>
 
 using namespace std;
 
-
 class LowComplexFinder {
-public:
-	LowComplexFinder();
-	virtual ~LowComplexFinder();
+  public:
+    LowComplexFinder();
+    virtual ~LowComplexFinder();
 
-	bool isLowComplex(vector<char> & seq);
-	bool isLowComplex(bam1_t *b);
-
+    bool isLowComplex(vector<char> &seq);
+    bool isLowComplex(bam1_t *b);
 };
 
 #endif /* LOWCOMPLEXFINDER_H_ */

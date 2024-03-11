@@ -14,6 +14,6 @@ TEST(TestBWIndex, bwt) {
     EXPECT_LE(0, divbwt(
         reinterpret_cast<sauchar_t const*>(input.data()),
         reinterpret_cast<sauchar_t*>(&buf[0]),
-        NULL, input.size()));
+        nullptr, input.size()));
     EXPECT_EQ(buf, bwidx.bwt());
 }

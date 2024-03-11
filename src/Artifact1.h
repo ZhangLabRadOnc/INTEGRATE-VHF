@@ -12,19 +12,16 @@
 
 using namespace std;
 
-
+#include "Alignment.h"
 #include "Gene.h"
 #include "MyTypes.h"
-#include "Alignment.h"
-
 
 class Artifact1 {
-public:
-	Artifact1();
-	virtual ~Artifact1();
+  public:
+    Artifact1();
+    virtual ~Artifact1();
 
-	bool isAf1(Gene & g, split_rna_t & st, myFind2 & mf2);
-
+    bool isAf1(Gene &g, split_rna_t &st, myFind2 &mf2);
 };
 
 #endif /* ARTIFACT1_H_ */

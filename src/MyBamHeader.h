@@ -7,101 +7,72 @@
 
 #ifndef MYBAMHEADER_H_
 #define MYBAMHEADER_H_
-#include <iostream>
-#include <map>
-#include <iterator>
-#include <string>
-#include <cstring>
 #include "sam.h"
-#include <vector>
 #include <cmath>
+#include <cstring>
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <string>
+#include <vector>
 
-
-//also need chr <--> number translation
+// also need chr <--> number translation
 
 using namespace std;
 
 class MyBamHeader {
-private:
-	map<string,int> rg;
-	map<string,int> std;
+  private:
+    map<string, int> rg;
+    map<string, int> std;
 
-	bamFile bf;
-	bam_header_t *bt;
-	int isRG;
-	int mInsert;
-	int mStd;
-	int maxDistance;
-	int numTids;
+    bamFile bf;
+    bam_header_t *bt;
+    int isRG;
+    int mInsert;
+    int mStd;
+    int maxDistance;
+    int numTids;
 
+  public:
+    map<string, int> tidM;
 
-public:
+    MyBamHeader();
+    int myBamOpen(char *fileName);
+    int getRGs();
+    int getRGStd(int std);
+    int getPI(char *rgp);
+    int getStd(char *rgp);
+    int setTidM();
+    int getTid(string &chrName);
+    // int run(char * fileName);
+    int run2(char *fileName);
+    string getChrName(int tid);
+    int computeMax();
 
-    map<string,int> tidM;
+    virtual ~MyBamHeader();
 
+    int getRGSize() { return rg.size(); }
 
-	MyBamHeader();
-	int myBamOpen(char * fileName);
-	int getRGs();
-	int getRGStd(int std);
-	int getPI(char * rgp);
-	int getStd(char * rgp);
-	int setTidM();
-	int getTid(string & chrName);
-	//int run(char * fileName);
-	int run2(char * fileName);
-	string getChrName(int tid);
-	int computeMax();
+    int getIsRg() const { return isRG; }
 
-	virtual ~MyBamHeader();
+    void setIsRg(int isRg) { isRG = isRg; }
 
-	int getRGSize()
-	{
-		return rg.size();
-	}
+    int getMInsert() const { return mInsert; }
 
-	int getIsRg() const {
-		return isRG;
-	}
+    void setMInsert(int insert) { mInsert = insert; }
 
-	void setIsRg(int isRg) {
-		isRG = isRg;
-	}
+    void setMStd(int std) { mStd = std; }
 
-	int getMInsert() const {
-		return mInsert;
-	}
+    int getMStd() const { return mStd; }
 
-	void setMInsert(int insert) {
-		mInsert = insert;
-	}
+    int getMax() const { return maxDistance; }
 
-	void setMStd(int std) {
-		mStd = std;
-	}
+    int getNumTids() const { return numTids; }
 
-	int getMStd() const {
-		return mStd;
-	}
+    void setNumTids(int numTids) { this->numTids = numTids; }
 
-	int getMax() const {
-		return maxDistance;
-	}
-
-	int getNumTids() const {
-		return numTids;
-	}
-
-	void setNumTids(int numTids) {
-		this->numTids = numTids;
-	}
-
-	int getInsertStdFromBAM(char * filename);
-	int printRGs();
-
-
+    int getInsertStdFromBAM(char *filename);
+    int printRGs();
 };
-
-
 
 #endif /* MYBAMHEADER_H_ */

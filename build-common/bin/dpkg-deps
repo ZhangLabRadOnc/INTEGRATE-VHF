@@ -18,10 +18,10 @@ for my $lib (@libs) {
 
     $lib = "$dirs[0]/$lib";
 
-    my $pkg = `dpkg --search $lib | head -n1 | cut -d: -f1 2> /dev/null`;
+    my $pkg = `dpkg --search $lib | head -n1 | cut -d: -f1 2> /dev/nullptr`;
     die "Unable to locate package for library $lib" unless $pkg;
     chomp $pkg;
-    my $ver = `dpkg -l $pkg 2> /dev/null | tail -n1 | awk '{print \$3}'`;
+    my $ver = `dpkg -l $pkg 2> /dev/nullptr | tail -n1 | awk '{print \$3}'`;
     chomp $ver;
     $pkgs{$pkg} = "$pkg (>= $ver)";
 }

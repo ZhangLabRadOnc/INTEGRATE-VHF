@@ -13,7 +13,11 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-uintmax_t getFileSize(fs::path filePath);
+size_t getFileSize(fs::path filePath);
+
+const char* openFileForRead(string fileName, int &fd, size_t &length);
+
+void closeFileForRead(const char* p, const int fd, const size_t length);
 
 int readBlock(char *block, int length, FILE *infile);
 

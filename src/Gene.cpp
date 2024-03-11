@@ -50,152 +50,122 @@ bool myTransSortFunc(transcript_t i, transcript_t j) {
         return false;
 }
 
-int Gene::loadGenesFromFile(const char *file, TidHandler &th) {
-
-    uint32_t length = getFileSize(file);
-    FILE *infile;
-
-    infile = fopen(file, "r");
-    if (!infile) {
-        cout << "Couldn't open file for reading: " << file << "." << endl;
-        exit(1);
-    }
-
-    char *fileContent;
-
-    try {
-        fileContent = new char[length];
-    } catch (exception &e) {
-        cerr << "Trying to allocate Memory to load Genes. exception caught: " << e.what() << endl;
-        return 1;
-    }
-
-    size_t result = fread(fileContent, 1, length, infile);
-    if (result != length) {
-        cerr << "Fail to read the genes file" << endl;
-        exit(1);
-    }
-
-    char *line_buffer = fileContent;
-    char *nextN = nullptr;
-
-    char *p = nullptr;
-    char *NC = nullptr;
-    char intChar[1024];
-
-    // int bin;
-    char nameC[1024];
-    char chromC[1024];
-    char strandC[1024];
-    uint32_t txStart;
-    uint32_t txEnd;
-    uint32_t cdsStart; // Dec 7, 2015
-    uint32_t cdsEnd;
-    int exonCount;
-    char exonStartsC[1000000]; // should be ok
-    char exonEndsC[1000000];   // should be ok
-    // int score;
-    char name2C[1024];
-    char *chr;
+int Gene::loadGenesFromFile(const char *fileName, TidHandler &th) {
+    string nameC;
     string chrStr;
+    string strandC;
+    int32_t txStart;
+    int32_t txEnd;
+    int32_t cdsStart; // Dec 7, 2015
+    int32_t cdsEnd;
+    int exonCount;
+    string exonStartsC;
+    string exonEndsC;
+    string name2C;
 
     int strand;
 
-    nextN = strchr(line_buffer, '\n');
-    line_buffer = nextN + 1;
-
-    int num = 0;
-    while (1) {
-        nextN = strchr(line_buffer, '\n');
-
-        // sscanf(line_buffer,"%d %s %s %s %u %u %u %u %d %s %s %d %s", &bin, nameC, chromC, strandC, &txStart, &txEnd,
-        //	    			&cdsStart, &cdsEnd, &exonCount, exonStartsC, exonEndsC, &score, name2C);
-
-        nextN[0] = '\0';
-        int numnum = sscanf(line_buffer, "%s\t%s\t%s\t%u\t%u\t%u\t%u\t%d\t%s\t%s\t%s", nameC, chromC, strandC, &txStart, &txEnd, &cdsStart, &cdsEnd, &exonCount, exonStartsC,
-                            exonEndsC, name2C);
-        if (numnum != 11) {
-            cout << "error loading genes at: " << line_buffer << endl;
-            cout << "From 0.3.0, INTEGRATE also use cdsStart and cdsEnd, check your annotation file should have 11 columns." << endl;
-            exit(1);
+    int fd;
+    size_t length;
+    // Start pointer of the file (inclusive)
+    const char *pfs = openFileForRead(fileName, fd, length);
+    // End pointer of the file (exclusive)
+    const char *pfe = pfs + length - 1;
+    // Start pointer of the current line (inclusive)
+    const char *pls = pfs;
+    // End pointer of the current line (inclusive)
+    const char *ple = pls;
+    while (pls <= pfe)
+    {
+        ple = pls + strcspn(pls, "\n") - 1;
+        if (*ple == '\r') {
+            ple--;
         }
-
-        // cout<<chromC<<" "<<strandC<<" "<<txStart<<" "<<txEnd<<" "<<exonCount<<" "<<exonStartsC<<" "<<exonEndsC<<" "<<name2C<<" "<<endl;
-
-        uint32_t *ps = new uint32_t[exonCount];
-        uint32_t *pe = new uint32_t[exonCount];
-
-        p = exonStartsC;
-        for (int i = 0; i < exonCount; i++) {
-            NC = strchr(p, ',');
-            strncpy(intChar, p, NC - p);
-            intChar[NC - p] = '\0';
-            ps[i] = atol(intChar);
-            p = NC + 1;
+        while (pls <= ple && isspace(*pls))
+        {
+            pls++;
         }
-
-        p = exonEndsC;
-        for (int i = 0; i < exonCount; i++) {
-            NC = strchr(p, ',');
-
-            strncpy(intChar, p, NC - p);
-            intChar[NC - p] = '\0';
-            pe[i] = atol(intChar);
-            p = NC + 1;
+        while (pls <= ple && isspace(*ple))
+        {
+            ple--;
         }
-
-        if (strcmp(strandC, "+") == 0)
-            strand = 0;
-        else
-            strand = 1;
-
-        transcript_t tt;
-        // tt.bin=bin;
-        tt.name = string(nameC);
-        if (strstr(chromC, "chr")) {
-            chr = chromC + 3;
-        } else
-            chr = chromC;
-        chrStr = string(chr);
-        tt.tid = th.getRefTid(chrStr);
-        if (tt.tid == -1) {
-            if (nextN - fileContent >= length - 1) {
-                cout << num << " transcripts loaded." << endl;
-                break;
-            } else {
-                line_buffer = nextN + 1;
+        if (!(pls >= ple || *pls == '#'))
+        {
+            int lineLength = ple - pls + 1;
+            char *lineBuffer = new char[lineLength + 1];
+            copy(pls, ple + 1, lineBuffer);
+            lineBuffer[lineLength] = '\0';
+            string line = string(lineBuffer);
+            delete[] lineBuffer;
+            istringstream iss = istringstream(line);
+            if (!(iss >> nameC >> chrStr >> strandC >> txStart >> txEnd >> cdsStart >> cdsEnd >> exonCount >> exonStartsC >> exonEndsC >> name2C))
+            {
+                cerr << "Error parsing line: " << line << endl;
+                exit(EXIT_FAILURE);
             }
-            continue;
-        }
-        tt.strand = strand;
-        tt.txStart = txStart;
-        tt.txEnd = txEnd;
-        tt.cdsStart = cdsStart; // Dec 7, 2015
-        tt.cdsEnd = cdsEnd;
-        tt.exonCount = exonCount;
-        tt.exonStarts = ps;
-        tt.exonEnds = pe;
-        // tt.score=score;
-        tt.name2 = string(name2C);
+            uint32_t *ps = new uint32_t[exonCount];
+            uint32_t *pe = new uint32_t[exonCount];
 
-        // Dec 2015, let us not use the transcripts truncated in coding region
-        int isRealAdd = 1;
-        if (tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd)))
-            isRealAdd = 0;
+            int32_t currentIndex = 0;
+            int32_t currentNumber = 0;
+            for (const char* p = exonStartsC.c_str(); *p && currentIndex < exonCount; ++p) {
+                if (*p >= '0' && *p <= '9') {
+                    currentNumber = currentNumber * 10 + (*p - '0');
+                } else if (*p == ',') {
+                    ps[currentIndex++] = currentNumber;
+                    currentNumber = 0;
+                } else {
+                    cerr << "Error parsing gene annotation." << endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
 
-        if (isRealAdd == 1) {
-            transcripts.push_back(tt);
-            num++;
-        }
+            currentIndex = 0;
+            currentNumber = 0;
+            for (const char* p = exonEndsC.c_str(); *p && currentIndex < exonCount; ++p) {
+                if (*p >= '0' && *p <= '9') {
+                    currentNumber = currentNumber * 10 + (*p - '0');
+                } else if (*p == ',') {
+                    pe[currentIndex++] = currentNumber;
+                    currentNumber = 0;
+                } else {
+                    cerr << "Error parsing gene annotation." << endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
 
-        if (nextN - fileContent >= length - 1) {
-            cout << num << " transcripts loaded." << endl;
-            break;
-        } else {
-            line_buffer = nextN + 1;
+            strand = strandC == "+" ? 0 : 1;
+    
+            transcript_t tt;
+            tt.name = nameC;
+            tt.tid = th.getRefTid(chrStr);
+            if (tt.tid == -1)
+            {
+                continue;
+            }
+            tt.strand = strand;
+            tt.txStart = txStart;
+            tt.txEnd = txEnd;
+            tt.cdsStart = cdsStart; // Dec 7, 2015
+            tt.cdsEnd = cdsEnd;
+            tt.exonCount = exonCount;
+            tt.exonStarts = ps;
+            tt.exonEnds = pe;
+            tt.name2 = name2C;
+
+            // Dec 2015, let us not use the transcripts truncated in coding region
+            if (!(tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd))))
+            {
+                transcripts.push_back(tt);
+            }
         }
+        pls = ple + strcspn(ple, "\n") + 1;
     }
+    closeFileForRead(pfs, fd, length);
+
     sort(transcripts.begin(), transcripts.end(), myTransSortFunc);
+    cout << transcripts.size() << " transcripts loaded." << endl;
+
     return 0;
 }
 

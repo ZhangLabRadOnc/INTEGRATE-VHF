@@ -1,58 +1,34 @@
-cmake_minimum_required(VERSION 2.8)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(HTSLIB REQUIRED IMPORTED_TARGET htslib)
+pkg_check_modules(DIVSUFSORT REQUIRED IMPORTED_TARGET libdivsufsort)
 
-set(LIB_SOURCES
-    ALGraph.h
+set(SOURCES
     Alignment.cpp
-    Alignment.h
     Artifact1.cpp
-    Artifact1.h
-    BWIndex.h
     BWT.cpp
-    BWT.h
     BreakPoint.cpp
-    BreakPoint.h
-    Constaints.h
     Dna.cpp
-    Dna.h
     FocalRegionHandler.cpp
-    FocalRegionHandler.h
     FusionGraph.cpp
-    FusionGraph.h
     Gene.cpp
-    Gene.h
     HitsCounter.cpp
-    HitsCounter.h
     LowComplexFinder.cpp
-    LowComplexFinder.h
     MyBamHeader.cpp
-    MyBamHeader.h
     MyBamWrap.cpp
-    MyBamWrap.h
-    MyTypes.h
     Reference.cpp
-    Reference.h
     Result.cpp
-    Result.h
     Rna.cpp
-    Rna.h
     RunCode.cpp
-    RunCode.h
-    SuffixArray.h
     SuffixArray2.cpp
-    SuffixArray2.h
     TidHandler.cpp
-    TidHandler.h
-    Timer.hpp
     Util.cpp
-    Util.h
     Updator.cpp
-    Updator.h
     main.cpp
 )
 
-add_library(integrate ${LIB_SOURCES})
-target_link_libraries(integrate ${Samtools_LIBRARIES})
+add_executable(${PROJECT_NAME}-bin ${SOURCES})
+set_target_properties(${PROJECT_NAME}-bin PROPERTIES OUTPUT_NAME integrate)
+target_link_libraries(${PROJECT_NAME}-bin PkgConfig::HTSLIB)
+target_link_libraries(${PROJECT_NAME}-bin PkgConfig::DIVSUFSORT)
 
-add_executable(integrate-bin main.cpp)
-target_link_libraries(integrate-bin integrate ${LIBDIVSUFSORT_LIBRARIES})
-set_target_properties(integrate-bin PROPERTIES OUTPUT_NAME Integrate)
+install(TARGETS ${PROJECT_NAME}-bin DESTINATION bin)

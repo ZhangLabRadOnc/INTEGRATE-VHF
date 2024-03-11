@@ -1,47 +1,31 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.27)
 
-project(Integrate_cpp)
-
-if(NOT CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX "/usr")
-endif()
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/vendor;${CMAKE_SOURCE_DIR}/build-common/cmake")
-include(TestHelper)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 include(VersionHelper)
-include(ProjectHelper)
+project(integrate
+    VERSION ${VERSION_FULL})
 
-set(EXE_VERSION_SUFFIX ${FULL_VERSION})
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD 23)
 
-configure_file(version/version.h.in version/version.h @ONLY)
-include_directories(${PROJECT_BINARY_DIR}/version)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
-include(BuildSamtools)
-include_directories(${Samtools_INCLUDE_DIRS})
+find_package(Threads REQUIRED)
+target_link_libraries(${BIN_TARGET} Threads::Threads)
 
-find_package(Threads)
-link_libraries(${CMAKE_THREAD_LIBS_INIT})
+find_package(OpenMP REQUIRED)
+target_link_libraries(${BIN_TARGET} OpenMP::OpenMP_CXX)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 
-if (CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_C_FLAGS "-std=c99 -Wall -ansi -pedantic")
-endif ()
-
-if (CMAKE_COMPILER_IS_GNUCXX)
-    #set(CMAKE_CXX_FLAGS "-Wall -ansi -pedantic -Wno-long-long -Wno-variadic-macros")
-endif ()
-
-include(divsufsort)
-
-# make sure to pick up headers from library dirs
-include_directories("src")
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-#enable_testing(true)
-#add_subdirectory(test)
-#add_projects(test/lib)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-# integration testing
-#add_subdirectory(integration-test)
+include_directories(include)
+configure_file(include/version.h.in ${PROJECT_BINARY_DIR}/version.h)
+include_directories(${PROJECT_BINARY_DIR})
 
 add_subdirectory(src)
-
-#include(PackageInfo.cmake)

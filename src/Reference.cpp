@@ -495,10 +495,10 @@ char Reference::getRefChar(uint32_t pos) {
             return getCharFromBinary(a);
         }
         if (bb > 0) {
-
             int a = (15 & (reference[aa] >> 4 * (8 - bb)));
             return getCharFromBinary(a);
         }
+        return 'N';
 
     } else
         return getCharFromBinary(getMask(referenceC[pos - 1]));

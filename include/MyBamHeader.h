@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "sam.h"
+#include <htslib/sam.h>
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -25,8 +25,8 @@ class MyBamHeader {
     map<string, int> rg;
     map<string, int> std;
 
-    bamFile bf;
-    bam_header_t *bt;
+    samFile *f;
+    sam_hdr_t *h;
     int isRG;
     int mInsert;
     int mStd;

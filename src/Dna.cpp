@@ -130,7 +130,7 @@ int isDisProper(const bam1_t *b, int insert, int std) {
 }
 
 // for one gene;
-static int my_local_func_1(const bam1_t *b, void *data) {
+static int my_local_func_1(const bam1_t *b) {
     // cout<<"my_local_1"<<endl;
     if (isBothMapped(b) == 1) {
         if (isBothInRegion(b) == 1) {
@@ -143,7 +143,7 @@ static int my_local_func_1(const bam1_t *b, void *data) {
                     encompass_dna_t en;
                     en.geneId1 = geneId1;
                     en.geneId2 = geneId1;
-                    en.name = string(bam1_qname(b));
+                    en.name = string(bam_get_qname(b));
                     en.len1 = b->core.l_qseq;
                     en.len2 = 0;
                     en.pos1 = b->core.pos + 1;
@@ -152,7 +152,7 @@ static int my_local_func_1(const bam1_t *b, void *data) {
                     en.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
                     en.tid1 = dna_th->getRefFromDNA(b->core.tid);
                     en.tid2 = dna_th->getRefFromDNA(b->core.mtid);
-                    uint32_t *pc = bam1_cigar(b);
+                    uint32_t *pc = bam_get_cigar(b);
                     for (int k = 0; k < b->core.n_cigar; k++) {
                         uint32_t cg = (*pc);
                         pc = pc + 1;
@@ -166,7 +166,7 @@ static int my_local_func_1(const bam1_t *b, void *data) {
                 encompass_dna_t en;
                 en.geneId1 = geneId1;
                 en.geneId2 = geneId1;
-                en.name = string(bam1_qname(b));
+                en.name = string(bam_get_qname(b));
                 en.len1 = b->core.l_qseq;
                 en.len2 = 0;
                 en.pos1 = b->core.pos + 1;
@@ -175,7 +175,7 @@ static int my_local_func_1(const bam1_t *b, void *data) {
                 en.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
                 en.tid1 = dna_th->getRefFromDNA(b->core.tid);
                 en.tid2 = dna_th->getRefFromDNA(b->core.mtid);
-                uint32_t *pc = bam1_cigar(b);
+                uint32_t *pc = bam_get_cigar(b);
                 for (int k = 0; k < b->core.n_cigar; k++) {
                     uint32_t cg = (*pc);
                     pc = pc + 1;
@@ -191,9 +191,9 @@ static int my_local_func_1(const bam1_t *b, void *data) {
     return 0;
 }
 
-static int my_local_func_2(const bam1_t *b, void *data) {
+static int my_local_func_2(const bam1_t *b) {
     // cout<<"my_local_2"<<endl;
-    // cout<<string(bam1_qname(b))<<endl;
+    // cout<<string(bam_get_qname(b))<<endl;
 
     if (isBothMapped(b) == 1) {
         if (isMInRegion(b) == 1) {
@@ -205,7 +205,7 @@ static int my_local_func_2(const bam1_t *b, void *data) {
                 encompass_dna_t en;
                 en.geneId1 = geneId1;
                 en.geneId2 = geneId2;
-                en.name = string(bam1_qname(b));
+                en.name = string(bam_get_qname(b));
                 en.len1 = b->core.l_qseq;
                 en.len2 = 0;
                 en.pos1 = b->core.pos + 1;
@@ -214,7 +214,7 @@ static int my_local_func_2(const bam1_t *b, void *data) {
                 en.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
                 en.tid1 = dna_th->getRefFromDNA(b->core.tid);
                 en.tid2 = dna_th->getRefFromDNA(b->core.mtid);
-                uint32_t *pc = bam1_cigar(b);
+                uint32_t *pc = bam_get_cigar(b);
                 for (int k = 0; k < b->core.n_cigar; k++) {
                     uint32_t cg = (*pc);
                     pc = pc + 1;
@@ -235,7 +235,7 @@ static int my_local_func_2(const bam1_t *b, void *data) {
                     encompass_dna_t en;
                     en.geneId1 = geneId1;
                     en.geneId2 = geneId2;
-                    en.name = string(bam1_qname(b));
+                    en.name = string(bam_get_qname(b));
                     en.len1 = b->core.l_qseq;
                     en.len2 = 0;
                     en.pos1 = b->core.pos + 1;
@@ -244,7 +244,7 @@ static int my_local_func_2(const bam1_t *b, void *data) {
                     en.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
                     en.tid1 = dna_th->getRefFromDNA(b->core.tid);
                     en.tid2 = dna_th->getRefFromDNA(b->core.mtid);
-                    uint32_t *pc = bam1_cigar(b);
+                    uint32_t *pc = bam_get_cigar(b);
                     for (int k = 0; k < b->core.n_cigar; k++) {
                         uint32_t cg = (*pc);
                         pc = pc + 1;
@@ -268,11 +268,11 @@ static int my_local_func_2(const bam1_t *b, void *data) {
     return 0;
 }
 
-static int my_local_func_3(const bam1_t *b, void *data) {
+static int my_local_func_3(const bam1_t *b) {
     // regions are not overlapped when calling this
     // haha you added 20000, now...
 
-    // cout<<"local3"<<string(bam1_qname(b))<<endl;
+    // cout<<"local3"<<string(bam_get_qname(b))<<endl;
 
     if (isBothMapped(b) == 1) {
         // cout<<"both mapped"<<endl;
@@ -286,7 +286,7 @@ static int my_local_func_3(const bam1_t *b, void *data) {
                 encompass_dna_t en;
                 en.geneId1 = geneId1;
                 en.geneId2 = geneId2;
-                en.name = string(bam1_qname(b));
+                en.name = string(bam_get_qname(b));
                 en.len1 = b->core.l_qseq;
                 en.len2 = 0;
                 en.pos1 = b->core.pos + 1;
@@ -295,7 +295,7 @@ static int my_local_func_3(const bam1_t *b, void *data) {
                 en.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
                 en.tid1 = dna_th->getRefFromDNA(b->core.tid);
                 en.tid2 = dna_th->getRefFromDNA(b->core.mtid);
-                uint32_t *pc = bam1_cigar(b);
+                uint32_t *pc = bam_get_cigar(b);
                 for (int k = 0; k < b->core.n_cigar; k++) {
                     uint32_t cg = (*pc);
                     pc = pc + 1;
@@ -308,7 +308,7 @@ static int my_local_func_3(const bam1_t *b, void *data) {
                 en.std = std;
 
                 for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                    int reada = bam1_seqi(bam1_seq(b), aa);
+                    int reada = bam_seqi(bam_get_seq(b), aa);
                     char chara = getCharA(reada);
                     en.seq1.push_back(chara);
                 }
@@ -323,7 +323,7 @@ static int my_local_func_3(const bam1_t *b, void *data) {
 
 region_t region5;
 
-static int my_local_func_5(const bam1_t *b, void *data) {
+static int my_local_func_5(const bam1_t *b) {
     if (isBothMapped(b) == 1) {
         int insert, std;
         getInserStd(insert, std, b);
@@ -337,7 +337,7 @@ static int my_local_func_5(const bam1_t *b, void *data) {
 
             en.geneId1 = geneId1;
             en.geneId2 = geneId2;
-            en.name = string(bam1_qname(b));
+            en.name = string(bam_get_qname(b));
             en.len1 = b->core.l_qseq;
             en.len2 = 0;
             en.pos1 = b->core.pos + 1;
@@ -345,7 +345,7 @@ static int my_local_func_5(const bam1_t *b, void *data) {
 
             en.tid1 = dna_th->getRefFromDNA(b->core.tid);
             en.tid2 = dna_th->getRefFromDNA(b->core.mtid);
-            uint32_t *pc = bam1_cigar(b);
+            uint32_t *pc = bam_get_cigar(b);
             for (int k = 0; k < b->core.n_cigar; k++) {
                 uint32_t cg = (*pc);
                 pc = pc + 1;
@@ -358,7 +358,7 @@ static int my_local_func_5(const bam1_t *b, void *data) {
             en.std = std;
 
             for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                int reada = bam1_seqi(bam1_seq(b), aa);
+                int reada = bam_seqi(bam_get_seq(b), aa);
                 char chara = getCharA(reada);
                 en.seq1.push_back(chara);
             }
@@ -368,7 +368,7 @@ static int my_local_func_5(const bam1_t *b, void *data) {
     return 0;
 }
 
-static int my_local_func_4(const bam1_t *b, void *data) {
+static int my_local_func_4(const bam1_t *b) {
     if (isBothMapped(b) == 1) {
         if (isBothInRegion(b) == 1) {
             int insert, std;
@@ -379,7 +379,7 @@ static int my_local_func_4(const bam1_t *b, void *data) {
                     encompass_dna_t en;
                     en.geneId1 = geneId1;
                     en.geneId2 = geneId1;
-                    en.name = string(bam1_qname(b));
+                    en.name = string(bam_get_qname(b));
                     en.len1 = b->core.l_qseq;
                     en.len2 = 0;
                     en.pos1 = b->core.pos + 1;
@@ -388,7 +388,7 @@ static int my_local_func_4(const bam1_t *b, void *data) {
                     en.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
                     en.tid1 = dna_th->getRefFromDNA(b->core.tid);
                     en.tid2 = dna_th->getRefFromDNA(b->core.mtid);
-                    uint32_t *pc = bam1_cigar(b);
+                    uint32_t *pc = bam_get_cigar(b);
                     for (int k = 0; k < b->core.n_cigar; k++) {
                         uint32_t cg = (*pc);
                         pc = pc + 1;
@@ -403,7 +403,7 @@ static int my_local_func_4(const bam1_t *b, void *data) {
                 encompass_dna_t en;
                 en.geneId1 = geneId1;
                 en.geneId2 = geneId1;
-                en.name = string(bam1_qname(b));
+                en.name = string(bam_get_qname(b));
                 en.len1 = b->core.l_qseq;
                 en.len2 = 0;
                 en.pos1 = b->core.pos + 1;
@@ -412,7 +412,7 @@ static int my_local_func_4(const bam1_t *b, void *data) {
                 en.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
                 en.tid1 = dna_th->getRefFromDNA(b->core.tid);
                 en.tid2 = dna_th->getRefFromDNA(b->core.mtid);
-                uint32_t *pc = bam1_cigar(b);
+                uint32_t *pc = bam_get_cigar(b);
                 for (int k = 0; k < b->core.n_cigar; k++) {
                     uint32_t cg = (*pc);
                     pc = pc + 1;
@@ -435,7 +435,7 @@ int Dna::traverseFindDna(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mb
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mySamOpen(dnaFile);
+    bw.mysam_open(dnaFile);
     bw.myGetIndex(dnaFile);
 
     int size = g.getSize();
@@ -663,7 +663,7 @@ int Dna::onlyDNA(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh, Refer
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mySamOpen(dnaFile);
+    bw.mysam_open(dnaFile);
     bw.myGetIndex(dnaFile);
 
     for (int i = 0; i < cand_g.size(); i++) {
@@ -922,7 +922,7 @@ int Dna::onlyDNAByResult(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mb
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mySamOpen(dnaFile);
+    bw.mysam_open(dnaFile);
     bw.myGetIndex(dnaFile);
 
     for (int i = 0; i < result.getSize(); i++) {
@@ -1021,7 +1021,7 @@ int Dna::onlyDNA1(char *dnaFile, char *name1, char *name2, Gene &g, TidHandler &
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mySamOpen(dnaFile);
+    bw.mysam_open(dnaFile);
     bw.myGetIndex(dnaFile);
 
     vector<int> ids;
@@ -1131,7 +1131,7 @@ int Dna::traverseEncompass(char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mySamOpen(dnaFile);
+    bw.mysam_open(dnaFile);
     bw.myGetIndex(dnaFile);
 
     int size = g.getSize();
@@ -1546,7 +1546,7 @@ int Dna::printEncompass(Gene &g, Reference &ref) {
 
 bool isSoftClip(const bam1_t *b, int &left, int &right) {
 
-    uint32_t *cigar = bam1_cigar(b);
+    uint32_t *cigar = bam_get_cigar(b);
     int nc = b->core.n_cigar;
     if (nc < 2)
         return false;
@@ -1577,7 +1577,7 @@ int anchorStrand;
 
 int tmpStart;
 
-static int my_get_split_reads(const bam1_t *b, void *data) {
+static int my_get_split_reads(const bam1_t *b) {
 
     // cout<<"my_get_split_reads"<<endl;
     if (isOne)
@@ -1602,14 +1602,14 @@ static int my_get_split_reads(const bam1_t *b, void *data) {
                 int mpos = b->core.mpos + b->core.l_qseq;
                 if (b->core.mpos > imgPos && mpos - imgPos < insert + 3 * std && mpos - imgPos > insert - 3 * std) {
                     split_dna_t st;
-                    st.name = string(bam1_qname(b));
+                    st.name = string(bam_get_qname(b));
                     st.len2 = b->core.l_qseq - left;
                     st.pos2 = b->core.pos + 1;
                     st.strand2 = strand;
                     st.len1 = left;
                     st.isLeftFirst = 0;
                     for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                        int reada = bam1_seqi(bam1_seq(b), aa);
+                        int reada = bam_seqi(bam_get_seq(b), aa);
                         char chara = getCharA(reada);
                         st.seq.push_back(chara);
                     }
@@ -1624,14 +1624,14 @@ static int my_get_split_reads(const bam1_t *b, void *data) {
                 int mpos = b->core.mpos + 1;
                 if (mpos < b->core.pos - left && impMPos - mpos < insert + 3 * std && impMPos - mpos > insert - 3 * std) {
                     split_dna_t st;
-                    st.name = string(bam1_qname(b));
+                    st.name = string(bam_get_qname(b));
                     st.len1 = b->core.l_qseq - right;
                     st.pos1 = b->core.pos - left + 1;
                     st.strand1 = strand;
                     st.len2 = right;
                     st.isLeftFirst = 1;
                     for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
-                        int reada = bam1_seqi(bam1_seq(b), aa);
+                        int reada = bam_seqi(bam_get_seq(b), aa);
                         char chara = getCharA(reada);
                         st.seq.push_back(getCharComp(chara));
                     }
@@ -1834,7 +1834,7 @@ int Dna::getSplitReadsAndRanges(char *dnaFile) {
     cout << "get split reads and ranges" << endl;
 
     MyBamWrap bw;
-    bw.mySamOpen(dnaFile);
+    bw.mysam_open(dnaFile);
     bw.myGetIndex(dnaFile);
 
     region_t rg1;

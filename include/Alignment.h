@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "sam.h"
+#include <htslib/sam.h>
 #include <cstdio>
 #include <cstring>
 #include <iostream>

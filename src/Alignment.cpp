@@ -476,7 +476,7 @@ int Alignment::runExonMap(Gene & g, int geneId, Reference & ref ,bam1_t* b,int r
 
         for(int aa=0;aa<b->core.l_qseq;aa++)
         {
-                int reada=bam1_seqi(bam1_seq(b),aa);
+                int reada=bam_seqi(bam_get_seq(b),aa);
                 char chara=getCharA(reada);
                 seqRead.push_back(chara);
         }
@@ -731,7 +731,7 @@ int Alignment::runBWTSplitMap(Gene &g, int geneId, bam1_t *b, int anchorStrand, 
     char *seqRead = new char[seqLen + 1];
 
     for (int aa = 0; aa < b->core.l_qseq; aa++) {
-        int reada = bam1_seqi(bam1_seq(b), aa);
+        int reada = bam_seqi(bam_get_seq(b), aa);
         char chara = getCharA(reada);
         seqRead[aa] = chara;
     }
@@ -903,7 +903,7 @@ int Alignment::runBWTSplitMap2(Gene &g, int geneId, bam1_t *b, int imgStrand, ve
 
     int x = 0;
     for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
-        int reada = bam1_seqi(bam1_seq(b), aa);
+        int reada = bam_seqi(bam_get_seq(b), aa);
         char chara = getCharComp(getCharA(reada));
         seqRead[x++] = chara;
     }

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "sam.h"
+#include <htslib/sam.h>
 #include <algorithm>
 #include <cstring>
 #include <iostream>
@@ -110,7 +110,7 @@ class Rna {
     int traverseCluster(Gene &g, int cfn, int bacc);
     int traversePrint(Gene &g, Reference &ref, Result &result, int minIntra, int bacc);
 
-    int traverseRemove(Gene &g);
+    void traverseRemove(Gene &g);
 
     // BWT
     int mapPartialSplitBWT(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, myFind2 &mf2);

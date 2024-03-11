@@ -801,6 +801,8 @@ int Gene::getCodingAndBaseLeft(int tranId, int exonNum, int isbkLeft, int &isCod
             baseLeft = -2;
         // cout<<"baseLeft final to "<<baseLeft<<endl;
     }
+
+    return 0;
 }
 
 junction_t assign_junction(int gId, int is5p, int tid, int strand, int pos1, int pos2, int exonNum, int is_coding, int baseLeft, string name, int coding_start) {

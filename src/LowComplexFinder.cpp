@@ -47,11 +47,11 @@ bool LowComplexFinder::isLowComplex(bam1_t *b) {
     if (b->core.l_qseq < 10)
         return false;
 
-    int lastchar = bam1_seqi(bam1_seq(b), 0);
+    int lastchar = bam_seqi(bam_get_seq(b), 0);
     int thechar;
     int same = 0;
     for (int aa = 1; aa < 10; aa++) {
-        thechar = bam1_seqi(bam1_seq(b), aa);
+        thechar = bam_seqi(bam_get_seq(b), aa);
         if (thechar == lastchar)
             same++;
         lastchar = thechar;
@@ -59,11 +59,11 @@ bool LowComplexFinder::isLowComplex(bam1_t *b) {
     if (same > 7)
         return true;
 
-    lastchar = bam1_seqi(bam1_seq(b), b->core.l_qseq - 1);
+    lastchar = bam_seqi(bam_get_seq(b), b->core.l_qseq - 1);
     same = 0;
 
     for (int aa = 1; aa < 10; aa++) {
-        thechar = bam1_seqi(bam1_seq(b), b->core.l_qseq - aa - 1);
+        thechar = bam_seqi(bam_get_seq(b), b->core.l_qseq - aa - 1);
         if (thechar == lastchar)
             same++;
         lastchar = thechar;

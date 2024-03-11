@@ -59,15 +59,22 @@ Rna::Rna() {
 
 int Rna::getGraph(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc) {
     // cout<<"in getGraph"<<endl;
-    bamFile fp = bam_open(rnaFile, "r");
-    bam1_t *b;
+    samFile *f = sam_open(rnaFile, "r");
+    if (f == nullptr)
+    {
+        cerr << "Failed to open " << rnaFile << " to read." << endl;
+        exit(1);
+    }
+    sam_hdr_t *h = sam_hdr_read(f);
+    if (h == nullptr)
+    {
+        cerr << "Failed to get header of file: " << rnaFile << endl;
+        exit(1);
+    }
+    bam1_t *b = bam_init1();
 
-    bam_header_read(fp);
-    b = (bam1_t *)malloc(sizeof(bam1_t));
-    b->data = (uint8_t *)malloc(sizeof(uint8_t) * 1024);
-
-    while (1) {
-        if ((bam_read1(fp, b)) < 0)
+    while (true) {
+        if ((sam_read1(f, h, b)) < 0)
             break;
         else {
             int isMap = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
@@ -112,7 +119,7 @@ int Rna::getGraph(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc) {
                                 char seqRead [1024];
                                 for(int aa=0;aa<b->core.l_qseq;aa++)
                                 {
-                                    int reada=bam1_seqi(bam1_seq(b),aa);
+                                    int reada=bam_seqi(bam_get_seq(b),aa);
                                     char chara=getCharA(reada);
                                     seqRead[aa]=chara;
                                 }
@@ -128,12 +135,12 @@ int Rna::getGraph(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc) {
                 /////////////////////////////////////////////////////////////
                 //              et.numCopy=count;
                 et.numCopy = 1;
-                et.name = string(bam1_qname(b));
+                et.name = string(bam_get_qname(b));
                 et.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
                 et.tid1 = tid1;
                 et.pos1 = pos;
                 et.len1 = b->core.l_qseq;
-                uint32_t *pc = bam1_cigar(b);
+                uint32_t *pc = bam_get_cigar(b);
                 for (int k = 0; k < b->core.n_cigar; k++) {
                     uint32_t cg = (*pc);
                     pc = pc + 1;
@@ -148,7 +155,7 @@ int Rna::getGraph(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc) {
 
                 /////////////////////////////////////////////////////////////
                 for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                    int reada = bam1_seqi(bam1_seq(b), aa);
+                    int reada = bam_seqi(bam_get_seq(b), aa);
                     char chara = getCharA(reada);
                     et.seq1.push_back(chara);
                 }
@@ -191,6 +198,18 @@ int Rna::getGraph(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc) {
         }
     }
     //    rnafg.printFg(g);
+
+    if (b != nullptr)
+    {
+        bam_destroy1(b);
+    }
+    if (h != nullptr) {
+        sam_hdr_destroy(h);
+    }
+    if (f != nullptr) {
+        sam_close(f);
+    }
+
     return 0;
 }
 
@@ -201,7 +220,7 @@ vector<anchor_rna_t> anVec;
 
 HitsCounter *lhc;
 
-static int myGetAnchorFunc(const bam1_t *b, void *data) {
+static int myGetAnchorFunc(const bam1_t *b) {
     int isMapped = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
     int isMateMapped = (b->core.flag & BAM_FMUNMAP) ? 0 : 1;
 
@@ -211,7 +230,7 @@ static int myGetAnchorFunc(const bam1_t *b, void *data) {
 
                 for(int aa=0;aa<b->core.l_qseq;aa++)
                 {
-                    int reada=bam1_seqi(bam1_seq(b),aa);
+                    int reada=bam_seqi(bam_get_seq(b),aa);
                     char chara=getCharA(reada);
                     seqRead[aa]=chara;
                 }
@@ -220,12 +239,12 @@ static int myGetAnchorFunc(const bam1_t *b, void *data) {
 
                 if(count>10)
                 {
-        //            cout<<"anchor "<<string(bam1_qname(b))<<" removed"<<endl;
+        //            cout<<"anchor "<<string(bam_get_qname(b))<<" removed"<<endl;
                     return 0;
                 }
         */
         anchor_rna_t at;
-        at.name = string(bam1_qname(b));
+        at.name = string(bam_get_qname(b));
         at.strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
         // at.tid=rg.tid;
         at.tid = rg_ref_tid;
@@ -236,13 +255,13 @@ static int myGetAnchorFunc(const bam1_t *b, void *data) {
 
                 for(int aa=0;aa<b->core.l_qseq;aa++)
                 {
-                    int reada=bam1_seqi(bam1_seq(b),aa);
+                    int reada=bam_seqi(bam_get_seq(b),aa);
                     char chara=getCharA(reada);
                     at.seq.push_back(chara);
                 }
 
 
-                uint32_t * pc = bam1_cigar(b);
+                uint32_t * pc = bam_get_cigar(b);
                 for(int k=0;k<b->core.n_cigar;k++)
                 {
                     uint32_t cg=(*pc);
@@ -300,7 +319,7 @@ region_t rg_h;
 
 bool isHardClip(const bam1_t *b);
 
-static int myGetHardFunc(const bam1_t *b, void *data) {
+static int myGetHardFunc(const bam1_t *b) {
     // cout<<"in myGetHardFunc"<<endl;
     int isMapped = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
     int isMateMapped = (b->core.flag & BAM_FMUNMAP) ? 0 : 1;
@@ -308,10 +327,10 @@ static int myGetHardFunc(const bam1_t *b, void *data) {
     // if(isSecond==1 && isMapped==1 && isMateMapped==1 && isHardClip(b))
     if (isMapped == 1 && isMateMapped == 1 && isHardClip(b)) {
         hardclip_t ht;
-        ht.name = string(bam1_qname(b));
+        ht.name = string(bam_get_qname(b));
 
         int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-        uint32_t *cigar = bam1_cigar(b);
+        uint32_t *cigar = bam_get_cigar(b);
         int nc = b->core.n_cigar;
 
         int op1 = cigar[0] & 0xf;
@@ -328,7 +347,7 @@ static int myGetHardFunc(const bam1_t *b, void *data) {
             added = true;
             ht.clipped = cpn;
             for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                int reada = bam1_seqi(bam1_seq(b), aa);
+                int reada = bam_seqi(bam_get_seq(b), aa);
                 char chara = getCharA(reada);
                 ht.seq.push_back(chara);
             }
@@ -338,7 +357,7 @@ static int myGetHardFunc(const bam1_t *b, void *data) {
             added = true;
             ht.clipped = cp1;
             for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
-                int reada = bam1_seqi(bam1_seq(b), aa);
+                int reada = bam_seqi(bam_get_seq(b), aa);
                 char chara = getCharComp(getCharA(reada));
                 ht.seq.push_back(chara);
             }
@@ -420,7 +439,7 @@ int Rna::mapPartialSplit(char* rnaFile, TidHandler& th, Gene& g, Reference & ref
 
     MyHash mhh;
 
-    bamFile fp=bam_open(rnaFile,"r");
+    samFile *fp=sam_open(rnaFile,"r");
     bam1_t *b;
 
     bam_header_read(fp);
@@ -429,7 +448,7 @@ int Rna::mapPartialSplit(char* rnaFile, TidHandler& th, Gene& g, Reference & ref
 
     while (1)
     {
-        if (( bam_read1(fp, b)) < 0)
+        if (( sam_read1(fp, b)) < 0)
              break;
         else
         {
@@ -437,7 +456,7 @@ int Rna::mapPartialSplit(char* rnaFile, TidHandler& th, Gene& g, Reference & ref
             int isMapped=(b->core.flag&BAM_FUNMAP)?0:1;
             if(!isMapped)
             {
-                string nm=string(bam1_qname(b));
+                string nm=string(bam_get_qname(b));
                 if(nm.length()>2)
                 {
                     if(nm[nm.length()-2]=='/')
@@ -474,7 +493,7 @@ cout<<anIds.size()<<endl;
                         unmapped_t ut;
                         for(int aa=0;aa<b->core.l_qseq;aa++)
                         {
-                            int reada=bam1_seqi(bam1_seq(b),aa);
+                            int reada=bam_seqi(bam_get_seq(b),aa);
                             char chara=getCharA(reada);
                             ut.seq.push_back(chara);
                         }
@@ -1567,6 +1586,7 @@ int isCanonical(Gene &g, split_rna_t &st, int bacc) {
                 return 1;
             }
         }
+        return 0;
     } else {
         // cout<<"here return bad"<<endl;
         return 0;
@@ -2208,17 +2228,24 @@ int Rna::mapPartialSplitBWT(char *rnaFile, TidHandler &th, Gene &g, HitsCounter 
 
     MyHash mhh;
 
-    bamFile fp = bam_open(rnaFile, "r");
-    bam1_t *b;
-
-    bam_header_read(fp);
-    b = (bam1_t *)malloc(sizeof(bam1_t));
-    b->data = (uint8_t *)malloc(sizeof(uint8_t) * 1024);
+    samFile *f = sam_open(rnaFile, "r");
+    if (f == nullptr)
+    {
+        cerr << "Failed to open " << rnaFile << " to read." << endl;
+        exit(1);
+    }
+    sam_hdr_t *h = sam_hdr_read(f);
+    if (h == nullptr)
+    {
+        cerr << "Failed to get header of file: " << rnaFile << endl;
+        exit(1);
+    }
+    bam1_t *b = bam_init1();
 
     int numberProcessed = 0;
     float t = clock();
-    while (1) {
-        if ((bam_read1(fp, b)) < 0) {
+    while (true) {
+        if ((sam_read1(f, h, b)) < 0) {
             if (numberProcessed % 1000000 != 0) {
                 cout << "====>" << numberProcessed << " unaligned reads processed. " << (clock() - t) / CLOCKS_PER_SEC << " seconds" << endl;
             }
@@ -2238,7 +2265,7 @@ int Rna::mapPartialSplitBWT(char *rnaFile, TidHandler &th, Gene &g, HitsCounter 
 
                 addspt.clear();
 
-                string nm = string(bam1_qname(b));
+                string nm = string(bam_get_qname(b));
 
                 if (nm.length() > 2) {
                     if (nm[nm.length() - 2] == '/')
@@ -2280,14 +2307,14 @@ int Rna::mapPartialSplitBWT(char *rnaFile, TidHandler &th, Gene &g, HitsCounter 
                 if (freq > 0) {
                     char seqRead[1024];
                     for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                        int reada = bam1_seqi(bam1_seq(b), aa);
+                        int reada = bam_seqi(bam_get_seq(b), aa);
                         char chara = getCharA(reada);
                         seqRead[aa] = chara;
                     }
                     count = hc.getHitsCount(seqRead, b->core.l_qseq);
                     if (count > 10) // parameter like this
                     {
-                        //                        cout<<"split "<<string(bam1_qname(b))<<" removed"<<endl;
+                        //                        cout<<"split "<<string(bam_get_qname(b))<<" removed"<<endl;
                         continue;
                     }
 
@@ -2366,7 +2393,7 @@ int Rna::mapPartialSplitBWT(char *rnaFile, TidHandler &th, Gene &g, HitsCounter 
                                                 unmapped_t ut;
                                                 for(int aa=0;aa<b->core.l_qseq;aa++)
                                                 {
-                                                    int reada=bam1_seqi(bam1_seq(b),aa);
+                                                    int reada=bam_seqi(bam_get_seq(b),aa);
                                                     char chara=getCharA(reada);
                                                     ut.seq.push_back(chara);
                                                 }
@@ -2422,8 +2449,16 @@ int Rna::mapPartialSplitBWT(char *rnaFile, TidHandler &th, Gene &g, HitsCounter 
         }
     }
 
-    free(b->data);
-    free(b);
+    if (b != nullptr)
+    {
+        bam_destroy1(b);
+    }
+    if (h != nullptr) {
+        sam_hdr_destroy(h);
+    }
+    if (f != nullptr) {
+        sam_close(f);
+    }
     // cout<<parna.size()<<endl;
     // cout<<parnaM.size()<<endl;
 
@@ -2749,21 +2784,28 @@ int Rna::reduceGraph(char *rnaFile, Gene &g, TidHandler &th) {
 
     MyHash mhh;
 
-    bamFile fp = bam_open(rnaFile, "r");
-    bam1_t *b;
+    samFile *f = sam_open(rnaFile, "r");
+    if (f == nullptr)
+    {
+        cerr << "Failed to open " << rnaFile << " to read." << endl;
+        exit(1);
+    }
+    sam_hdr_t *h = sam_hdr_read(f);
+    if (h == nullptr)
+    {
+        cerr << "Failed to get header of file: " << rnaFile << endl;
+        exit(1);
+    }
+    bam1_t *b = bam_init1();
 
-    bam_header_read(fp);
-    b = (bam1_t *)malloc(sizeof(bam1_t));
-    b->data = (uint8_t *)malloc(sizeof(uint8_t) * 1024);
-
-    while (1) {
-        if ((bam_read1(fp, b)) < 0)
+    while (true) {
+        if ((sam_read1(f, h, b)) < 0)
             break;
         else {
 
             int isMapped = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
             if (isMapped) {
-                string nm = string(bam1_qname(b));
+                string nm = string(bam_get_qname(b));
                 if (nm.length() > 2) {
                     if (nm[nm.length() - 2] == '/')
                         nm.resize(nm.length() - 2);
@@ -2843,6 +2885,17 @@ int Rna::reduceGraph(char *rnaFile, Gene &g, TidHandler &th) {
     //    rnafg.cleanVertex();
 
     rnafg.printFg(g);
+
+    if (b != nullptr)
+    {
+        bam_destroy1(b);
+    }
+    if (h != nullptr) {
+        sam_hdr_destroy(h);
+    }
+    if (f != nullptr) {
+        sam_close(f);
+    }
 
     return 0;
 }
@@ -3148,7 +3201,7 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2>
             split_rna_t st;
             // st.geneId1=gid1;
             // st.geneId2=gid2;
-            string nm = string(bam1_qname(b));
+            string nm = string(bam_get_qname(b));
             if (nm.length() > 2) {
                 if (nm[nm.length() - 2] == '/')
                     nm.resize(nm.length() - 2);
@@ -3249,7 +3302,7 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2>
             if (isReport == 1) {
 
                 for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                    int reada = bam1_seqi(bam1_seq(b), aa);
+                    int reada = bam_seqi(bam_get_seq(b), aa);
                     char chara = getCharA(reada);
                     st.seq.push_back(chara);
                 }
@@ -3978,7 +4031,7 @@ int Rna::homoTest3(Gene &g, split_rna_t &st, myFind2 &mf2) {
     return 0;
 }
 
-int Rna::traverseRemove(Gene &g) { rnafg.fg.removeEdgesIf(hasNoSpanningReads); }
+void Rna::traverseRemove(Gene &g) { rnafg.fg.removeEdgesIf(hasNoSpanningReads); }
 
 FusionGraph *Rna::giveGraph() { return &rnafg; }
 
@@ -4004,9 +4057,9 @@ anchor_rna_t anTop; // let us just find split reads first
 int cigarInRegionTwo(const bam1_t *b) {
     // cout<<"cigarInRegion"<<endl;
 
-    // cout<<string(bam1_qname(b))<<endl;
+    // cout<<string(bam_get_qname(b))<<endl;
 
-    uint32_t *cigar = bam1_cigar(b);
+    uint32_t *cigar = bam_get_cigar(b);
     int nc = b->core.n_cigar;
     if (nc < 3) {
         // cout<<"nc < 3"<<endl;
@@ -4118,14 +4171,14 @@ int cigarInRegionTwo(const bam1_t *b) {
         spTop.cwith1 = 0;
         spTop.isCMap = 0;
         spTop.lenC = 0;
-        spTop.name = string(bam1_qname(b));
+        spTop.name = string(bam_get_qname(b));
         spTop.posC = 0;
         spTop.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
         spTop.strand2 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
         spTop.strandC = 0;
         spTop.seq.clear();
         for (int aa = 0; aa < b->core.l_qseq; aa++) {
-            int reada = bam1_seqi(bam1_seq(b), aa);
+            int reada = bam_seqi(bam_get_seq(b), aa);
             char chara = getCharA(reada);
             spTop.seq.push_back(chara);
         }
@@ -4147,7 +4200,7 @@ int cigarInRegionTwo(const bam1_t *b) {
     }
 }
 
-static int myTopHatFunc(const bam1_t *b, void *data) {
+static int myTopHatFunc(const bam1_t *b) {
     int isMapped = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
     int isMateMapped = (b->core.flag & BAM_FMUNMAP) ? 0 : 1;
 
@@ -4219,18 +4272,25 @@ int Rna::readSTAR(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Refer
 
     // cout<<"read all STAR good split reads"<<endl;
 
-    bamFile fp = bam_open(rnaFile, "r");
-    bam1_t *b;
-
-    bam_header_read(fp);
-    b = (bam1_t *)malloc(sizeof(bam1_t));
-    b->data = (uint8_t *)malloc(sizeof(uint8_t) * 1024);
+    samFile *f = sam_open(rnaFile, "r");
+    if (f == nullptr)
+    {
+        cerr << "Failed to open " << rnaFile << " to read." << endl;
+        exit(1);
+    }
+    sam_hdr_t *h = sam_hdr_read(f);
+    if (h == nullptr)
+    {
+        cerr << "Failed to get header of file: " << rnaFile << endl;
+        exit(1);
+    }
+    bam1_t *b = bam_init1();
 
     int numberProcessed = 0;
     float t = clock();
 
-    while (1) {
-        if ((bam_read1(fp, b)) < 0) {
+    while (true) {
+        if ((sam_read1(f, h, b)) < 0) {
             if (numberProcessed % 1000000 != 0) {
                 cout << "====>" << numberProcessed << " secondary reads processed. " << (clock() - t) / CLOCKS_PER_SEC << " seconds" << endl;
             }
@@ -4292,16 +4352,25 @@ int Rna::readSTAR(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Refer
         }
     }
 
-    free(b->data);
-    free(b);
+    if (b != nullptr)
+    {
+        bam_destroy1(b);
+    }
+    if (h != nullptr) {
+        sam_hdr_destroy(h);
+    }
+    if (f != nullptr) {
+        sam_close(f);
+    }
+
     return 0;
 }
 
 int Rna::cigarInRegionTwo2(const bam1_t *b, TidHandler &th, Gene &g, HitsCounter &hc, MyHash &mhh, Reference &ref, myFind2 &mf2) {
 
-    // cout<<"name="<<string(bam1_qname(b))<<endl;
+    // cout<<"name="<<string(bam_get_qname(b))<<endl;
 
-    uint32_t *cigar = bam1_cigar(b);
+    uint32_t *cigar = bam_get_cigar(b);
     int nc = b->core.n_cigar;
     if (nc < 3) {
         return false;
@@ -4436,7 +4505,7 @@ int Rna::cigarInRegionTwo2(const bam1_t *b, TidHandler &th, Gene &g, HitsCounter
                 st.cwith1 = 0;
                 st.isCMap = 0;
                 st.lenC = 0;
-                st.name = string(bam1_qname(b));
+                st.name = string(bam_get_qname(b));
                 st.posC = 0;
                 st.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
                 st.strand2 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
@@ -4448,13 +4517,13 @@ int Rna::cigarInRegionTwo2(const bam1_t *b, TidHandler &th, Gene &g, HitsCounter
 
                 if (st.strand1 == 0) {
                     for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                        int reada = bam1_seqi(bam1_seq(b), aa);
+                        int reada = bam_seqi(bam_get_seq(b), aa);
                         char chara = getCharA(reada);
                         st.seq.push_back(chara);
                     }
                 } else {
                     for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
-                        int reada = bam1_seqi(bam1_seq(b), aa);
+                        int reada = bam_seqi(bam_get_seq(b), aa);
                         char chara = getCharComp(getCharA(reada));
                         st.seq.push_back(chara);
                     }
@@ -4848,19 +4917,26 @@ int Rna::readTopHat2(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Re
 
     // cout<<"read all tophat good split reads"<<endl;
 
-    bamFile fp = bam_open(rnaFile, "r");
-    bam1_t *b;
-
-    bam_header_read(fp);
-    b = (bam1_t *)malloc(sizeof(bam1_t));
-    b->data = (uint8_t *)malloc(sizeof(uint8_t) * 1024);
+    samFile *f = sam_open(rnaFile, "r");
+    if (f == nullptr)
+    {
+        cerr << "Failed to open " << rnaFile << " to read." << endl;
+        exit(1);
+    }
+    sam_hdr_t *h = sam_hdr_read(f);
+    if (h == nullptr)
+    {
+        cerr << "Failed to get header of file: " << rnaFile << endl;
+        exit(1);
+    }
+    bam1_t *b = bam_init1();
 
     MyHash mhh;
     int numberProcessed = 0;
     float t = clock();
 
-    while (1) {
-        if ((bam_read1(fp, b)) < 0) {
+    while (true) {
+        if ((sam_read1(f, h, b)) < 0) {
             if (numberProcessed % 1000000 != 0) {
                 cout << "====>" << numberProcessed << " mapped split reads processed. " << (clock() - t) / CLOCKS_PER_SEC << " seconds" << endl;
             }
@@ -4881,13 +4957,22 @@ int Rna::readTopHat2(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Re
         }
     }
 
-    free(b->data);
-    free(b);
+    if (b != nullptr)
+    {
+        bam_destroy1(b);
+    }
+    if (h != nullptr) {
+        sam_hdr_destroy(h);
+    }
+    if (f != nullptr) {
+        sam_close(f);
+    }
+
     return 0;
 }
 
 bool isMIM(const bam1_t *b) {
-    uint32_t *cigar = bam1_cigar(b);
+    uint32_t *cigar = bam_get_cigar(b);
     int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
     int nc = b->core.n_cigar;
     // cout<<"nc="<<nc<<endl;
@@ -5001,7 +5086,7 @@ bool isMIM(const bam1_t *b) {
 }
 
 bool isMBad(const bam1_t *b) {
-    uint32_t *cigar = bam1_cigar(b);
+    uint32_t *cigar = bam_get_cigar(b);
     int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
     int nc = b->core.n_cigar;
 
@@ -5036,7 +5121,7 @@ bool isMBad(const bam1_t *b) {
 }
 
 bool isLgClip(const bam1_t *b) {
-    uint32_t *cigar = bam1_cigar(b);
+    uint32_t *cigar = bam_get_cigar(b);
     int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
     int nc = b->core.n_cigar;
 
@@ -5061,7 +5146,7 @@ bool isLgClip(const bam1_t *b) {
 }
 
 bool isHardClip(const bam1_t *b) {
-    uint32_t *cigar = bam1_cigar(b);
+    uint32_t *cigar = bam_get_cigar(b);
     int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
     int nc = b->core.n_cigar;
 
@@ -5089,9 +5174,9 @@ int partial_processed = 0;
 
 region_t rgpartial;
 vector<split_rna_t> tmpspv; // strand1 seq and name; tid2, pos2; spId==1 neibor is working
-static int myGetPartial(const bam1_t *b, void *data) {
+static int myGetPartial(const bam1_t *b) {
 
-    // cout<<"record of "<<string(bam1_qname(b))<<endl;
+    // cout<<"record of "<<string(bam_get_qname(b))<<endl;
 
     int isMapped = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
     int isMateMapped = (b->core.flag & BAM_FMUNMAP) ? 0 : 1;
@@ -5121,7 +5206,7 @@ static int myGetPartial(const bam1_t *b, void *data) {
             // cout<<"strange"<<endl;
             partial_processed++;
             split_rna_t st;
-            st.name = string(bam1_qname(b));
+            st.name = string(bam_get_qname(b));
             st.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
 
             st.tid2 = mtid;
@@ -5134,13 +5219,13 @@ static int myGetPartial(const bam1_t *b, void *data) {
 
             if (st.strand1 == 0) {
                 for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                    int reada = bam1_seqi(bam1_seq(b), aa);
+                    int reada = bam_seqi(bam_get_seq(b), aa);
                     char chara = getCharA(reada);
                     st.seq.push_back(chara);
                 }
             } else {
                 for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
-                    int reada = bam1_seqi(bam1_seq(b), aa);
+                    int reada = bam_seqi(bam_get_seq(b), aa);
                     char chara = getCharComp(getCharA(reada));
                     st.seq.push_back(chara);
                 }
@@ -5162,10 +5247,10 @@ static int myGetPartial(const bam1_t *b, void *data) {
 
 int to_change_tmpspv = 0;
 region_t nei_region;
-static int myGetOtherSeq(const bam1_t *b, void *data) {
+static int myGetOtherSeq(const bam1_t *b) {
     // cout<<"int myGetOtherSeq"<<endl;
 
-    string name_cand = string(bam1_qname(b));
+    string name_cand = string(bam_get_qname(b));
     int mtid = b->core.mtid;
     uint32_t mpos = b->core.mpos;
 
@@ -5177,13 +5262,13 @@ static int myGetOtherSeq(const bam1_t *b, void *data) {
         vector<char> tmpseq;
         if (strand_cand == 0) {
             for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                int reada = bam1_seqi(bam1_seq(b), aa);
+                int reada = bam_seqi(bam_get_seq(b), aa);
                 char chara = getCharA(reada);
                 tmpseq.push_back(chara);
             }
         } else {
             for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
-                int reada = bam1_seqi(bam1_seq(b), aa);
+                int reada = bam_seqi(bam_get_seq(b), aa);
                 char chara = getCharComp(getCharA(reada));
                 tmpseq.push_back(chara);
             }
@@ -5205,8 +5290,10 @@ static int myGetOtherSeq(const bam1_t *b, void *data) {
 
         tmpspv[to_change_tmpspv].seq.insert(tmpspv[to_change_tmpspv].seq.begin(), tmpseq.begin(), tmpseq.end());
 
-        tmpspv[to_change_tmpspv].lenC == 1;
+        tmpspv[to_change_tmpspv].lenC = 1;
     }
+
+    return 0;
 }
 
 int getTheOtherHalf(vector<int> &neis, TidHandler &th, Gene &g, MyBamWrap &mbw) {

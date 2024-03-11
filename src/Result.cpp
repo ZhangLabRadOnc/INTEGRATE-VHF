@@ -59,8 +59,6 @@ string getType(int tp) {
         return "Error";
         break;
     }
-
-    return 0;
 }
 
 int printOneEncompassDna(encompass_dna_t &et, Reference &ref, ofstream &outFile) {

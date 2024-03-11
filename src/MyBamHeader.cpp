@@ -10,9 +10,8 @@
 int MAX_LIB_INSERT = 10000;
 
 MyBamHeader::MyBamHeader() {
-    // TODO Auto-generated constructor stub
-    bt = nullptr;
-    bf = nullptr;
+    f = nullptr;
+    h = nullptr;
     maxDistance = 0;
     mInsert = 0;
     mStd = 0;
@@ -20,29 +19,44 @@ MyBamHeader::MyBamHeader() {
     isRG = 0; // no RG
 }
 
+MyBamHeader::~MyBamHeader()
+{
+    if (h != nullptr)
+    {
+        sam_hdr_destroy(h);
+        h = nullptr;
+    }
+    if (f != nullptr) {
+        sam_close(f);
+        f = nullptr;
+    }
+}
+
 int MyBamHeader::myBamOpen(char *fileName) {
-    bf = bam_open(fileName, "r");
-    if (bf == nullptr) {
-        cerr << "failed to open " << fileName << " to read." << endl;
+    f = sam_open(fileName, "r");
+    if (f == nullptr)
+    {
+        cerr << "Failed to open file: " << fileName << endl;
         exit(1);
     }
-    bt = bam_header_read(bf);
-    if (bt == nullptr) {
-        cerr << "BAM " << fileName << " has no header." << endl;
+    h = sam_hdr_read(f);
+    if (h == nullptr)
+    {
+        sam_close(f);
+        cerr << "Failed to get header of file: " << fileName << endl;
         exit(1);
     }
+
     return 0;
 }
 
 int MyBamHeader::getRGs() {
 
-    char *line_buffer = bt->text;
+    char *line_buffer = h->text;
     // cout<<strlen(line_buffer)<<endl;
-    int length = bt->l_text;
+    int length = h->l_text;
     // cout<<length<<"l"<<endl;
-    uint32_t c_number;
 
-    c_number = 0;
     char *p = nullptr;
     char *p2 = nullptr;
     char *nextN = nullptr;
@@ -95,7 +109,7 @@ int MyBamHeader::getRGs() {
                 rg.insert(pair<string, int>(string(id), 0));
             }
         }
-        if (nextN - bt->text == length - 1) {
+        if (nextN - h->text == length - 1) {
             break;
         } else {
             line_buffer = nextN + 1;
@@ -147,24 +161,23 @@ int getMeanStd(vector<int> numbers, int &mean, int &std) {
 }
 
 int testInsertStd(char *fileName, string testRG, int &insert, int &std) {
-
     vector<int> inserts;
 
-    bamFile fp = bam_open(fileName, "r");
-    bam1_t *b;
+    samFile *f = sam_open(fileName, "r");
+    bam_hdr_t *h = sam_hdr_read(f);
+    bam1_t *b = bam_init1();
 
-    bam_header_read(fp);
-    b = (bam1_t *)malloc(sizeof(bam1_t));
-    b->data = (uint8_t *)malloc(sizeof(uint8_t) * 1024);
-
-    int numberProcessed = 0;
-    float t = clock();
     int x = 0;
-    while (1) {
-        if ((bam_read1(fp, b)) < 0) {
+    while (1)
+    {
+        if ((sam_read1(f, h, b)) < 0)
+        {
             break;
-        } else {
-            if (x >= 10000000) {
+        }
+        else
+        {
+            if (x >= 10000000)
+            {
                 break;
             }
             x++;
@@ -172,71 +185,57 @@ int testInsertStd(char *fileName, string testRG, int &insert, int &std) {
             readg[0] = '\0';
             strcat(readg, bam_aux2Z(bam_aux_get(b, "RG")));
             string tmp(readg);
-            if (testRG.compare(tmp) == 0) {
-                if (b->core.tid == b->core.mtid && b->core.pos < b->core.mpos && b->core.mpos - b->core.pos < MAX_LIB_INSERT) {
+            if (testRG.compare(tmp) == 0)
+            {
+                if (b->core.tid == b->core.mtid && b->core.pos < b->core.mpos && b->core.mpos - b->core.pos < MAX_LIB_INSERT)
+                {
                     inserts.push_back(b->core.mpos - b->core.pos + b->core.l_qseq);
                 }
             }
         }
     }
 
-    if (inserts.size() > 0) {
-        getMeanStd(inserts, insert, std);
-        free(b->data);
-        free(b);
-        bam_close(fp);
-        return 1;
-    } else {
-        getMeanStd(inserts, insert, std);
-        free(b->data);
-        free(b);
-        bam_close(fp);
-        return 0;
-    }
+    getMeanStd(inserts, insert, std);
+    bam_destroy1(b);
+    sam_close(f);
+    
+    return inserts.size() <= 0;
 }
 
 int testInsertStdAll(char *fileName, int &insert, int &std) {
-
     vector<int> inserts;
 
-    bamFile fp = bam_open(fileName, "r");
-    bam1_t *b;
+    samFile *f = sam_open(fileName, "r");
+    sam_hdr_t *h = sam_hdr_read(f);
+    bam1_t *b = bam_init1();
 
-    bam_header_read(fp);
-    b = (bam1_t *)malloc(sizeof(bam1_t));
-    b->data = (uint8_t *)malloc(sizeof(uint8_t) * 1024);
-
-    int numberProcessed = 0;
-    float t = clock();
     int x = 0;
-    while (1) {
-        if ((bam_read1(fp, b)) < 0) {
+    while (1)
+    {
+        if ((sam_read1(f, h, b)) < 0)
+        {
             break;
-        } else {
-            if (x >= 10000000) {
+        }
+        else
+        {
+            if (x >= 10000000)
+            {
                 break;
             }
             x++;
 
-            if (b->core.tid == b->core.mtid && b->core.pos < b->core.mpos && b->core.mpos - b->core.pos < MAX_LIB_INSERT) {
+            if (b->core.tid == b->core.mtid && b->core.pos < b->core.mpos && b->core.mpos - b->core.pos < MAX_LIB_INSERT)
+            {
                 inserts.push_back(b->core.mpos - b->core.pos + b->core.l_qseq);
             }
         }
     }
 
-    if (inserts.size() > 0) {
-        getMeanStd(inserts, insert, std);
-        free(b->data);
-        free(b);
-        bam_close(fp);
-        return 1;
-    } else {
-        getMeanStd(inserts, insert, std);
-        free(b->data);
-        free(b);
-        bam_close(fp);
-        return 0;
-    }
+    getMeanStd(inserts, insert, std);
+    bam_destroy1(b);
+    sam_close(f);
+
+    return inserts.size() <= 0;
 }
 
 int MyBamHeader::getInsertStdFromBAM(char *filename) {
@@ -275,7 +274,7 @@ int MyBamHeader::getPI(char *rgp) { return rg[string(rgp)]; }
 int MyBamHeader::getStd(char *rgp) { return std[string(rgp)]; }
 
 string MyBamHeader::getChrName(int tid) {
-    // string name=string(this->bt->target_name[tid]);
+    // string name=string(this->h->target_name[tid]);
 
     /*
         if (name[0]=='C' && name[0]=='h' && name[0]=='r') {
@@ -284,14 +283,14 @@ string MyBamHeader::getChrName(int tid) {
         return name;
 */
 
-    string name = string(this->bt->target_name[tid]);
+    string name = string(this->h->target_name[tid]);
 
     if (name[0] == 'c' && name[1] == 'h' && name[2] == 'r') {
         return name.substr(3, name.length() - 3);
     }
     return name;
 
-    //	return string(this->bt->target_name[tid]);
+    //	return string(this->h->target_name[tid]);
 }
 
 /*
@@ -381,19 +380,13 @@ int MyBamHeader::computeMax() {
 
 int MyBamHeader::setTidM() {
     // cout<<"int set"<<endl;
-    for (int i = 0; i < this->bt->n_targets; i++) {
+    for (int i = 0; i < this->h->n_targets; i++) {
         tidM.insert(pair<string, int>(getChrName(i), i));
         //	cout<<getChrName(i)<<" "<<i<<endl;
     }
     // cout<<"setted"<<endl;
-    numTids = bt->n_targets;
+    numTids = h->n_targets;
     return 0;
 }
 
 int MyBamHeader::getTid(string &chrName) { return tidM[chrName]; }
-
-MyBamHeader::~MyBamHeader() {
-    // TODO Auto-generated destructor stub
-    if (bf != nullptr)
-        bam_close(bf);
-}

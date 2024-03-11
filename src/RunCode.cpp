@@ -722,7 +722,7 @@ int RunCode::runFindFusions(int argc, char *argv[]) {
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
     MyBamWrap mbw;
-    mbw.mySamOpen(argv[opStart + 3]);
+    mbw.mysam_open(argv[opStart + 3]);
     mbw.myGetIndex(argv[opStart + 3]);
 
     t = clock();

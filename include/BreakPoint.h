@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef BREAKPOINT_H_
-#define BREAKPOINT_H_
+#pragma once
 
 #include <algorithm>
 #include <ctime>
@@ -36,5 +35,3 @@ class BreakPoint {
     int AddOneVCF(break_point_record_t &bkt, Reference &ref);
     int printOneBEDPE(break_point_record_t &bkt, Reference &ref, ofstream &outFile);
 };
-
-#endif /* BREAKPOINT_H_ */

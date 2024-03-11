@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef UTIL_H_
-#define UTIL_H_
+#pragma once
 
 #include <cstdio>
 #include <cstdlib>
@@ -36,5 +35,3 @@ char getCharComp(char reada);
 char getCharA(int reada);
 
 int getPeptide(vector<char> &seq5p, vector<char> &seq, int start_pos, vector<char> &peptide, int &full, int &left);
-
-#endif /* UTIL_H_ */

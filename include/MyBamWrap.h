@@ -6,8 +6,7 @@
  *  Given a region and a function on each records from the region, apply the function
  */
 
-#ifndef MYBAMWRAP_H_
-#define MYBAMWRAP_H_
+#pragma once
 
 #include "sam.h"
 #include <cstring>
@@ -34,5 +33,3 @@ class MyBamWrap {
 
     void testFetch(char *fileName, string chrName, uint32_t lpos, uint32_t rpos);
 };
-
-#endif /* MYBAMWRAP_H_ */

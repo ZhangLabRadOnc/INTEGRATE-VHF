@@ -7,8 +7,7 @@
  *  Edit and change: Apr 27, 2013
  */
 
-#ifndef REFERENCE_H_
-#define REFERENCE_H_
+#pragma once
 
 #include <algorithm>
 #include <cstdio>
@@ -96,5 +95,3 @@ class Reference {
 
     int getIsInt() { return isInt; }
 };
-
-#endif /* REFERENCE_H_ */

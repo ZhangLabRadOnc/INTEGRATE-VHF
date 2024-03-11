@@ -5,8 +5,8 @@
  *      Author: jinzhang
  */
 
-#ifndef MYBAMHEADER_H_
-#define MYBAMHEADER_H_
+#pragma once
+
 #include "sam.h"
 #include <cmath>
 #include <cstring>
@@ -74,5 +74,3 @@ class MyBamHeader {
     int getInsertStdFromBAM(char *filename);
     int printRGs();
 };
-
-#endif /* MYBAMHEADER_H_ */

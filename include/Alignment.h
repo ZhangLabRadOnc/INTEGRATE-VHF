@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef ALIGNMENT_H_
-#define ALIGNMENT_H_
+#pragma once
 
 #include "sam.h"
 #include <cstdio>
@@ -47,5 +46,3 @@ class Alignment {
     int global(vector<char> &seq, int tail, int tail_pos, int tid, uint32_t left, uint32_t right, Reference &ref, uint32_t &aa, uint32_t &bb, int &miss, int &gap, int &score);
     split_dna_t globalAlign(split_dna_t &st, Gene &g, Reference &ref, region_to_map_t &rtm);
 };
-
-#endif /* ALIGNMENT_H_ */

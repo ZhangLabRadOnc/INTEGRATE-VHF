@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef ALGRAPH_H_
-#define ALGRAPH_H_
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -132,5 +131,3 @@ template <typename Object, typename Weight> class ALGraph {
 template <typename Object, typename Weight> const typename ALGraph<Object, Weight>::EdgeList ALGraph<Object, Weight>::emptyEdgeList;
 
 #include "ALGraph.cpp"
-
-#endif /* ALGRAPH_H_ */

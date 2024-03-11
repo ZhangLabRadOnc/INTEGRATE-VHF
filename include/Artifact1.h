@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef ARTIFACT1_H_
-#define ARTIFACT1_H_
+#pragma once
 
 #include <iostream>
 
@@ -23,5 +22,3 @@ class Artifact1 {
 
     bool isAf1(Gene &g, split_rna_t &st, myFind2 &mf2);
 };
-
-#endif /* ARTIFACT1_H_ */

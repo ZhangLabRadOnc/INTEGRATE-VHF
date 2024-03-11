@@ -6,6 +6,8 @@
  *  A template class of graph
  */
 
+#pragma once
+
 #include <cassert>
 #include <cstdlib>
 #include <iostream>

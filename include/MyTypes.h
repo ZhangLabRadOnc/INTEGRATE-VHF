@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef MYTYPES_H_
-#define MYTYPES_H_
+#pragma once
 
 #include <stdint.h>
 #include <string>
@@ -364,5 +363,3 @@ typedef struct {
     int exonNum;
 
 } junction_t;
-
-#endif /* MYTYPES_H_ */

@@ -10,8 +10,7 @@
  *  A node of the graph is a Gene Node.
  */
 
-#ifndef FUSIONGRAPH_H_
-#define FUSIONGRAPH_H_
+#pragma once
 
 #include <algorithm>
 #include <iostream>
@@ -66,5 +65,3 @@ class FusionGraph {
 
     int getEncompassNum(int gIndex1, int gIndex2);
 };
-
-#endif /* FUSIONGRAPH_H_ */

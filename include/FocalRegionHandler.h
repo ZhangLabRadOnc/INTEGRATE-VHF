@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef FOCALREGIONHANDLER_H_
-#define FOCALREGIONHANDLER_H_
+#pragma once
 
 #include "MyTypes.h"
 #include <algorithm>
@@ -23,5 +22,3 @@ class FocalRegionHandler {
   public:
     int getUion(vector<region_to_map_t> &vtp, vector<region_to_map_t> &vtup);
 };
-
-#endif /* FOCALREGIONHANDLER_H_ */

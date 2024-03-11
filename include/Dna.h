@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef DNA_H_
-#define DNA_H_
+#pragma once
 
 #include "sam.h"
 #include <algorithm>
@@ -84,5 +83,3 @@ class Dna {
 
     int isEnGood(result_t &rt, encompass_dna_t &en, Gene &g, int min_deletion, int isUpdate);
 };
-
-#endif /* DNA_H_ */

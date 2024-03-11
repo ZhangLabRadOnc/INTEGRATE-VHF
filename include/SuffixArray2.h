@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef SUFFIXARRAY2_H_
-#define SUFFIXARRAY2_H_
+#pragma once
 
 #include <cstdlib>
 #include <iostream>
@@ -24,5 +23,3 @@ class SuffixArray2 {
     int getSA(int i);
     virtual ~SuffixArray2();
 };
-
-#endif /* SUFFIXARRAY2_H_ */

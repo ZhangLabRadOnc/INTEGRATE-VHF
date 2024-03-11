@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef RUNCODE_H_
-#define RUNCODE_H_
+#pragma once
 
 #include <cstring>
 #include <ctime>
@@ -34,5 +33,3 @@ class RunCode {
     int runBuildBWTs(int argc, char *argv[]);
     int runFindFusions(int argc, char *argv[]);
 };
-
-#endif /* RUNCODE_H_ */

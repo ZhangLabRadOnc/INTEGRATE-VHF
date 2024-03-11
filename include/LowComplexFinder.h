@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef LOWCOMPLEXFINDER_H_
-#define LOWCOMPLEXFINDER_H_
+#pragma once
 
 #include "sam.h"
 #include <algorithm>
@@ -25,5 +24,3 @@ class LowComplexFinder {
     bool isLowComplex(vector<char> &seq);
     bool isLowComplex(bam1_t *b);
 };
-
-#endif /* LOWCOMPLEXFINDER_H_ */

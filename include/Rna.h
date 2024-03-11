@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef RNA_H_
-#define RNA_H_
+#pragma once
 
 #include "sam.h"
 #include <algorithm>
@@ -165,5 +164,3 @@ class Rna {
     int readSTAR(char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2);
     int getHardClipReads(Gene &, MyBamWrap &, TidHandler &);
 };
-
-#endif /* RNA_H_ */

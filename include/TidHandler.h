@@ -11,8 +11,7 @@
  *  in a bam to the correspoding unified tid used by INTEGRATE when loading the reference.
  */
 
-#ifndef TIDHANDLER_H_
-#define TIDHANDLER_H_
+#pragma once
 
 #include <cstring>
 #include <iostream>
@@ -51,5 +50,3 @@ class TidHandler {
     int getDNAFromRef(int tid);
     int getRefFromDNA(int dnaTid);
 };
-
-#endif /* TIDHANDLER_H_ */

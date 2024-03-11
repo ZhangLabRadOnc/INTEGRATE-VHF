@@ -9,8 +9,7 @@
  *  multiple exons (So that introns are also known).
  */
 
-#ifndef GENE_H_
-#define GENE_H_
+#pragma once
 
 #include <algorithm>
 #include <cmath>
@@ -115,5 +114,3 @@ class Gene {
 
     int getStrandnPrimenTid(int gid, int isbkLeft, int &is5p, int &tid, int &strand);
 };
-
-#endif /* GENE_H_ */

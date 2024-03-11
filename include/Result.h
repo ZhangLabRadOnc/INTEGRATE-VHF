@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef RESULT_H_
-#define RESULT_H_
+#pragma once
 
 #include "sam.h"
 #include <algorithm>
@@ -65,5 +64,3 @@ class Result {
     int getAllJunctionsStep5(Gene &g, Reference &ref);
     int getAllJunctionsStep6(char *filename, Gene &g, Reference &ref);
 };
-
-#endif /* RESULT_H_ */

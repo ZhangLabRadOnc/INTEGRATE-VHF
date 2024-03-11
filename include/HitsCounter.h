@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef HITSCOUNTER_H_
-#define HITSCOUNTER_H_
+#pragma once
 
 #include <iostream>
 
@@ -47,5 +46,3 @@ class HitsCounter {
 
     void setMinBwtLen(int minBwtLen) { MIN_BWT_LEN = minBwtLen; }
 };
-
-#endif /* HITSCOUNTER_H_ */

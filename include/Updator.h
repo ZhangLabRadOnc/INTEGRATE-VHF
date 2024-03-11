@@ -5,8 +5,7 @@
  *      Author: jinzhang
  */
 
-#ifndef UPDATOR_H_
-#define UPDATOR_H_
+#pragma once
 
 #include <algorithm>
 #include <cstring>
@@ -29,5 +28,3 @@ class Updator {
 
     int update(int gid5p, int gid3p, uint32_t &pos5p, uint32_t &pos3p, split_rna_t &st, Reference &ref, Gene &g);
 };
-
-#endif

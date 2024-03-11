@@ -10,8 +10,7 @@
  *  upto the allowd differences
  */
 
-#ifndef BWT_H_
-#define BWT_H_
+#pragma once
 
 #include <algorithm>
 #include <cstdio>
@@ -116,5 +115,3 @@ class BWT {
 
     virtual ~BWT();
 };
-
-#endif /* BWT_H_ */

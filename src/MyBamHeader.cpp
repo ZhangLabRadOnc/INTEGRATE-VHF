@@ -160,7 +160,7 @@ int getMeanStd(vector<int> numbers, int &mean, int &std) {
     return 0;
 }
 
-int testInsertStd(const char *fileName, string testRG, int &insert, int &std) {
+bool testInsertStd(const char *fileName, string testRG, int &insert, int &std) {
     vector<int> inserts;
 
     samFile *f = sam_open(fileName, "r");
@@ -199,10 +199,10 @@ int testInsertStd(const char *fileName, string testRG, int &insert, int &std) {
     bam_destroy1(b);
     sam_close(f);
     
-    return inserts.size() <= 0;
+    return inserts.size() > 0;
 }
 
-int testInsertStdAll(const char *fileName, int &insert, int &std) {
+bool testInsertStdAll(const char *fileName, int &insert, int &std) {
     vector<int> inserts;
 
     samFile *f = sam_open(fileName, "r");
@@ -235,7 +235,7 @@ int testInsertStdAll(const char *fileName, int &insert, int &std) {
     bam_destroy1(b);
     sam_close(f);
 
-    return inserts.size() <= 0;
+    return inserts.size() > 0;
 }
 
 int MyBamHeader::getInsertStdFromBAM(const char *filename) {
@@ -243,7 +243,7 @@ int MyBamHeader::getInsertStdFromBAM(const char *filename) {
         isRG = 1;
         for (map<string, int>::iterator it = rg.begin(); it != rg.end(); ++it) {
             int insert, std;
-            if (testInsertStd(filename, it->first, insert, std) == 1) {
+            if (testInsertStd(filename, it->first, insert, std)) {
                 if (it->second - insert > std || it->second - insert < 0 - std) {
                     cout << "Warning: for RG " << it->first << ", there is no PI in BAM or the value provided is " << it->second << " and tested is " << insert
                          << ". Changed to tested value." << endl;
@@ -336,7 +336,7 @@ int MyBamHeader::run2(const char *fileName) {
     // this->setMStd(std);
 
     int insertt, stdt;
-    if (testInsertStdAll(fileName, insertt, stdt) == 1) {
+    if (testInsertStdAll(fileName, insertt, stdt)) {
         mInsert = insertt;
         mStd = stdt;
     }

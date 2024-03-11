@@ -8,30 +8,45 @@
 #pragma once
 
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <map>
-#include <stdint.h>
-#include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <typeinfo>
-#include <vector>
+#include <filesystem>
 
 using namespace std;
+namespace fs = std::filesystem;
 
-uint32_t getFilelength(const char *file);
+uintmax_t getFileSize(fs::path filePath);
+
 int readBlock(char *block, int length, FILE *infile);
 
-extern map<int, char> intChar;
-extern map<char, char> charChar;
+inline char getCharComp(char reada) {
+    switch (reada) {
+        case 'A':
+            return 'T';
+        case 'C':
+            return 'G';
+        case 'G':
+            return 'C';
+        case 'T':
+            return 'A';
+        case 'N':
+            return 'N';
+        default:
+            return 'N';
+    }
+}
 
-extern map<string, char> tableAmino;
-
-int InitialIntChar();
-
-char getCharComp(char reada);
-char getCharA(int reada);
-
-int getPeptide(vector<char> &seq5p, vector<char> &seq, int start_pos, vector<char> &peptide, int &full, int &left);
+inline char getCharA(int reada) {
+    switch (reada) {
+        case 1:
+            return 'A';
+        case 2:
+            return 'C';
+        case 4:
+            return 'G';
+        case 8:
+            return 'T';
+        case 15:
+            return 'N';
+        default:
+            return 'N';
+    }
+}

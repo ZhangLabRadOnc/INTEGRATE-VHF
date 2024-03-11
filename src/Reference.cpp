@@ -337,7 +337,7 @@ int Reference::loadRef(const char *fileName) {
     posListRight.clear();
 
     // allocate memory
-    uint32_t length = getFilelength(fileName);
+    uint32_t length = getFileSize(fileName);
     try {
         if (isInt == 1) {
             reference = new uint32_t[length / 8 + 1024];

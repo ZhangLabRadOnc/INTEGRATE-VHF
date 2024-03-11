@@ -52,7 +52,7 @@ bool myTransSortFunc(transcript_t i, transcript_t j) {
 
 int Gene::loadGenesFromFile(const char *file, TidHandler &th) {
 
-    uint32_t length = getFilelength(file);
+    uint32_t length = getFileSize(file);
     FILE *infile;
 
     infile = fopen(file, "r");

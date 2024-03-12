@@ -446,7 +446,7 @@ int Rna::mapPartialSplit(char* rnaFile, TidHandler& th, Gene& g, Reference & ref
     b = (bam1_t*)malloc(sizeof(bam1_t));
     b->data=(uint8_t*)malloc(sizeof(uint8_t)*1024);
 
-    while (1)
+    while (true)
     {
         if (( sam_read1(fp, b)) < 0)
              break;

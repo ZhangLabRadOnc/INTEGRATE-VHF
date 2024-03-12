@@ -26,8 +26,8 @@ using namespace std;
 struct FusionEdge {
     vector<int> encompass;
     vector<int> spannings;
-    double weight;
-    double w_star; // for star secondary split reads
+    double weight = 0;
+    double w_star = 0; // for star secondary split reads
     int addIndex(int index);
     int getSize();
 };

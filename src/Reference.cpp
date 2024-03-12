@@ -123,7 +123,7 @@ int Reference::parseBlock(char *block, uint32_t &c_number, uint32_t length, int 
     char *p = nullptr;
     char *nextN = nullptr;
     int localc = 0;
-    while (1) {
+    while (true) {
         nextN = strchr(line_buffer, '\n');
 
         if (line_buffer[0] == '>') {

@@ -66,7 +66,7 @@ int MyBamHeader::getRGs() {
     id[0] = '\0';
     insert[0] = '\0';
 
-    while (1) {
+    while (true) {
         nextN = strchr(line_buffer, '\n');
         if (line_buffer[0] == '@' && line_buffer[1] == 'R' && line_buffer[2] == 'G') {
             char tmp[nextN - line_buffer + 2];
@@ -168,7 +168,7 @@ bool testInsertStd(const char *fileName, string testRG, int &insert, int &std) {
     bam1_t *b = bam_init1();
 
     int x = 0;
-    while (1)
+    while (true)
     {
         if ((sam_read1(f, h, b)) < 0)
         {
@@ -210,7 +210,7 @@ bool testInsertStdAll(const char *fileName, int &insert, int &std) {
     bam1_t *b = bam_init1();
 
     int x = 0;
-    while (1)
+    while (true)
     {
         if ((sam_read1(f, h, b)) < 0)
         {

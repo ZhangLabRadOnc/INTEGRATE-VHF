@@ -1138,14 +1138,14 @@ int getRefExonSeq(Reference &ref, int tid, uint32_t aa, uint32_t bb, int strand,
     return 0;
 }
 
-typedef struct {
+struct fusion_junction_t{
     int fusion_id;
     junction_t p5;
     junction_t p3;
     vector<char> seq1;
     vector<char> seq2;
-    int isInframe;
-} fusion_junction_t;
+    int isInframe = 0;
+};
 
 // have repeats
 vector<fusion_junction_t> fjtvec;
@@ -1311,13 +1311,13 @@ int Result::getAllJunctionsStep3(const char *filename, Gene &g, Reference &ref) 
 
 // SMC-RNA
 
-typedef struct {
+struct fusion_junction_2_t{
     int fusion_id;
     junction_t p5;
     junction_t p3;
     vector<char> seq1;
     vector<char> seq2;
-    int isInframe;
+    int isInframe = 0;
 
     int tier;
     int isCano;
@@ -1330,7 +1330,7 @@ typedef struct {
 
     split_rna_t st;
 
-} fusion_junction_2_t;
+};
 
 vector<fusion_junction_2_t> fjtvec2;
 

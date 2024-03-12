@@ -356,7 +356,7 @@ int Gene::getExons(int geneId, list<exon_map_t> &exons) {
     exons.sort(mySortExon);
 
     list<exon_map_t>::iterator it = exons.begin();
-    while (1) {
+    while (true) {
         it++;
         if (it == exons.end())
             break;

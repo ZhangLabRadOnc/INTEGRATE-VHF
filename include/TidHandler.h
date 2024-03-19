@@ -27,6 +27,7 @@ using namespace std;
 class TidHandler {
 
   private:
+    Reference *ref;
     map<string, int> chrName2Tid;
     map<int, string> Tid2ChrName;
 
@@ -36,11 +37,8 @@ class TidHandler {
     map<int, int> Ref2RNA;
 
   public:
-    TidHandler();
+    TidHandler(Reference &ref);
     virtual ~TidHandler();
-
-    int setRefTid(Reference &ref);
-    int getRefTid(string name);
 
     int setRNAAndRef(MyBamHeader &rnabh);
     int getRNAFromRef(int tid);

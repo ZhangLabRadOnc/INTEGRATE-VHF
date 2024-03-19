@@ -50,27 +50,13 @@ bool myTransSortFunc(transcript_t i, transcript_t j) {
         return false;
 }
 
-int Gene::loadGenesFromFile(const char *fileName, TidHandler &th) {
-    string nameC;
-    string chrStr;
-    string strandC;
-    int32_t txStart;
-    int32_t txEnd;
-    int32_t cdsStart; // Dec 7, 2015
-    int32_t cdsEnd;
-    int exonCount;
-    string exonStartsC;
-    string exonEndsC;
-    string name2C;
-
-    int strand;
-
+int Gene::loadGenesFromFile(const char *fileName, Reference &ref) {
     int fd;
-    size_t length;
+    size_t fileLen;
     // Start pointer of the file (inclusive)
-    const char *pfs = openFileForRead(fileName, fd, length);
+    const char *pfs = openFileForRead(fileName, fd, fileLen);
     // End pointer of the file (exclusive)
-    const char *pfe = pfs + length - 1;
+    const char *pfe = pfs + fileLen - 1;
     // Start pointer of the current line (inclusive)
     const char *pls = pfs;
     // End pointer of the current line (inclusive)
@@ -91,67 +77,76 @@ int Gene::loadGenesFromFile(const char *fileName, TidHandler &th) {
         }
         if (!(pls >= ple || *pls == '#'))
         {
-            int lineLength = ple - pls + 1;
-            char *lineBuffer = new char[lineLength + 1];
-            copy(pls, ple + 1, lineBuffer);
-            lineBuffer[lineLength] = '\0';
-            string line = string(lineBuffer);
-            delete[] lineBuffer;
-            istringstream iss = istringstream(line);
-            if (!(iss >> nameC >> chrStr >> strandC >> txStart >> txEnd >> cdsStart >> cdsEnd >> exonCount >> exonStartsC >> exonEndsC >> name2C))
-            {
-                cerr << "Error parsing line: " << line << endl;
-                exit(EXIT_FAILURE);
-            }
-            uint32_t *ps = new uint32_t[exonCount];
-            uint32_t *pe = new uint32_t[exonCount];
+            int lineLen = ple - pls + 1;
+            char *line = new char[lineLen + 1];
+            copy(pls, ple + 1, line);
+            line[lineLen] = '\0';
 
-            int32_t currentIndex = 0;
-            int32_t currentNumber = 0;
-            for (const char* p = exonStartsC.c_str(); *p && currentIndex < exonCount; ++p) {
-                if (*p >= '0' && *p <= '9') {
-                    currentNumber = currentNumber * 10 + (*p - '0');
-                } else if (*p == ',') {
-                    ps[currentIndex++] = currentNumber;
-                    currentNumber = 0;
-                } else {
-                    cerr << "Error parsing gene annotation." << endl;
-                    exit(EXIT_FAILURE);
-                }
-            }
-
-            currentIndex = 0;
-            currentNumber = 0;
-            for (const char* p = exonEndsC.c_str(); *p && currentIndex < exonCount; ++p) {
-                if (*p >= '0' && *p <= '9') {
-                    currentNumber = currentNumber * 10 + (*p - '0');
-                } else if (*p == ',') {
-                    pe[currentIndex++] = currentNumber;
-                    currentNumber = 0;
-                } else {
-                    cerr << "Error parsing gene annotation." << endl;
-                    exit(EXIT_FAILURE);
-                }
-            }
-
-            strand = strandC == "+" ? 0 : 1;
-    
             transcript_t tt;
-            tt.name = nameC;
-            tt.tid = th.getRefTid(chrStr);
-            if (tt.tid == -1)
+            const char* delimiters = " \t";
+            char* token = strtok(line, delimiters);
+            tt.name = string(token);
+            token = strtok(nullptr, delimiters);
+            tt.tid = ref.getSeqId(string(token));
+            if (tt.tid < 0)
             {
                 continue;
             }
-            tt.strand = strand;
-            tt.txStart = txStart;
-            tt.txEnd = txEnd;
-            tt.cdsStart = cdsStart; // Dec 7, 2015
-            tt.cdsEnd = cdsEnd;
-            tt.exonCount = exonCount;
-            tt.exonStarts = ps;
-            tt.exonEnds = pe;
-            tt.name2 = name2C;
+            token = strtok(nullptr, delimiters);
+            tt.strand = (token[0] == '+' ? 0 : 1);
+            token = strtok(nullptr, delimiters);
+            tt.txStart = stoi(token);
+            token = strtok(nullptr, delimiters);
+            tt.txEnd = stoi(token);
+            token = strtok(nullptr, delimiters);
+            tt.cdsStart = stoi(token);
+            token = strtok(nullptr, delimiters);
+            tt.cdsEnd = stoi(token);
+            token = strtok(nullptr, delimiters);
+            tt.exonCount = stoi(token);
+            token = strtok(nullptr, delimiters);
+            char *exonStartsC = strdup(token);
+            token = strtok(nullptr, delimiters);
+            char *exonEndsC = strdup(token);
+            token = strtok(nullptr, delimiters);
+            tt.name2 = string(token);
+            delete[] line;
+
+            uint32_t *pes = new uint32_t[tt.exonCount];
+            uint32_t *pee = new uint32_t[tt.exonCount];
+
+            int32_t idx = 0;
+            int32_t num = 0;
+            for (const char* p = exonStartsC; *p && idx < tt.exonCount; ++p) {
+                if (*p >= '0' && *p <= '9') {
+                    num = num * 10 + (*p - '0');
+                } else if (*p == ',') {
+                    pes[idx++] = num;
+                    num = 0;
+                } else {
+                    cerr << "Error parsing gene annotation." << endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+            free(exonStartsC);
+
+            idx = 0;
+            num = 0;
+            for (const char* p = exonEndsC; *p && idx < tt.exonCount; ++p) {
+                if (*p >= '0' && *p <= '9') {
+                    num = num * 10 + (*p - '0');
+                } else if (*p == ',') {
+                    pee[idx++] = num;
+                    num = 0;
+                } else {
+                    cerr << "Error parsing gene annotation." << endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+            free(exonEndsC);
+
+            tt.exonStarts = pes;
+            tt.exonEnds = pee;
 
             // Dec 2015, let us not use the transcripts truncated in coding region
             if (!(tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd))))
@@ -161,7 +156,7 @@ int Gene::loadGenesFromFile(const char *fileName, TidHandler &th) {
         }
         pls = ple + strcspn(ple, "\n") + 1;
     }
-    closeFileForRead(pfs, fd, length);
+    closeFileForRead(pfs, fd, fileLen);
 
     sort(transcripts.begin(), transcripts.end(), myTransSortFunc);
     cout << transcripts.size() << " transcripts loaded." << endl;

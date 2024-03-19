@@ -11,6 +11,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 using namespace std;
 
@@ -20,13 +21,16 @@ class Reference {
   private:
     string filePath;
     faidx_t *f;
+    int seqCount;
     map<int, char *> sequences;
+    vector<const char *> names;
 
   public:
     Reference(string filePath);
     virtual ~Reference();
-    string getSeqName(int i);
-    int getSeqLength(int i);
+    string getSeqName(int id);
+    int getSeqId(string name);
+    int getSeqLength(int id);
     int getSeqCount();
-    char *getSeq(int i);
+    char *getSeq(int id);
 };

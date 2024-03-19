@@ -675,14 +675,13 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     Reference ref(argv[opStart]);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
-    TidHandler th;
-    th.setRefTid(ref);
+    TidHandler th(ref);
 
     Gene g;
 
     t = clock();
     cout << "Loading genes..." << endl;
-    g.loadGenesFromFile(argv[opStart + 1], th);
+    g.loadGenesFromFile(argv[opStart + 1], ref);
     g.setGene();
     g.allocate();
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;

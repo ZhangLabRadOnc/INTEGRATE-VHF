@@ -7,39 +7,24 @@
 
 #include "TidHandler.h"
 
-TidHandler::TidHandler() {
-    // TODO Auto-generated constructor stub
-}
-
-TidHandler::~TidHandler() {
-    // TODO Auto-generated destructor stub
-}
-
-int TidHandler::setRefTid(Reference &ref) {
-
-    int listSize = ref.getSeqCount();
-    for (int i = 0; i < listSize; i++) {
+TidHandler::TidHandler(Reference &ref) {
+    this->ref = &ref;
+    int seqCount = ref.getSeqCount();
+    for (int i = 0; i < seqCount; i++) {
         string chrname = ref.getSeqName(i);
         chrName2Tid.insert(pair<string, int>(chrname, i));
         Tid2ChrName.insert(pair<int, string>(i, chrname));
     }
-    return 0;
 }
 
-int TidHandler::getRefTid(string name) {
-    map<string, int>::iterator it = chrName2Tid.find(name);
-    if (it == chrName2Tid.end())
-        return -1;
-    else
-        return it->second;
-    // return chrName2Tid[name];
+TidHandler::~TidHandler() {
+    this->ref = nullptr;
 }
 
 int TidHandler::setRNAAndRef(MyBamHeader &rnabh) {
 
     for (int i = 0; i < rnabh.getNumTids(); i++) {
-        string chrname = rnabh.getChrName(i);
-        int tid = getRefTid(chrname);
+        int tid = ref->getSeqId(rnabh.getChrName(i));
         RNA2Ref.insert(pair<int, int>(i, tid));
         Ref2RNA.insert(pair<int, int>(tid, i));
     }
@@ -66,8 +51,7 @@ int TidHandler::getRefFromRNA(int rnaTid) {
 int TidHandler::setDNAAndRef(MyBamHeader &dnabh) {
 
     for (int i = 0; i < dnabh.getNumTids(); i++) {
-        string chrname = dnabh.getChrName(i);
-        int tid = getRefTid(chrname);
+        int tid = ref->getSeqId(dnabh.getChrName(i));
         DNA2Ref.insert(pair<int, int>(i, tid));
         Ref2DNA.insert(pair<int, int>(tid, i));
 

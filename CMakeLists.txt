@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.27)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 include(VersionHelper)
-project(integrate
+project(Integrate
     VERSION ${VERSION_FULL})
 
 set(CMAKE_C_STANDARD 23)

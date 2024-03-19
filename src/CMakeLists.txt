@@ -27,7 +27,7 @@ set(SOURCES
 )
 
 add_executable(${PROJECT_NAME}-bin ${SOURCES})
-set_target_properties(${PROJECT_NAME}-bin PROPERTIES OUTPUT_NAME integrate)
+set_target_properties(${PROJECT_NAME}-bin PROPERTIES OUTPUT_NAME Integrate)
 target_link_libraries(${PROJECT_NAME}-bin PkgConfig::HTSLIB)
 target_link_libraries(${PROJECT_NAME}-bin PkgConfig::DIVSUFSORT)
 

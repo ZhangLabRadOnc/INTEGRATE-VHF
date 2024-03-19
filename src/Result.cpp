@@ -70,7 +70,7 @@ int printOneEncompassDna(encompass_dna_t &et, Reference &ref, ofstream &outFile)
     else
         outFile << "-";
     outFile << "\t";
-    outFile << ref.getCharName(et.tid1);
+    outFile << ref.getSeqName(et.tid1);
     outFile << "\t";
     outFile << et.pos1;
     outFile << "\t";
@@ -81,7 +81,7 @@ int printOneEncompassDna(encompass_dna_t &et, Reference &ref, ofstream &outFile)
     else
         outFile << "-";
     outFile << "\t";
-    outFile << ref.getCharName(et.tid2);
+    outFile << ref.getSeqName(et.tid2);
     outFile << "\t";
     outFile << et.pos2;
     outFile << "\t";
@@ -103,7 +103,7 @@ int printOneSplitDna(split_dna_t &st, Reference &ref, ofstream &outFile) {
         outFile << "+\t";
     else
         outFile << "-\t";
-    outFile << ref.getCharName(st.tid1) << "\t";
+    outFile << ref.getSeqName(st.tid1) << "\t";
     outFile << st.pos1 << "\t";
     outFile << st.len1 << "\t";
 
@@ -111,7 +111,7 @@ int printOneSplitDna(split_dna_t &st, Reference &ref, ofstream &outFile) {
         outFile << "+\t";
     else
         outFile << "-\t";
-    outFile << ref.getCharName(st.tid2) << "\t";
+    outFile << ref.getSeqName(st.tid2) << "\t";
     outFile << st.pos2 << "\t";
     outFile << st.len2 << "\t";
 
@@ -163,13 +163,13 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
             outFile << "+\t";
         else
             outFile << "-\t";
-        outFile << ref.getCharName(et.tid1) << "\t";
+        outFile << ref.getSeqName(et.tid1) << "\t";
         outFile << et.pos1 << "\t";
         if (et.strand2 == 0)
             outFile << "+\t";
         else
             outFile << "-\t";
-        outFile << ref.getCharName(et.tid2) << "\t";
+        outFile << ref.getSeqName(et.tid2) << "\t";
         outFile << et.pos2 << "\t";
 
         for (int j = 0; j < et.seq1.size(); j++) {
@@ -209,7 +209,7 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
                 outFile << "+\t";
             else
                 outFile << "-\t";
-            outFile << ref.getCharName(rt.sprnas[j].tid1) << "\t" << rt.sprnas[j].pos1 << "\t" << rt.sprnas[j].len1 << "\t";
+            outFile << ref.getSeqName(rt.sprnas[j].tid1) << "\t" << rt.sprnas[j].pos1 << "\t" << rt.sprnas[j].len1 << "\t";
             //  {
             //      outFile<<"*"<<" "<<"*"<<" "<<"*"<<" "<<"*"<<" ";
             //  }
@@ -217,7 +217,7 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
                 outFile << "+\t";
             else
                 outFile << "-\t";
-            outFile << ref.getCharName(rt.sprnas[j].tid2) << "\t" << rt.sprnas[j].pos2 << "\t" << rt.sprnas[j].len2 << "\t";
+            outFile << ref.getSeqName(rt.sprnas[j].tid2) << "\t" << rt.sprnas[j].pos2 << "\t" << rt.sprnas[j].len2 << "\t";
             for (int x = 0; x < rt.sprnas[j].seq.size(); x++) {
                 outFile << rt.sprnas[j].seq[x];
             }
@@ -800,20 +800,17 @@ int bestSpdna(result_t *prt, split_dna_t &st) {
 }
 
 int RefPrinter(Reference &ref, int tid, uint32_t aa, uint32_t bb, int strand, int is5p, ofstream &outFile) {
+    uint32_t seqLen = bb - aa + 1;
 
-    uint32_t refaa = ref.to_ref_pos(tid, aa);
-    uint32_t refbb = ref.to_ref_pos(tid, bb);
-    for (uint32_t x = refaa; x <= refbb; x++)
-        outFile << ref.getRefChar(x);
+    const char *seqRef = ref.getSeq(tid);
+    outFile.write(seqRef + aa - 1, seqLen);
     outFile << "\t";
 
-    if (refbb - refaa + 1 >= 150) {
+    if (seqLen >= 150) {
         if ((strand == 0 && is5p == 1) || (strand == 1 && is5p == 0)) {
-            for (uint32_t x = refbb - 150 + 1; x <= refbb; x++)
-                outFile << ref.getRefChar(x);
+            outFile.write(seqRef + bb - 150, 150);
         } else {
-            for (uint32_t x = refaa; x <= refaa + 150 - 1; x++)
-                outFile << ref.getRefChar(x);
+            outFile.write(seqRef + aa - 1, 150);
         }
     } else
         outFile << "NA";
@@ -883,7 +880,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
                 outFile << "+\t";
             else
                 outFile << "-\t";
-            outFile << ref.getCharName(tid) << "\t";
+            outFile << ref.getSeqName(tid) << "\t";
             outFile << pos1 << "\t" << pos2 << "\t";
             RefPrinter(ref, tid, pos1, pos2, strand, is5p, outFile);
             outFile << "\t";
@@ -892,7 +889,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
                 outFile << "+\t";
             else
                 outFile << "-\t";
-            outFile << ref.getCharName(tid_2) << "\t";
+            outFile << ref.getSeqName(tid_2) << "\t";
             outFile << pos1_2 << "\t" << pos2_2 << "\t";
             RefPrinter(ref, tid_2, pos1_2, pos2_2, strand_2, is5p_2, outFile);
             outFile << endl;
@@ -934,7 +931,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
                 outFile << "+\t";
             else
                 outFile << "-\t";
-            outFile << ref.getCharName(tid_2) << "\t";
+            outFile << ref.getSeqName(tid_2) << "\t";
             outFile << pos1_2 << "\t" << pos2_2 << "\t";
             RefPrinter(ref, tid_2, pos1_2, pos2_2, strand_2, is5p_2, outFile);
             outFile << "\t";
@@ -943,7 +940,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
                 outFile << "+\t";
             else
                 outFile << "-\t";
-            outFile << ref.getCharName(tid) << "\t";
+            outFile << ref.getSeqName(tid) << "\t";
             outFile << pos1 << "\t" << pos2 << "\t";
             RefPrinter(ref, tid, pos1, pos2, strand, is5p, outFile);
             outFile << endl;
@@ -1124,15 +1121,20 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 }
 
 int getRefExonSeq(Reference &ref, int tid, uint32_t aa, uint32_t bb, int strand, vector<char> &seq) {
-
-    uint32_t refaa = ref.to_ref_pos(tid, aa);
-    uint32_t refbb = ref.to_ref_pos(tid, bb);
-    if (strand == 0) {
-        for (uint32_t x = refaa; x <= refbb; x++)
-            seq.push_back(ref.getRefChar(x));
-    } else {
-        for (uint32_t x = refbb; x >= refaa; x--)
-            seq.push_back(getCharComp(ref.getRefChar(x)));
+    const char *seqRef = ref.getSeq(tid);
+    if (strand == 0)
+    {
+        for (uint32_t x = aa - 1; x < bb; x++)
+        {
+            seq.push_back(seqRef[x]);
+        }
+    }
+    else
+    {
+        for (uint32_t x = bb - 1; x >= aa - 1; x--)
+        {
+            seq.push_back(getCharComp(seqRef[x]));
+        }
     }
 
     return 0;
@@ -1617,9 +1619,9 @@ int Result::getAllJunctionsStep6(const char *filename, Gene &g, Reference &ref) 
         // cout<<"here1"<<endl;
         if (last_pos5 != p5_pos || last_pos3 != p3_pos) {
             if (fjtvec2[i].isCano == 1)
-                outFile << ref.getCharName(fjtvec2[i].p5.tid) << "\t";
+                outFile << ref.getSeqName(fjtvec2[i].p5.tid) << "\t";
             else
-                outFile << ref.getCharName(g.getTid(fjtvec2[i].geneId5p)) << "\t";
+                outFile << ref.getSeqName(g.getTid(fjtvec2[i].geneId5p)) << "\t";
             // cout<<"here1.1"<<endl;
             int strand1;
             if (fjtvec2[i].isCano == 1)
@@ -1638,9 +1640,9 @@ int Result::getAllJunctionsStep6(const char *filename, Gene &g, Reference &ref) 
             }
             // cout<<"here1.2"<<endl;
             if (fjtvec2[i].isCano == 1)
-                outFile << ref.getCharName(fjtvec2[i].p3.tid) << "\t";
+                outFile << ref.getSeqName(fjtvec2[i].p3.tid) << "\t";
             else
-                outFile << ref.getCharName(g.getTid(fjtvec2[i].geneId3p)) << "\t";
+                outFile << ref.getSeqName(g.getTid(fjtvec2[i].geneId3p)) << "\t";
 
             int strand2;
             if (fjtvec2[i].isCano == 1)

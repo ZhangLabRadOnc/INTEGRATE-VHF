@@ -1404,13 +1404,7 @@ int Alignment::runBWTSplitMap2(Gene &g, int geneId, vector<char> &seq, int imgSt
 
 int Alignment::global(vector<char> &seq, int tail, int tail_pos, int tid, uint32_t left, uint32_t right, Reference &ref, uint32_t &aa, uint32_t &bb, int &miss, int &gap,
                       int &score) {
-
     // cout<<"in global"<<tid<<" "<<tail_pos<<" "<<left<<" "<<right<<endl;
-
-    uint32_t refaa = ref.to_ref_pos(tid, left);
-    uint32_t refbb = ref.to_ref_pos(tid, right);
-
-    // cout<<"in global refaabb"<<refaa<<" "<<refbb<<" "<<endl;
 
     int seqStart; // with 0
 
@@ -1422,7 +1416,7 @@ int Alignment::global(vector<char> &seq, int tail, int tail_pos, int tid, uint32
     }
 
     int i, j;
-    int length2 = refbb - refaa + 1;
+    int length2 = right - left + 1;
 
     vector<vector<int>> F;
     vector<vector<int>> bt; // horizon 0 skew 1: match skew 4:miss vertical 2
@@ -1451,6 +1445,8 @@ int Alignment::global(vector<char> &seq, int tail, int tail_pos, int tid, uint32
     for (i = 1; i <= tail; i++)
         F[i][0] = 0 - 3 * i; // gap   //cost
 
+    const char *seqRef = ref.getSeq(tid);
+
     for (i = 1; i <= tail; i++) {
         // cout<<"i="<<i<<endl;
         for (j = 1; j <= length2; j++) {
@@ -1464,7 +1460,7 @@ int Alignment::global(vector<char> &seq, int tail, int tail_pos, int tid, uint32
             if (i == tail)
                 gapbad1 = 0;
             int max;
-            if (seq[seqStart + i - 1] == ref.getRefChar(refaa - 1 + j)) // found by bk changed to 1
+            if (seq[seqStart + i - 1] == seqRef[left + j - 2]) // found by bk changed to 1
             {
                 bt[i][j] = 1;
                 good = 0 - good;
@@ -1499,7 +1495,7 @@ int Alignment::global(vector<char> &seq, int tail, int tail_pos, int tid, uint32
     ////
     // cout<<"++++++++++++"<<endl;
     // cout<<nb<<endl;
-    bb = ref.to_chr_pos(tid, refaa + nb - 1);
+    bb = left + nb - 1;
 
     score = F[na][nb];
 
@@ -1528,7 +1524,7 @@ int Alignment::global(vector<char> &seq, int tail, int tail_pos, int tid, uint32
 
     // cout<<"nb="<<nb<<endl;
     // cout<<"refaa+nb="<<refaa+nb<<endl;
-    aa = ref.to_chr_pos(tid, refaa + nb);
+    aa = left + nb;
     // cout<<"aa="<<aa<<endl;
     // found by bk
 

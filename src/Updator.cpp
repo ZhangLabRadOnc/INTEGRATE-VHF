@@ -12,7 +12,6 @@ typedef struct {
 string getJuncString(int tid, int strand, int pos, int is5p, Reference &ref, int length) {
     uint32_t left;
     uint32_t right;
-    string res = "";
 
     if (is5p == 1 && strand == 0) {
         if (pos >= length)
@@ -33,22 +32,25 @@ string getJuncString(int tid, int strand, int pos, int is5p, Reference &ref, int
             left = 1;
         right = pos;
     } else {
-        return res;
+        return string("");
     }
 
-    uint32_t aa = ref.to_ref_pos(tid, left);
-    uint32_t bb = ref.to_ref_pos(tid, right);
-
+    char *result = new char[length + 1];
+    char *seq = ref.getSeq(tid);
     if (strand == 0) {
-        for (uint32_t p = aa; p <= bb; p++) {
-            res += ref.getRefChar(p);
+        for (int i = 0; i < length; i++) {
+            result[i] = seq[left + i - 1];
         }
     } else {
-        for (uint32_t p = bb; p >= aa; p--) {
-            res += getCharComp(ref.getRefChar(p));
+        for (int i = 0; i < length; i++) {
+            result[i] = getCharComp(seq[right - i - 1]);
         }
     }
-    return res;
+    result[length] = '\0';
+    string resultStr(result);
+    delete[] result;
+
+    return resultStr;
 }
 
 int getPosPairs(int tid5p, int tid3p, int strand5p, int strand3p, uint32_t pos5p, uint32_t pos3p, Reference &ref, int diff, vector<pos_pair_t> &posPairs) {

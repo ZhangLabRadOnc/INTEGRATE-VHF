@@ -104,8 +104,6 @@ int HitsCounter::allocate(int size) {
 }
 
 int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
-
-    // cout<<"in get ChromeBWTS"<<endl;
     struct stat sb;
     if (stat(directory, &sb) == 0 && S_ISDIR(sb.st_mode)) {
         //  cout<<"directoy exist.OK!"<<endl;
@@ -114,73 +112,32 @@ int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
         exit(0);
     }
 
-    // cout<<directory<<endl;
-    int size = ref.getListSize();
+    int size = ref.getSeqCount();
     char fileDirectory[1024];
     fileDirectory[0] = '\0';
     strcat(fileDirectory, directory);
     if (fileDirectory[strlen(fileDirectory) - 1] != '/')
         strcat(fileDirectory, "/");
 
-    // cout<<fileDirectory<<endl;
-
     for (int i = 0; i < size; i++) {
-        uint32_t ll = ref.getPosLeft(i);
-        uint32_t rr = ref.getPosRight(i);
+        uint32_t length = ref.getSeqLength(i);
 
-        if (rr - ll + 1 > MIN_BWT_LEN) {
-
-            // float t=clock();
-            //	ref.getCharName(i);
-            cout << "Building BWT and rBWT for " << ref.getCharName(i) << "..." << endl;
+        if (length > MIN_BWT_LEN) {
+            cout << "Building BWT and rBWT for " << ref.getSeqName(i) << "..." << endl;
             float t = clock();
             char fileName[1024];
             fileName[0] = '\0';
             strcat(fileName, fileDirectory);
-
-            // cout<<"fileName="<<fileName<<endl;
-
-            strcat(fileName, ref.getCharName(i).c_str());
-
-            // cout<<"fileName="<<fileName<<endl;
+            strcat(fileName, ref.getSeqName(i).c_str());
 
             char fileUse1[1024];
             fileUse1[0] = '\0';
             strcat(fileUse1, fileName);
-
-            uint32_t length = rr - ll + 1;
-            char *tmp = new char[length + 2];
             strcat(fileUse1, ".bwt");
-            // float t=clock();
 
-            // int isInt=ref.getIsInt();
-
-            // if(isInt==1)
-            //{
-            for (uint32_t i = 0; i < length; i++) {
-                tmp[i] = ref.getRefChar(ll + i);
-            }
-            //}
-            // else
-            //{
-            //	ref.getBlock(ll,rr,tmp);
-            //	for(uint32_t a=0;a<rr-ll+1;a++)
-            //	{
-
-            //	}
-            //}
-
-            tmp[length] = '$';
-            tmp[length + 1] = '\0';
-            // cout<<"get tmp"<<endl;
-            // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
-            // t=clock();
-
+            char *tmp = ref.getSeq(i);
             getOne(tmp, length, fileUse1);
 
-            // cout<<"get one"<<endl;
-            // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
-            // t=clock();
             char fileUse2[1024];
             fileUse2[0] = '\0';
             strcat(fileUse2, fileName);
@@ -191,23 +148,15 @@ int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
 
             uint32_t x = 0;
             for (int j = length - 1; j >= 0; j--) {
-                // uint32_t refPos=ll+j;
-                // rtmp[x++]=getCharComp(ref.getRefChar(refPos));
                 rtmp[x++] = getCharComp(tmp[j]);
             }
 
             rtmp[length] = '$';
             rtmp[length + 1] = '\0';
 
-            // cout<<"get rtmp"<<endl;
-            // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
-            // t=clock();
-
             getOne(rtmp, length, fileUse2);
-            // cout<<"get one"<<endl;
             cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
-            delete[] tmp;
             delete[] rtmp;
         }
     }
@@ -215,7 +164,7 @@ int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
     return 0;
 }
 
-int HitsCounter::getOne(char *refseq, uint32_t length, const char *fileName) {
+int HitsCounter::getOne(char *seqRef, uint32_t length, const char *fileName) {
 
     //	cout<<"in getOne "<<fileName<<endl;
 
@@ -223,15 +172,15 @@ int HitsCounter::getOne(char *refseq, uint32_t length, const char *fileName) {
     BWT bwt;
 
     // float t=clock();
-    sfa.builtArray(refseq, length + 1);
+    sfa.builtArray(seqRef, length + 1);
     // cout<<"array"<<endl;
     // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
     // t=clock();
-    bwt.create(refseq, length + 1, &sfa);
+    bwt.create(seqRef, length + 1, &sfa);
     // cout<<"bwt"<<endl;
     // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
     // t=clock();
-    bwt.getOccAndOB(refseq, length + 1);
+    bwt.getOccAndOB(seqRef, length + 1);
     // cout<<"occ ob"<<endl;
     // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
     // t=clock();
@@ -243,7 +192,7 @@ int HitsCounter::getOne(char *refseq, uint32_t length, const char *fileName) {
 
 int HitsCounter::loadChromBWTs(Reference &ref, const char *directory) {
 
-    int size = ref.getListSize();
+    int size = ref.getSeqCount();
     char fileDirectory[1024];
     fileDirectory[0] = '\0';
     strcat(fileDirectory, directory);
@@ -253,10 +202,7 @@ int HitsCounter::loadChromBWTs(Reference &ref, const char *directory) {
     int sizeBWTs = 0;
 
     for (int i = 0; i < size; i++) {
-        uint32_t ll = ref.getPosLeft(i);
-        uint32_t rr = ref.getPosRight(i);
-
-        if (rr - ll + 1 > MIN_BWT_LEN) {
+        if (ref.getSeqLength(i) > MIN_BWT_LEN) {
             sizeBWTs++;
         }
     }
@@ -267,15 +213,12 @@ int HitsCounter::loadChromBWTs(Reference &ref, const char *directory) {
     int id = 0;
 
     for (int i = 0; i < size; i++) {
-        uint32_t ll = ref.getPosLeft(i);
-        uint32_t rr = ref.getPosRight(i);
-
-        if (rr - ll + 1 > MIN_BWT_LEN) {
-            ref.getCharName(i);
+        if (ref.getSeqLength(i) > MIN_BWT_LEN) {
+            ref.getSeqName(i);
             char fileName[1024];
             fileName[0] = '\0';
             strcat(fileName, fileDirectory);
-            strcat(fileName, ref.getCharName(i).c_str());
+            strcat(fileName, ref.getSeqName(i).c_str());
 
             char fileUse1[1024];
             fileUse1[0] = '\0';

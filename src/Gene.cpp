@@ -414,22 +414,18 @@ int Gene::buildOneSuffix(int geneId, int isForward, Reference &ref) {
 
     // cout<<"Length,with $="<<length+1<<endl;
 
+    const char *seqRef = ref.getSeq(genes[geneId].tid);
+
     if (isForward == 1) {
-        for (int j = 0; j < length; j++) {
-            uint32_t refPos = ref.to_ref_pos(genes[geneId].tid, genes[geneId].leftLimit + j);
-            tmp[j] = ref.getRefChar(refPos);
-        }
-        tmp[length] = '$';
-        tmp[length + 1] = '\0';
+        copy(seqRef + genes[geneId].leftLimit - 1, seqRef + genes[geneId].rightLimit, tmp);
     } else {
         int x = 0;
         for (int j = length - 1; j >= 0; j--) {
-            uint32_t refPos = ref.to_ref_pos(genes[geneId].tid, genes[geneId].leftLimit + j);
-            tmp[x++] = getCharComp(ref.getRefChar(refPos));
+            tmp[x++] = getCharComp(seqRef[genes[geneId].leftLimit + j - 1]);
         }
-        tmp[length] = '$';
-        tmp[length + 1] = '\0';
     }
+    tmp[length] = '$';
+    tmp[length + 1] = '\0';
 
     // cout<<tmp[0]<<tmp[1]<<tmp[2]<<tmp[3]<<tmp[4]<<"<-->"<<tmp[length-4]<<tmp[length-3]<<tmp[length-2]<<tmp[length-1]<<tmp[length]<<endl;
 

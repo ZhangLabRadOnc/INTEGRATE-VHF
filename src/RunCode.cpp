@@ -113,10 +113,7 @@ int RunCode::runBuildBWTs(int argc, const char *argv[]) {
 
     float t = clock();
     cout << "Load ref" << endl;
-    Reference ref;
-    ref.setIsInt(0);
-    // ref.setIsInt(1);
-    ref.test(argv[opStart]);
+    Reference ref(argv[opStart]);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
     t = clock();
@@ -675,9 +672,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
 
     float t = clock();
     cout << "Loading reference..." << endl;
-    Reference ref;
-    ref.setIsInt(0);
-    ref.test(argv[opStart]);
+    Reference ref(argv[opStart]);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
     TidHandler th;

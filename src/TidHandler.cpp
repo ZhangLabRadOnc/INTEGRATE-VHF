@@ -17,9 +17,9 @@ TidHandler::~TidHandler() {
 
 int TidHandler::setRefTid(Reference &ref) {
 
-    int listSize = ref.getListSize();
+    int listSize = ref.getSeqCount();
     for (int i = 0; i < listSize; i++) {
-        string chrname = ref.getCharName(i);
+        string chrname = ref.getSeqName(i);
         chrName2Tid.insert(pair<string, int>(chrname, i));
         Tid2ChrName.insert(pair<int, string>(i, chrname));
     }

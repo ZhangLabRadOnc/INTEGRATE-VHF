@@ -6,7 +6,7 @@ ENV TZ=UTC DEBIAN_FRONTEND=noninteractive
 RUN \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        llvm clang lld libomp-dev make cmake ninja-build pkgconf \
+        llvm clang lld libomp-dev cmake ninja-build pkgconf \
         libhts-dev libdivsufsort-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

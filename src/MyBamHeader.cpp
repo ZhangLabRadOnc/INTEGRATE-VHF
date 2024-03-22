@@ -157,6 +157,7 @@ int getMeanStd(vector<int> numbers, int &mean, int &std) {
     }
 
     std = sqrt(sumSquare);
+
     return 0;
 }
 
@@ -196,7 +197,9 @@ bool testInsertStd(const char *fileName, string testRG, int &insert, int &std) {
     }
 
     getMeanStd(inserts, insert, std);
+
     bam_destroy1(b);
+    sam_hdr_destroy(h);
     sam_close(f);
     
     return inserts.size() > 0;
@@ -232,7 +235,9 @@ bool testInsertStdAll(const char *fileName, int &insert, int &std) {
     }
 
     getMeanStd(inserts, insert, std);
+
     bam_destroy1(b);
+    sam_hdr_destroy(h);
     sam_close(f);
 
     return inserts.size() > 0;

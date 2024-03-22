@@ -8,16 +8,32 @@
 #include "Gene.h"
 
 Gene::Gene() {
-    // TODO Auto-generated constructor stub
     bwts = nullptr;
+    rbwts = nullptr;
 }
 
-Gene::~Gene() {
-    // TODO Auto-generated destructor stub
+Gene::~Gene()
+{
     if (bwts != nullptr)
+    {
         delete[] bwts;
+    }
     if (rbwts != nullptr)
+    {
         delete[] rbwts;
+    }
+    for (int i = 0; i < transcripts.size(); i++)
+    {
+        if (transcripts[i].exonStarts != nullptr)
+        {
+            delete[] transcripts[i].exonStarts;
+        }
+        if (transcripts[i].exonEnds != nullptr)
+        {
+            delete[] transcripts[i].exonEnds;
+        }
+    }
+    transcripts.clear();
 }
 
 bool myGeneSortFunc(gene_t i, gene_t j) {

@@ -46,18 +46,3 @@ void closeFileForRead(const char* p, const int fd, const size_t length)
     munmap((void*)p, length);
     close(fd);
 }
-
-/*
- * Read a block of chars from file till a \n of file
- * return the actual length;
- *
- */
-int readBlock(char *block, int length, FILE *infile) {
-    fread(block, 1, length, infile);
-    if (block[length - 1] != '\n' && block[length - 1] != EOF) {
-        fgets(block + length, 1024, infile);
-        length += strlen(block + length);
-    }
-
-    return length;
-}

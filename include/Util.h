@@ -19,8 +19,6 @@ const char* openFileForRead(string fileName, int &fd, size_t &length);
 
 void closeFileForRead(const char* p, const int fd, const size_t length);
 
-int readBlock(char *block, int length, FILE *infile);
-
 inline char getCharComp(char reada) {
     switch (reada) {
         case 'A':

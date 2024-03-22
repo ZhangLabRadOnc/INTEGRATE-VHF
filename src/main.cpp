@@ -14,9 +14,6 @@ using namespace std;
 
 #include "RunCode.h"
 
-map<int, char> intChar;
-map<char, char> charChar;
-map<string, char> tableAmino;
 locale loc2;
 const collate<char> &coll2 = use_facet<collate<char>>(loc2);
 int HASHSIZE = 10000000;
@@ -38,7 +35,6 @@ int usage() {
 }
 
 int main(int argc, const char *argv[]) {
-
     cout << PROJECT_NAME << " version " << VERSION_FULL << endl;
 
     RunCode runcode;

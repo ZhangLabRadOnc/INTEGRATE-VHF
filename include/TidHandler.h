@@ -13,11 +13,7 @@
 
 #pragma once
 
-#include <cstring>
-#include <iostream>
-#include <iterator>
 #include <map>
-#include <string>
 
 using namespace std;
 
@@ -28,16 +24,13 @@ class TidHandler {
 
   private:
     Reference *ref;
-    map<string, int> chrName2Tid;
-    map<int, string> Tid2ChrName;
-
     map<int, int> DNA2Ref;
     map<int, int> Ref2DNA;
     map<int, int> RNA2Ref;
     map<int, int> Ref2RNA;
 
   public:
-    TidHandler(Reference &ref);
+    TidHandler(Reference *ref);
     virtual ~TidHandler();
 
     int setRNAAndRef(MyBamHeader &rnabh);

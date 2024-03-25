@@ -675,7 +675,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     Reference ref(argv[opStart]);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
-    TidHandler th(ref);
+    TidHandler th(&ref);
 
     Gene g;
 

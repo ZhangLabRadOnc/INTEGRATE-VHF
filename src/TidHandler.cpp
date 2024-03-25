@@ -5,16 +5,11 @@
  *      Author: jinzhang
  */
 
+#include "MyBamHeader.h"
 #include "TidHandler.h"
 
-TidHandler::TidHandler(Reference &ref) {
-    this->ref = &ref;
-    int seqCount = ref.getSeqCount();
-    for (int i = 0; i < seqCount; i++) {
-        string chrname = ref.getSeqName(i);
-        chrName2Tid.insert(pair<string, int>(chrname, i));
-        Tid2ChrName.insert(pair<int, string>(i, chrname));
-    }
+TidHandler::TidHandler(Reference *ref) {
+    this->ref = ref;
 }
 
 TidHandler::~TidHandler() {
@@ -22,7 +17,6 @@ TidHandler::~TidHandler() {
 }
 
 int TidHandler::setRNAAndRef(MyBamHeader &rnabh) {
-
     for (int i = 0; i < rnabh.getNumTids(); i++) {
         int tid = ref->getSeqId(rnabh.getChrName(i));
         RNA2Ref.insert(pair<int, int>(i, tid));
@@ -37,7 +31,6 @@ int TidHandler::getRNAFromRef(int tid) {
         return -1;
     else
         return it->second;
-    // return Ref2RNA[tid];
 }
 
 int TidHandler::getRefFromRNA(int rnaTid) {
@@ -49,13 +42,10 @@ int TidHandler::getRefFromRNA(int rnaTid) {
 }
 
 int TidHandler::setDNAAndRef(MyBamHeader &dnabh) {
-
     for (int i = 0; i < dnabh.getNumTids(); i++) {
         int tid = ref->getSeqId(dnabh.getChrName(i));
         DNA2Ref.insert(pair<int, int>(i, tid));
         Ref2DNA.insert(pair<int, int>(tid, i));
-
-        // cout<<chrname<<" "<<tid<<" "<<i<<endl;
     }
     return 0;
 }
@@ -66,7 +56,6 @@ int TidHandler::getDNAFromRef(int tid) {
         return -1;
     else
         return it->second;
-    // return Ref2RNA[tid];
 }
 
 int TidHandler::getRefFromDNA(int dnaTid) {

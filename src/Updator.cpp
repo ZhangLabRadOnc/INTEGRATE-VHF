@@ -36,14 +36,14 @@ string getJuncString(int tid, int strand, int pos, int is5p, Reference &ref, int
     }
 
     char *result = new char[length + 1];
-    char *seq = ref.getSeq(tid);
+    const char *seqRef = ref.getSeq(tid);
     if (strand == 0) {
         for (int i = 0; i < length; i++) {
-            result[i] = seq[left + i - 1];
+            result[i] = seqRef[left + i - 1];
         }
     } else {
         for (int i = 0; i < length; i++) {
-            result[i] = getCharComp(seq[right - i - 1]);
+            result[i] = getCharComp(seqRef[right - i - 1]);
         }
     }
     result[length] = '\0';

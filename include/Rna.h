@@ -75,6 +75,8 @@ class Rna {
     encompass_rna_t getEnRna(int index) { return enrna[index]; };
 
     int getGraph(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
+    int getGraph_second(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
+    int getGraph_second_read_normal(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
 
     int cbEncompassRcs(Gene &g);
     int combineOne(Gene &g, int gid1, int gid2, MyHash &mhh);

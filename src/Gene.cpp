@@ -5,35 +5,37 @@
  *      Author: jinzhang
  */
 
+#include "VirusLoader.h"
 #include "Gene.h"
 
 Gene::Gene() {
-    bwts = nullptr;
-    rbwts = nullptr;
+    this->bwts = nullptr;
+    this->rbwts = nullptr;
 }
 
 Gene::~Gene()
 {
-    if (bwts != nullptr)
+    if (this->bwts != nullptr)
     {
-        delete[] bwts;
+        delete[] this->bwts;
     }
-    if (rbwts != nullptr)
+    if (this->rbwts != nullptr)
     {
-        delete[] rbwts;
+        delete[] this->rbwts;
     }
-    for (int i = 0; i < transcripts.size(); i++)
+    for (int i = 0; i < this->transcripts.size(); i++)
     {
-        if (transcripts[i].exonStarts != nullptr)
+        if (this->transcripts[i].exonStarts != nullptr)
         {
-            delete[] transcripts[i].exonStarts;
+            delete[] this->transcripts[i].exonStarts;
         }
-        if (transcripts[i].exonEnds != nullptr)
+        if (this->transcripts[i].exonEnds != nullptr)
         {
-            delete[] transcripts[i].exonEnds;
+            delete[] this->transcripts[i].exonEnds;
         }
     }
-    transcripts.clear();
+    this->transcripts.clear();
+    this->viruses.clear();
 }
 
 bool myGeneSortFunc(gene_t i, gene_t j) {
@@ -66,9 +68,10 @@ bool myTransSortFunc(transcript_t i, transcript_t j) {
         return false;
 }
 
-int Gene::loadGenesFromFile(const char *fileName, Reference &ref) {
+int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::VirusNamePair> *namePairs, Reference &ref) {
     int fd;
     size_t fileLen;
+    int count = 0;
     // Start pointer of the file (inclusive)
     const char *pfs = openFileForRead(fileName, fd, fileLen);
     // End pointer of the file (exclusive)
@@ -99,13 +102,37 @@ int Gene::loadGenesFromFile(const char *fileName, Reference &ref) {
             line[lineLen] = '\0';
 
             transcript_t tt;
-            const char* delimiters = " \t";
-            char* token = strtok(line, delimiters);
+            const char *delimiters = " \t";
+            char *token = strtok(line, delimiters);
             tt.name = string(token);
             token = strtok(nullptr, delimiters);
-            tt.tid = ref.getSeqId(string(token));
+            tt.chrName = string(token);
+            tt.tid = -1;
+            if (namePairs != nullptr)
+            {
+                for (const auto &pair : *namePairs)
+                {
+                    if (pair.originalName.compare(tt.chrName) == 0)
+                    {
+                        tt.chrName = pair.mappedName;
+                        break;
+                    }
+                }
+            } else {
+                if (tt.chrName.starts_with("chr"))
+                {
+                    tt.chrName = tt.chrName.substr(3);
+                }
+                if (tt.chrName.compare("MT") == 0)
+                {
+                    tt.chrName = "M";
+                }
+            }
+            tt.tid = ref.getSeqId(tt.chrName);
             if (tt.tid < 0)
             {
+                delete[] line;
+                pls = ple + strcspn(ple, "\n") + 1;
                 continue;
             }
             token = strtok(nullptr, delimiters);
@@ -168,6 +195,7 @@ int Gene::loadGenesFromFile(const char *fileName, Reference &ref) {
             if (!(tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd))))
             {
                 transcripts.push_back(tt);
+                count++;
             }
         }
         pls = ple + strcspn(ple, "\n") + 1;
@@ -175,9 +203,18 @@ int Gene::loadGenesFromFile(const char *fileName, Reference &ref) {
     closeFileForRead(pfs, fd, fileLen);
 
     sort(transcripts.begin(), transcripts.end(), myTransSortFunc);
-    cout << transcripts.size() << " transcripts loaded." << endl;
+    cout << count << " transcripts loaded from file: " << fileName << endl;
 
     return 0;
+}
+
+void Gene::readVirusLoader(const VirusLoader &virusLoader, Reference &ref) {
+    for (const auto &v : virusLoader.selAnnotMap) {
+        loadGenesFromFile(v.first.c_str(), &v.second, ref);
+        for (const auto &p : v.second) {
+            viruses.push_back(p.mappedName);
+        }
+    }
 }
 
 int Gene::setGene() {
@@ -189,6 +226,7 @@ int Gene::setGene() {
     } else {
         gene_t gt;
         gt.name2 = transcripts[0].name2;
+        gt.chrName = transcripts[0].chrName;
         gt.strand = transcripts[0].strand;
         gt.transIds.push_back(0);
         gt.leftLimit = transcripts[0].txStart;
@@ -202,6 +240,7 @@ int Gene::setGene() {
         if (transcripts[i].name2.compare(transcripts[i - 1].name2) != 0) {
             gene_t gt;
             gt.name2 = transcripts[i].name2;
+            gt.chrName = transcripts[i].chrName;
             gt.strand = transcripts[i].strand;
             gt.transIds.push_back(i);
             gt.leftLimit = transcripts[i].txStart;
@@ -214,6 +253,7 @@ int Gene::setGene() {
             if (transcripts[i].tid != transcripts[i - 1].tid) {
                 gene_t gt;
                 gt.name2 = transcripts[i].name2;
+                gt.chrName = transcripts[i].chrName;
                 gt.strand = transcripts[i].strand;
                 gt.transIds.push_back(i);
                 gt.leftLimit = transcripts[i].txStart;
@@ -231,6 +271,7 @@ int Gene::setGene() {
                 if (transcripts[i].txStart > genes[genes.size() - 1].rightLimit) {
                     gene_t gt;
                     gt.name2 = transcripts[i].name2;
+                    gt.chrName = transcripts[i].chrName;
                     gt.strand = transcripts[i].strand;
                     gt.transIds.push_back(i);
                     gt.leftLimit = transcripts[i].txStart;
@@ -301,8 +342,21 @@ int Gene::isPairPossibleFusion(int id1, int id2, int strand1, int strand2) {
     // if(genes[id1].fakeId !=-1 && genes[id1].fakeId==genes[id2].fakeId)
     //	return 0;
 
-    if (genes[id1].name2.compare(genes[id2].name2) == 0)
+    if (genes[id1].name2.compare(genes[id2].name2) == 0) {
         return 0;
+    }
+
+    bool found = false;
+    for (auto &v : viruses) {
+        if (v.compare(genes[id1].chrName) == 0 || v.compare(genes[id2].chrName) == 0) {
+            found = true;
+            break;
+        }
+    }
+    if (!found)
+    {
+        return 0;
+    }
 
     int gStrand1 = genes[id1].strand;
     int gStrand2 = genes[id2].strand;

@@ -33,7 +33,7 @@ BWT::BWT() {
     // mf2.create();
 }
 
-int BWT::create(char *seq, int len, SuffixArray2 *array) {
+int BWT::create(const char *seq, int len, SuffixArray2 *array) {
     // cout<<"in create"<<endl;
     length = len;
     bwt = new char[length + 1];
@@ -63,7 +63,7 @@ int BWT::create(char *seq, int len, SuffixArray2 *array) {
     return 0;
 }
 
-int BWT::getOccAndOB(char *seq, int len) {
+int BWT::getOccAndOB(const char *seq, int len) {
 
     int d = 0;
     int a = 0;

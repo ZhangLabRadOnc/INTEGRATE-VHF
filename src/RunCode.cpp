@@ -331,6 +331,51 @@ int getOptForFusion(int argc, const char *argv[], options_t &opt, int &opStart) 
             }
         }
 
+        if (tmp.compare("-virusIndex") == 0) {
+            if (i + 1 < argc) {
+                opt.fileVirus = argv[i + 1];
+
+                if (i + 2 < argc && i + 2 > opStart)
+                    opStart = i + 2;
+                else {
+                    usageFusion();
+                }
+            } else {
+                cout << "Please give a file name after -virusIndex" << endl;
+                exit(1);
+            }
+        }
+
+        if (tmp.starts_with("-virusType")) {
+            if (i + 1 < argc) {
+                size_t idx = tmp.find(':');
+                if (idx == string::npos) {
+                    cout << "Please give a virus result type and a file path" << endl;
+                    exit(1);
+                }
+                string virus = tmp.substr(idx + 1);
+                string value = argv[i + 1];
+                if (value.empty()) {
+                    cout << "Please give a file path for virus type" << endl;
+                    exit(1);
+                }
+                if (opt.virusTypes.find(virus) != opt.virusTypes.end()) {
+                    cout << "Duplicate virus result type found: " << virus << endl;
+                    continue;
+                }
+                opt.virusTypes[virus] = value;
+
+                if (i + 2 < argc && i + 2 > opStart)
+                    opStart = i + 2;
+                else {
+                    usageFusion();
+                }
+            } else {
+                cout << "Please give a virus result type and a file path after -virusType" << endl;
+                exit(1);
+            }
+        }
+
         if (tmp.compare("-reads") == 0) {
             if (i + 1 < argc) {
                 // need some code; formal expression
@@ -593,6 +638,8 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
         usageFusion();
     }
 
+    opt.fileVirus = nullptr;
+
     if (opt.isRunningNormal == 1) {
         opt.fileRead = "reads_normal.tsv";
         opt.fileSum = "summary_normal.tsv";
@@ -602,7 +649,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
         opt.bkFileVCF = "bk_sv_normal.vcf";
         opt.fileJunction = "junctions_normal.bedpe";
         opt.filePeptide = "peptides_normal.bedpe";
-        opt.fileSmcRna = "fusions_normal..bedpe";
+        opt.fileSmcRna = "fusions_normal.bedpe";
         opt.sample_name = "sample_normal";
     } else {
         opt.fileRead = "reads.txt";
@@ -671,9 +718,18 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     mf2.create();
 
     float t = clock();
-    cout << "Loading reference..." << endl;
+    cout << "Loading reference from: " << argv[opStart] << endl;
     Reference ref(argv[opStart]);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+
+    VirusLoader *vl = nullptr;
+    if (opt.fileVirus != nullptr) {
+        float t = clock();
+        cout << "Loading virus..." << endl;
+        vl = new VirusLoader(opt.fileVirus, opt.virusTypes);
+        ref.readVirusLoader(*vl);
+        cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+    }
 
     TidHandler th(&ref);
 
@@ -681,7 +737,12 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
 
     t = clock();
     cout << "Loading genes..." << endl;
-    g.loadGenesFromFile(argv[opStart + 1], ref);
+    g.loadGenesFromFile(argv[opStart + 1], nullptr, ref);
+    if (vl != nullptr && !opt.virusTypes.empty()) {
+        g.readVirusLoader(*vl, ref);
+        delete vl;
+        vl = nullptr;
+    }
     g.setGene();
     g.allocate();
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
@@ -703,6 +764,8 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     cout << "\nGetting graph by encompassing RNA reads..." << endl;
     Rna rna;
     rna.getGraph(argv[opStart + 3], th, g, hc);
+    rna.getGraph_second(argv[opStart+3],th, g, hc);
+    rna.getGraph_second_read_normal(argv[opStart+3],th, g, hc);
     // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
 
     // t=clock();

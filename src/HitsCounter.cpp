@@ -123,19 +123,19 @@ int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
         uint32_t length = ref.getSeqLength(i);
 
         if (length > MIN_BWT_LEN) {
-            cout << "Building BWT and rBWT for " << ref.getSeqName(i) << "..." << endl;
+            cout << "Building BWT and rBWT for " << ref.getSeqMappedName(i) << "..." << endl;
             float t = clock();
             char fileName[1024];
             fileName[0] = '\0';
             strcat(fileName, fileDirectory);
-            strcat(fileName, ref.getSeqName(i).c_str());
+            strcat(fileName, ref.getSeqMappedName(i).c_str());
 
             char fileUse1[1024];
             fileUse1[0] = '\0';
             strcat(fileUse1, fileName);
             strcat(fileUse1, ".bwt");
 
-            char *tmp = ref.getSeq(i);
+            const char *tmp = ref.getSeq(i);
             getOne(tmp, length, fileUse1);
 
             char fileUse2[1024];
@@ -164,7 +164,7 @@ int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
     return 0;
 }
 
-int HitsCounter::getOne(char *seqRef, uint32_t length, const char *fileName) {
+int HitsCounter::getOne(const char *seqRef, uint32_t length, const char *fileName) {
 
     //	cout<<"in getOne "<<fileName<<endl;
 
@@ -214,26 +214,8 @@ int HitsCounter::loadChromBWTs(Reference &ref, const char *directory) {
 
     for (int i = 0; i < size; i++) {
         if (ref.getSeqLength(i) > MIN_BWT_LEN) {
-            ref.getSeqName(i);
-            char fileName[1024];
-            fileName[0] = '\0';
-            strcat(fileName, fileDirectory);
-            strcat(fileName, ref.getSeqName(i).c_str());
-
-            char fileUse1[1024];
-            fileUse1[0] = '\0';
-            strcat(fileUse1, fileName);
-
-            strcat(fileUse1, ".bwt");
-
-            loadOne(&bwts[id], fileUse1);
-
-            char fileUse2[1024];
-            fileUse2[0] = '\0';
-            strcat(fileUse2, fileName);
-
-            strcat(fileUse2, ".rbwt");
-            loadOne(&rbwts[id], fileUse2);
+            loadOne(&bwts[id], (fileDirectory + ref.getSeqOriginalName(i) + ".bwt").c_str());
+            loadOne(&rbwts[id], (fileDirectory + ref.getSeqOriginalName(i) + ".rbwt").c_str());
 
             id++;
         }

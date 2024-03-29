@@ -8,72 +8,109 @@
 
 #include <cstring>
 #include <htslib/faidx.h>
-#include <map>
+#include <iostream>
 #include <string>
+#include <unordered_map>
+#include "VirusLoader.h"
 #include "Reference.h"
 
+using namespace std;
+
 Reference::Reference(string filePath) {
-    this->filePath = filePath;
-    this->f = fai_load(this->filePath.c_str());
-    this->seqCount = faidx_nseq(f);
-    for (int i = 0; i < this->seqCount; i++) {
-        const char *name = faidx_iseq(this->f, i);
-        if (strstr(name, "chr") == name) {
-            name += 3;
+    faidx_t *f = fai_load(filePath.c_str());
+    this->faSet.insert(f);
+    int n = faidx_nseq(f);
+    
+    for (int i = 0; i < n; i++) {
+        string name = string(faidx_iseq(f, i));
+        if (name.starts_with("chr")) {
+            name = name.substr(3);
         }
-        names.push_back(name);
+        if (name.compare("MT") == 0){
+            name = "M";
+        }
+        bool found = false;
+        for (auto &c : CHRS) {
+            if (c.compare(name) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            continue;
+        }
+        RefItem refItem = RefItem(name, name, f);
+        this->nameMappedToId[name] = this->refItems.size();
+        this->refItems[this->refItems.size()] = refItem;
+        cout << name << endl;
+        this->seqCount++;
     }
 }
 
 Reference::~Reference() {
-    if (this->f != nullptr) {
-        fai_destroy(this->f);
-        this->f = nullptr;
-    }
-    for (auto it = this->sequences.begin(); it != this->sequences.end(); it++) {
+    for (auto it = this->seqs.begin(); it != this->seqs.end(); it++) {
         free(it->second);
     }
-    this->sequences.clear();
-    this->names.clear();
+    this->seqs.clear();
+    this->nameMappedToId.clear();
+    this->refItems.clear();
+    for (auto it = this->faSet.begin(); it != this->faSet.end(); it++) {
+        if (*it != nullptr) {
+            fai_destroy(*it);
+        }
+    }
+    this->faSet.clear();
 }
 
-string Reference::getSeqName(int id) {
+string Reference::getSeqMappedName(int id) {
     if (id < 0 || id >= this->seqCount) {
         return "";
     }
 
-    return names[id];
+    return this->refItems[id].mappedName;
 }
 
-int Reference::getSeqId(string name) {
-    int idx = 0;
-    for (const auto &i : names) {
-        if (name.compare(i) == 0) {
-            return idx;
-        }
-        idx++;
+string Reference::getSeqOriginalName(int id) {
+    if (id < 0 || id >= this->seqCount) {
+        return "";
     }
 
-    return -1;
+    return this->refItems[id].originalName;
+}
+
+int Reference::getSeqId(const string &name) {
+    if (this->nameMappedToId.find(name) == this->nameMappedToId.end()) {
+        if (this->nameOriginalToId.find(name) != this->nameOriginalToId.end()) {
+            return this->nameOriginalToId[name];
+        }
+        return -1;
+    }
+    return this->nameMappedToId[name];
 }
 
 int Reference::getSeqLength(int id) {
-    return faidx_seq_len(this->f, faidx_iseq(f, id));
+    if (id < 0 || id >= this->seqCount) {
+        cerr << "Invalid seq id: " << id << endl;
+        return -1;
+    }
+    RefItem item = this->refItems[id];
+    return faidx_seq_len(item.f, item.originalName.c_str());
 }
 
 int Reference::getSeqCount() {
     return this->seqCount;
 }
 
-char *Reference::getSeq(int id) {
-    int seqLen = faidx_seq_len(this->f, faidx_iseq(f, id));
+const char *Reference::getSeq(int id) {
+    RefItem item = this->refItems[id];
+    int seqLen = faidx_seq_len(item.f, item.originalName.c_str());
     int fetched;
     char *result;
-    auto it = this->sequences.find(id);
-    if (it !=  this->sequences.end()) {
+    auto it = this->seqs.find(id);
+    if (it != this->seqs.end()) {
         result = it->second;
     } else {
-        result = faidx_fetch_seq(f, faidx_iseq(f, id), 0, seqLen - 1, &fetched);
+        result = faidx_fetch_seq(item.f, item.originalName.c_str(), 0, seqLen - 1, &fetched);
         for (int i = 0; i < fetched; i++) {
             if (result[i] != 'A' && result[i] != 'T' && result[i] != 'C' && result[i] != 'G' && result[i] != 'N') {
                 result[i] = 'N';
@@ -82,7 +119,21 @@ char *Reference::getSeq(int id) {
         result = (char *)realloc(result, fetched + 2);
         result[fetched] = '$';
         result[fetched + 1] = '\0';
-        this->sequences[id] = result;
+        this->seqs[id] = result;
     }
     return result;
+}
+
+void Reference::readVirusLoader(const VirusLoader &virusLoader) {
+    for (const auto &v : virusLoader.selRefMap) {
+        string filePath = v.first;
+        faidx_t *f = fai_load(filePath.c_str());
+        this->faSet.insert(f);
+        for (const auto &n : v.second) {
+            RefItem refItem = RefItem(n.originalName, n.mappedName, f);
+            this->nameMappedToId[n.mappedName] = this->refItems.size();
+            this->refItems[this->refItems.size()] = refItem;
+        }
+        this->seqCount++;
+    }
 }

@@ -19,7 +19,7 @@ class SuffixArray2 {
 
   public:
     SuffixArray2();
-    int builtArray(char *tmp, uint32_t length);
+    int builtArray(const char *tmp, uint32_t length);
     int getSA(int i);
     virtual ~SuffixArray2();
 };

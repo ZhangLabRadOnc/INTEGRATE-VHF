@@ -145,7 +145,7 @@ SuffixArray2::SuffixArray2() {
     array = nullptr;
 }
 
-int SuffixArray2::builtArray(char *tmp, uint32_t length) {
+int SuffixArray2::builtArray(const char *tmp, uint32_t length) {
     /*
         int* s = new int[length+3];
         for(uint32_t i=0;i<length;i++)

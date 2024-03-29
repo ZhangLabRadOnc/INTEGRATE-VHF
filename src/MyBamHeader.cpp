@@ -279,23 +279,15 @@ int MyBamHeader::getPI(char *rgp) { return rg[string(rgp)]; }
 int MyBamHeader::getStd(char *rgp) { return std[string(rgp)]; }
 
 string MyBamHeader::getChrName(int tid) {
-    // string name=string(this->h->target_name[tid]);
-
-    /*
-        if (name[0]=='C' && name[0]=='h' && name[0]=='r') {
-        return name.substr(3,name.length()-3);
+    string name = string(h->target_name[tid]);
+    if (name.starts_with("chr")) {
+        name = name.substr(3);
     }
-        return name;
-*/
-
-    string name = string(this->h->target_name[tid]);
-
-    if (name[0] == 'c' && name[1] == 'h' && name[2] == 'r') {
-        return name.substr(3, name.length() - 3);
+    if (name.compare("MT") == 0) {
+        name = "M";
     }
-    return name;
 
-    //	return string(this->h->target_name[tid]);
+    return string(name);
 }
 
 /*

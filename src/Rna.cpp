@@ -77,8 +77,8 @@ int Rna::getGraph(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
         if ((sam_read1(f, h, b)) < 0)
             break;
         else {
-            int isMap = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
-            int isMMap = (b->core.flag & BAM_FMUNMAP) ? 0 : 1;
+            bool isMap = !(b->core.flag & BAM_FUNMAP);
+            bool isMMap = !(b->core.flag & BAM_FMUNMAP);
             // cout<<isMap<<" "<<isMap<<endl;
             if (isMap && isMMap) {
                 int tid = b->core.tid;
@@ -212,6 +212,336 @@ int Rna::getGraph(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
 
     return 0;
 }
+
+//HPV
+
+vector<encompass_rna_t> secondary_ets;
+std::multimap<string, int> en_dict;
+
+int Rna::getGraph_second(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
+{
+    // cout << "in getGraph 2" << endl;
+    samFile *f = sam_open(rnaFile, "r");
+    if (f == nullptr)
+    {
+        cerr << "Failed to open " << rnaFile << " to read." << endl;
+        exit(1);
+    }
+    sam_hdr_t *h = sam_hdr_read(f);
+    if (h == nullptr)
+    {
+        cerr << "Failed to get header of file: " << rnaFile << endl;
+        exit(1);
+    }
+    bam1_t *b = bam_init1();
+
+    while (true)
+    {
+        if ((sam_read1(f, h, b)) < 0)
+            break;
+        else
+        {
+            bool isSecond = (b->core.flag & BAM_FSECONDARY);
+            if (isSecond)
+            {
+                int tid = b->core.tid;
+                uint32_t pos = b->core.pos + 1;
+
+                int mtid = b->core.mtid;
+                uint32_t mpos = b->core.mpos + 1;
+
+                int strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+                int strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
+
+                if (tid == mtid && strand1 + strand2 == 1)
+                {
+                    uint32_t distance;
+                    if (mpos > pos)
+                        distance = mpos - pos;
+                    else
+                        distance = pos - mpos;
+                    if (distance < 1000)
+                        continue;
+                }
+                // cout<<"here2"<<endl;
+                vector<int> geneIds1;
+                vector<int> geneIds2;
+                int tid1 = th.getRefFromRNA(tid);
+                int tid2 = th.getRefFromRNA(mtid);
+
+                if (tid1 == -1 || tid2 == -1)
+                    continue;
+
+                g.isInGene(tid1, pos, geneIds1);
+                g.isInGene(tid2, mpos, geneIds2);
+
+                if (geneIds1.size() == 0 || geneIds2.size() == 0)
+                {
+                    continue;
+                }
+                encompass_rna_t et;
+
+                /////////////////////////////////////////////////////////////
+                //              et.numCopy=count;
+                et.numCopy = 1;
+                et.name = string(bam_get_qname(b));
+                et.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+                et.tid1 = tid1;
+                et.pos1 = pos;
+                et.len1 = b->core.l_qseq;
+                uint32_t *pc = bam_get_cigar(b);
+                for (int k = 0; k < b->core.n_cigar; k++)
+                {
+                    uint32_t cg = (*pc);
+                    pc = pc + 1;
+                    et.cigar1.push_back(cg);
+                }
+
+                et.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
+                ;
+                et.tid2 = tid2;
+                et.pos2 = mpos;
+                et.len2 = -1;
+
+                /////////////////////////////////////////////////////////////
+                for (int aa = 0; aa < b->core.l_qseq; aa++)
+                {
+                    int reada = bam_seqi(bam_get_seq(b), aa);
+                    char chara = getCharA(reada);
+                    et.seq1.push_back(chara);
+                }
+
+                // int added=0;
+                // cout<<"before double"<<endl;
+                for (int i = 0; i < geneIds1.size(); i++)
+                {
+                    for (int j = 0; j < geneIds2.size(); j++)
+                    {
+                        // cout<<"111"<<endl;
+                        if (geneIds1[i] == geneIds2[j])
+                            continue;
+
+                        // cout<<"222"<<endl;
+
+                        if (g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2) == 0) // in gene guarentee not the ones with diff locus.
+                            continue;
+                        // cout<<"333"<<endl;
+
+                        if (rnafg.isGeneIn(geneIds1[i]) == 0)
+                        {
+                            // cout<<g.getGene(geneIds1[i])->name2<<" ";
+                            rnafg.addGene(geneIds1[i]);
+                        }
+                        if (rnafg.isGeneIn(geneIds2[j]) == 0)
+                        {
+                            // cout<<g.getGene(geneIds2[j])->name2<<" ";
+                            rnafg.addGene(geneIds2[j]);
+                        }
+                        // if(added==0)
+                        //{
+
+                        et.geneId1 = geneIds1[i];
+                        et.geneId2 = geneIds2[j];
+                        enrna.push_back(et);
+
+                        secondary_ets.push_back(et);
+                        en_dict.insert(make_pair(et.name, secondary_ets.size() - 1));
+                        // added=1;
+                        // }
+                        // cout<<"444"<<endl;
+                        rnafg.addEncompass(geneIds1[i], geneIds2[j], enrna.size() - 1);
+                    }
+                }
+            }
+        }
+    }
+    rnafg.printFg(g);
+
+
+    if (b != nullptr)
+    {
+        bam_destroy1(b);
+    }
+    if (h != nullptr) {
+        sam_hdr_destroy(h);
+    }
+    if (f != nullptr) {
+        sam_close(f);
+    }
+
+    return 0;
+}
+
+int Rna::getGraph_second_read_normal(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
+{
+    // cout << "in getGraph 3" << endl;
+    samFile *f = sam_open(rnaFile, "r");
+    if (f == nullptr)
+    {
+        cerr << "Failed to open " << rnaFile << " to read." << endl;
+        exit(1);
+    }
+    sam_hdr_t *h = sam_hdr_read(f);
+    if (h == nullptr)
+    {
+        cerr << "Failed to get header of file: " << rnaFile << endl;
+        exit(1);
+    }
+    bam1_t *b = bam_init1();
+
+    while (true)
+    {
+        if ((sam_read1(f, h, b)) < 0)
+            break;
+        else
+        {
+            // cout<<"&&&&&&&&&&&&&&&&&&&&&&&&&&&&"<<endl;
+            string seq_name = string(bam_get_qname(b));
+            // cout<<seq_name<<endl;
+            bool isSecond = (b->core.flag & BAM_FSECONDARY);
+            pair<multimap<string, int>::iterator, multimap<string, int>::iterator> range;
+            if (!isSecond)
+            {
+                range = en_dict.equal_range(seq_name);
+            }
+            multimap<string, int>::iterator aa;
+            for (aa = range.first; aa != range.second; ++aa)
+            {
+
+                // et_second is the read mapped as secondary reads
+                // here fields for it were alreadsy assigned.
+
+                // cout << "#################" << endl;
+
+                encompass_rna_t et_second;
+                et_second = secondary_ets[aa->second];
+
+                cout << et_second.name << endl;
+
+                int tid = b->core.tid;            // for this primary read
+                int tid1 = th.getRefFromRNA(tid); // for this primary read
+                uint32_t pos1 = b->core.pos + 1;  // for this primary read
+
+                if (!(tid1 == et_second.tid2 && pos1 == et_second.pos2)) // this is not a pair
+                {
+                    continue;
+                }
+                // cout << "go on" << endl;
+
+                vector<int> geneIds1;
+                vector<int> geneIds2;
+
+                if (tid1 == -1 || et_second.tid1 == -1)
+                    continue;
+
+                // cout << "go on" << endl;
+
+                g.isInGene(tid1, pos1, geneIds1);
+                g.isInGene(et_second.tid1, et_second.pos1, geneIds2);
+
+                if (geneIds1.size() == 0 || geneIds2.size() == 0)
+                {
+                    continue;
+                }
+
+                // cout << "go on 3" << endl;
+                encompass_rna_t et;
+
+                /////////////////////////////////////////////////////////////
+                //              et.numCopy=count;
+                et.numCopy = 1;
+                et.name = string(bam_get_qname(b));
+                et.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+                et.tid1 = tid1;
+                et.pos1 = pos1;
+                et.len1 = b->core.l_qseq;
+                uint32_t *pc = bam_get_cigar(b);
+                for (int k = 0; k < b->core.n_cigar; k++)
+                {
+                    uint32_t cg = (*pc);
+                    pc = pc + 1;
+                    et.cigar1.push_back(cg);
+                }
+
+                et.strand2 = et_second.strand1;
+                et.tid2 = et_second.tid1;
+                et.pos2 = et_second.pos1;
+                et.len2 = -1;
+
+                // cout << "^^^^^^^^" << et.strand1 << " " << et.tid1 << " " << et.pos1 << endl;
+                // cout << "^^^^^^^^" << et.strand2 << " " << et.tid2 << " " << et.pos2 << endl;
+
+                /////////////////////////////////////////////////////////////
+                for (int aa = 0; aa < b->core.l_qseq; aa++)
+                {
+                    int reada = bam_seqi(bam_get_seq(b), aa);
+                    char chara = getCharA(reada);
+                    et.seq1.push_back(chara);
+                }
+
+                // cout << "set et read" << endl;
+
+                // int added=0;
+                // cout << "before double" << endl;
+                for (int i = 0; i < geneIds1.size(); i++)
+                {
+                    for (int j = 0; j < geneIds2.size(); j++)
+                    {
+                        // cout << "111" << endl;
+                        if (geneIds1[i] == geneIds2[j])
+                            continue;
+
+                        // cout << "222" << endl;
+
+                        if (g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2) == 0) // in gene guarentee not the ones with diff locus.
+                            continue;
+                        // cout << "333" << endl;
+
+                        if (rnafg.isGeneIn(geneIds1[i]) == 0)
+                        {
+                            cout << g.getGene(geneIds1[i])->name2 << " ";
+                            rnafg.addGene(geneIds1[i]);
+                        }
+                        if (rnafg.isGeneIn(geneIds2[j]) == 0)
+                        {
+                            cout << g.getGene(geneIds2[j])->name2 << " ";
+                            rnafg.addGene(geneIds2[j]);
+                        }
+                        // if(added==0)
+                        //{
+
+                        et.geneId1 = geneIds1[i];
+                        et.geneId2 = geneIds2[j];
+                        enrna.push_back(et);
+                        // cout << "add" << endl;
+                        // added=1;
+                        // }
+                        // cout<<"444"<<endl;
+                        rnafg.addEncompass(geneIds1[i], geneIds2[j], enrna.size() - 1);
+                        // cout << "here" << endl;
+                    }
+                }
+            }
+        }
+    }
+    rnafg.printFg(g);
+
+
+    if (b != nullptr)
+    {
+        bam_destroy1(b);
+    }
+    if (h != nullptr) {
+        sam_hdr_destroy(h);
+    }
+    if (f != nullptr) {
+        sam_close(f);
+    }
+
+    return 0;
+}
+
+// Done HPV
 
 region_t rg;
 int rg_ref_tid;

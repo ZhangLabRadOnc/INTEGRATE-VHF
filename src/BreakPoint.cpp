@@ -262,14 +262,14 @@ int BreakPoint::getOneBKRNA(break_point_record_t &bkt, Reference &ref) {
 int BreakPoint::printOneBK(break_point_record_t &bkt, Reference &ref, ofstream &outFile) {
     outFile << bkt.nm5p << "\t";
     outFile << bkt.nm3p << "\t";
-    outFile << ref.getSeqName(bkt.tid1) << "\t";
+    outFile << ref.getSeqMappedName(bkt.tid1) << "\t";
     outFile << bkt.rnabk1 << "\t";
     if (bkt.isExon == 1) {
         outFile << bkt.exonbk1 << "\t";
     } else
         outFile << "NA"
                 << "\t";
-    outFile << ref.getSeqName(bkt.tid2) << "\t";
+    outFile << ref.getSeqMappedName(bkt.tid2) << "\t";
     outFile << bkt.rnabk2 << "\t";
     if (bkt.isExon == 1) {
         outFile << bkt.exonbk2 << "\t";
@@ -300,7 +300,7 @@ int BreakPoint::AddOneVCF(break_point_record_t &bkt, Reference &ref) {
     // del +
     if (imprecise == 0 && bkt.tid1 == bkt.tid2 && bkt.gStrand1 == 0 && bkt.gStrand2 == 0 && bkt.exonbk1 < bkt.exonbk2 && bkt.dnabk1 < bkt.dnabk2) {
         vcf_t vt_del;
-        vt_del.chr = ref.getSeqName(bkt.tid1);
+        vt_del.chr = ref.getSeqMappedName(bkt.tid1);
         vt_del.pos = bkt.dnabk1 + 1;
         vt_del.id = "del_" + NumberToString(++sv_index) + "_" + bkt.nm5p + "_" + bkt.nm3p;
         vt_del.ref = ref.getSeq(bkt.tid1)[vt_del.pos - 1];
@@ -316,7 +316,7 @@ int BreakPoint::AddOneVCF(break_point_record_t &bkt, Reference &ref) {
     // del -
     if (imprecise == 0 && bkt.tid1 == bkt.tid2 && bkt.gStrand1 == 1 && bkt.gStrand2 == 1 && bkt.exonbk1 > bkt.exonbk2 && bkt.dnabk1 > bkt.dnabk2) {
         vcf_t vt_del;
-        vt_del.chr = ref.getSeqName(bkt.tid2);
+        vt_del.chr = ref.getSeqMappedName(bkt.tid2);
         vt_del.pos = bkt.dnabk2 + 1;
         vt_del.id = "del_" + NumberToString(++sv_index) + "_" + bkt.nm5p + "_" + bkt.nm3p;
         vt_del.ref = ref.getSeq(bkt.tid2)[vt_del.pos - 1];
@@ -333,7 +333,7 @@ int BreakPoint::AddOneVCF(break_point_record_t &bkt, Reference &ref) {
     // dup +
     if (imprecise == 0 && bkt.tid1 == bkt.tid2 && bkt.gStrand1 == 0 && bkt.gStrand2 == 0 && bkt.exonbk1 > bkt.exonbk2) {
         vcf_t vt_del;
-        vt_del.chr = ref.getSeqName(bkt.tid1);
+        vt_del.chr = ref.getSeqMappedName(bkt.tid1);
         vt_del.pos = bkt.dnabk1 + 1;
         vt_del.id = "dup_" + NumberToString(++sv_index) + "_" + bkt.nm5p + "_" + bkt.nm3p;
         vt_del.ref = ref.getSeq(bkt.tid1)[vt_del.pos - 1];
@@ -350,7 +350,7 @@ int BreakPoint::AddOneVCF(break_point_record_t &bkt, Reference &ref) {
     // dup -
     if (imprecise == 0 && bkt.tid1 == bkt.tid2 && bkt.gStrand1 == 1 && bkt.gStrand2 == 1 && bkt.exonbk1 < bkt.exonbk2) {
         vcf_t vt_del;
-        vt_del.chr = ref.getSeqName(bkt.tid2);
+        vt_del.chr = ref.getSeqMappedName(bkt.tid2);
         vt_del.pos = bkt.dnabk2 + 1;
         vt_del.id = "dup_" + NumberToString(++sv_index) + "_" + bkt.nm5p + "_" + bkt.nm3p;
         vt_del.ref = ref.getSeq(bkt.tid2)[vt_del.pos - 1];
@@ -367,7 +367,7 @@ int BreakPoint::AddOneVCF(break_point_record_t &bkt, Reference &ref) {
     // inv a
     if (imprecise == 0 && bkt.tid1 == bkt.tid2 && bkt.gStrand1 == 0 && bkt.gStrand2 == 1 && bkt.dnabk1 < bkt.exonbk2) {
         vcf_t vt_del;
-        vt_del.chr = ref.getSeqName(bkt.tid1);
+        vt_del.chr = ref.getSeqMappedName(bkt.tid1);
         vt_del.pos = bkt.dnabk1 + 1;
         vt_del.id = "inv_" + NumberToString(++sv_index) + "_" + bkt.nm5p + "_" + bkt.nm3p;
         vt_del.ref = ref.getSeq(bkt.tid1)[vt_del.pos - 1];
@@ -384,7 +384,7 @@ int BreakPoint::AddOneVCF(break_point_record_t &bkt, Reference &ref) {
     // inv b
     if (imprecise == 0 && bkt.tid1 == bkt.tid2 && bkt.gStrand1 == 1 && bkt.gStrand2 == 0 && bkt.dnabk1 > bkt.exonbk2) {
         vcf_t vt_del;
-        vt_del.chr = ref.getSeqName(bkt.tid2);
+        vt_del.chr = ref.getSeqMappedName(bkt.tid2);
         vt_del.pos = bkt.dnabk2;
         vt_del.id = "inv_" + NumberToString(++sv_index) + "_" + bkt.nm5p + "_" + bkt.nm3p;
         vt_del.ref = ref.getSeq(bkt.tid2)[vt_del.pos - 1];
@@ -401,7 +401,7 @@ int BreakPoint::AddOneVCF(break_point_record_t &bkt, Reference &ref) {
 
     // bnd
     vcf_t vt;
-    vt.chr = ref.getSeqName(bkt.tid1);
+    vt.chr = ref.getSeqMappedName(bkt.tid1);
     uint32_t pos1 = 0;
     if (imprecise) {
         if (bkt.isExon == 1)
@@ -413,7 +413,7 @@ int BreakPoint::AddOneVCF(break_point_record_t &bkt, Reference &ref) {
     vt.pos = pos1;
     vcf_t vt2;
 
-    vt2.chr = ref.getSeqName(bkt.tid2);
+    vt2.chr = ref.getSeqMappedName(bkt.tid2);
     uint32_t pos2 = 0;
     if (imprecise) {
         if (bkt.isExon == 1)
@@ -466,7 +466,7 @@ int BreakPoint::printOneBEDPE(break_point_record_t &bkt, Reference &ref, ofstrea
     if (bkt.isRT == 1)
         return 0;
 
-    outFile << ref.getSeqName(bkt.tid1) << "\t";
+    outFile << ref.getSeqMappedName(bkt.tid1) << "\t";
     uint32_t bk1 = 0;
     if (bkt.isExon == 1) {
         bk1 = bkt.exonbk1;
@@ -478,7 +478,7 @@ int BreakPoint::printOneBEDPE(break_point_record_t &bkt, Reference &ref, ofstrea
     outFile << bk1 << "\t";
     outFile << bk1 << "\t";
 
-    outFile << ref.getSeqName(bkt.tid2) << "\t";
+    outFile << ref.getSeqMappedName(bkt.tid2) << "\t";
     uint32_t bk2 = 0;
     if (bkt.isExon == 1) {
         bk2 = bkt.exonbk2;

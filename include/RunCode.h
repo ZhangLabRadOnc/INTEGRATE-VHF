@@ -24,6 +24,7 @@ using namespace std;
 #include "Rna.h"
 #include "SuffixArray2.h"
 #include "TidHandler.h"
+#include "VirusLoader.h"
 
 class RunCode {
   public:

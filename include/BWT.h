@@ -66,8 +66,8 @@ class BWT {
     //	myFind2 mf2;
   public:
     BWT();
-    int create(char *seq, int len, SuffixArray2 *array);
-    int getOccAndOB(char *seq, int len); // only for ACGTN
+    int create(const char *seq, int len, SuffixArray2 *array);
+    int getOccAndOB(const char *seq, int len); // only for ACGTN
     int getOB(int i, char c);
     int nextKL(int &k, int &l, char c);
 

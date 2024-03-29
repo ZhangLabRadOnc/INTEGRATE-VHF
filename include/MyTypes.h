@@ -10,12 +10,14 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 using namespace std;
 
 typedef struct {
     // int bin;
     string name;
+    string chrName;
     int tid;
     int strand;
     uint32_t txStart;
@@ -52,6 +54,7 @@ typedef struct {
     int strand;
     uint32_t leftLimit;
     uint32_t rightLimit;
+    string chrName;
     string name2;
     vector<int> transIds;
 
@@ -301,6 +304,8 @@ typedef struct {
     const char *fileJunction;
     const char *filePeptide;
     const char *fileSmcRna;
+    const char *fileVirus;
+    unordered_map<string, string> virusTypes;
 
     int isRunningNormal;
 

@@ -23,6 +23,7 @@ set(SOURCES
     TidHandler.cpp
     Util.cpp
     Updator.cpp
+    VirusLoader.cpp
     main.cpp
 )
 

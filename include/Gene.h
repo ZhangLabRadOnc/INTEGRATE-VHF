@@ -36,19 +36,24 @@ using namespace std;
 #include "BWT.h"
 #include "SuffixArray2.h"
 
+#include "VirusLoader.h"
+
 class Gene {
   private:
     vector<gene_t> genes;
     vector<transcript_t> transcripts;
     BWT *bwts;
     BWT *rbwts;
+    vector<string> viruses;
 
   public:
     Gene();
     virtual ~Gene();
 
     /*load transcripts from input annotation file with 9 columns.*/
-    int loadGenesFromFile(const char *fileName, Reference &ref);
+    int loadGenesFromFile(const char *fileName, const vector<VirusLoader::VirusNamePair> *namePairs, Reference &ref);
+    void readVirusLoader(const VirusLoader &virusLoader, Reference &ref);
+
     int setGene();
 
     // int getGeneLimit(int geneIdx1, int geneIdx2, uint32_t & start1, uint32_t & end1, uint32_t & start2, uint32_t & end2);

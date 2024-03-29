@@ -9,28 +9,44 @@
 
 #pragma once
 
+#include <fstream>
+#include <htslib/faidx.h>
 #include <string>
-#include <map>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
+#include "VirusLoader.h"
 
 using namespace std;
 
-#include <htslib/faidx.h>
+const string CHRS[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X", "Y", "M"};
 
 class Reference {
+  public:
+    struct RefItem {
+      string originalName;
+      string mappedName;
+      faidx_t *f = nullptr;
+      RefItem() = default;
+      RefItem(string originalName, string mappedName, faidx_t *f) : originalName(originalName), mappedName(mappedName), f(f) {}
+    };
+
   private:
-    string filePath;
-    faidx_t *f;
-    int seqCount;
-    map<int, char *> sequences;
-    vector<const char *> names;
+    int seqCount = 0;
+    unordered_map<int, char *> seqs;
+    unordered_set<faidx_t *> faSet;
+    unordered_map<int, RefItem> refItems;
+    unordered_map<string, int> nameMappedToId;
+    unordered_map<string, int> nameOriginalToId;
 
   public:
     Reference(string filePath);
     virtual ~Reference();
-    string getSeqName(int id);
-    int getSeqId(string name);
+    string getSeqMappedName(int id);
+    string getSeqOriginalName(int id);
+    int getSeqId(const string &name);
     int getSeqLength(int id);
     int getSeqCount();
-    char *getSeq(int id);
+    const char *getSeq(int id);
+    void readVirusLoader(const VirusLoader &virusLoader);
 };

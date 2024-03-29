@@ -36,7 +36,7 @@ class HitsCounter {
     int getNumber() { return number; };
     int allocate(int size);
     int getChromBWTs(Reference &ref, const char *directory);
-    int getOne(char *refseq, uint32_t length, const char *fileName);
+    int getOne(const char *refseq, uint32_t length, const char *fileName);
     int loadChromBWTs(Reference &ref, const char *directory);
     int loadOne(BWT *bwt, const char *bwtfile);
 

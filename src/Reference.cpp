@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include "VirusLoader.h"
 #include "Reference.h"
+#include "Util.h"
 
 using namespace std;
 
@@ -22,27 +23,16 @@ Reference::Reference(string filePath) {
     int n = faidx_nseq(f);
     
     for (int i = 0; i < n; i++) {
-        string name = string(faidx_iseq(f, i));
-        if (name.starts_with("chr")) {
-            name = name.substr(3);
+        const string originalName = string(faidx_iseq(f, i));
+        string mappedName = getStdChrName(originalName);
+        this->nameOriginalToId[originalName] = this->refItems.size();
+        this->nameMappedToId[mappedName] = this->refItems.size();
+        this->refItems[this->refItems.size()] = RefItem(originalName, mappedName, f);
+        if (originalName.compare(mappedName) != 0) {
+            cout << originalName << " => " << mappedName << endl;
+        } else {
+            cout << originalName << endl;
         }
-        if (name.compare("MT") == 0){
-            name = "M";
-        }
-        bool found = false;
-        for (auto &c : CHRS) {
-            if (c.compare(name) == 0) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            continue;
-        }
-        RefItem refItem = RefItem(name, name, f);
-        this->nameMappedToId[name] = this->refItems.size();
-        this->refItems[this->refItems.size()] = refItem;
-        cout << name << endl;
         this->seqCount++;
     }
 }
@@ -62,14 +52,6 @@ Reference::~Reference() {
     this->faSet.clear();
 }
 
-string Reference::getSeqMappedName(int id) {
-    if (id < 0 || id >= this->seqCount) {
-        return "";
-    }
-
-    return this->refItems[id].mappedName;
-}
-
 string Reference::getSeqOriginalName(int id) {
     if (id < 0 || id >= this->seqCount) {
         return "";
@@ -78,11 +60,23 @@ string Reference::getSeqOriginalName(int id) {
     return this->refItems[id].originalName;
 }
 
-int Reference::getSeqId(const string &name) {
+string Reference::getSeqMappedName(int id) {
+    if (id < 0 || id >= this->seqCount) {
+        return "";
+    }
+
+    return this->refItems[id].mappedName;
+}
+
+int Reference::getSeqIdByOriginalName(const string &name) {
+    if (this->nameOriginalToId.find(name) == this->nameOriginalToId.end()) {
+        return -1;
+    }
+    return this->nameOriginalToId[name];
+}
+
+int Reference::getSeqIdByMappedName(const string &name) {
     if (this->nameMappedToId.find(name) == this->nameMappedToId.end()) {
-        if (this->nameOriginalToId.find(name) != this->nameOriginalToId.end()) {
-            return this->nameOriginalToId[name];
-        }
         return -1;
     }
     return this->nameMappedToId[name];
@@ -130,10 +124,10 @@ void Reference::readVirusLoader(const VirusLoader &virusLoader) {
         faidx_t *f = fai_load(filePath.c_str());
         this->faSet.insert(f);
         for (const auto &n : v.second) {
-            RefItem refItem = RefItem(n.originalName, n.mappedName, f);
+            this->nameOriginalToId[n.originalName] = this->refItems.size();
             this->nameMappedToId[n.mappedName] = this->refItems.size();
-            this->refItems[this->refItems.size()] = refItem;
+            this->refItems[this->refItems.size()] = RefItem(n.originalName, n.mappedName, f);
+            this->seqCount++;
         }
-        this->seqCount++;
     }
 }

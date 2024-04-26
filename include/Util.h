@@ -9,6 +9,8 @@
 
 #include <cstdio>
 #include <filesystem>
+#include <string>
+#include <regex>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -51,4 +53,16 @@ inline char getCharA(int reada) {
         default:
             return 'N';
     }
+}
+
+inline string getStdChrName(string name) {
+    if (name.starts_with("chr") || name.starts_with("Chr")) {
+        name = name.substr(3);
+    }
+
+    if (name.compare("M") == 0) {
+        return "MT";
+    }
+
+    return name;
 }

@@ -279,15 +279,7 @@ int MyBamHeader::getPI(char *rgp) { return rg[string(rgp)]; }
 int MyBamHeader::getStd(char *rgp) { return std[string(rgp)]; }
 
 string MyBamHeader::getChrName(int tid) {
-    string name = string(h->target_name[tid]);
-    if (name.starts_with("chr")) {
-        name = name.substr(3);
-    }
-    if (name.compare("MT") == 0) {
-        name = "M";
-    }
-
-    return string(name);
+    return string(h->target_name[tid]);
 }
 
 /*
@@ -348,8 +340,7 @@ int MyBamHeader::run2(const char *fileName) {
     maxDistance = computeMax();
 
     // cout<<"maxDis="<<maxDistance<<endl;
-
-    setTidM();
+    numTids = h->n_targets;
 
     // and here need another function to test PI and stds, in case they are still not set
 
@@ -374,16 +365,3 @@ int MyBamHeader::computeMax() {
     // cout<<"max="<<max<<endl;
     return max;
 }
-
-int MyBamHeader::setTidM() {
-    // cout<<"int set"<<endl;
-    for (int i = 0; i < this->h->n_targets; i++) {
-        tidM.insert(pair<string, int>(getChrName(i), i));
-        //	cout<<getChrName(i)<<" "<<i<<endl;
-    }
-    // cout<<"setted"<<endl;
-    numTids = h->n_targets;
-    return 0;
-}
-
-int MyBamHeader::getTid(string &chrName) { return tidM[chrName]; }

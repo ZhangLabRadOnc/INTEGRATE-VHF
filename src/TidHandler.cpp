@@ -6,7 +6,9 @@
  */
 
 #include "MyBamHeader.h"
+#include "Reference.h"
 #include "TidHandler.h"
+#include "Util.h"
 
 TidHandler::TidHandler(Reference *ref) {
     this->ref = ref;
@@ -18,7 +20,12 @@ TidHandler::~TidHandler() {
 
 int TidHandler::setRNAAndRef(MyBamHeader &rnabh) {
     for (int i = 0; i < rnabh.getNumTids(); i++) {
-        int tid = ref->getSeqId(rnabh.getChrName(i));
+        string name = rnabh.getChrName(i);
+        int tid = ref->getSeqIdByOriginalName(name);
+        if (tid < 0) {
+            name = getStdChrName(name);
+            tid = ref->getSeqIdByMappedName(name);
+        }
         RNA2Ref.insert(pair<int, int>(i, tid));
         Ref2RNA.insert(pair<int, int>(tid, i));
     }
@@ -43,7 +50,12 @@ int TidHandler::getRefFromRNA(int rnaTid) {
 
 int TidHandler::setDNAAndRef(MyBamHeader &dnabh) {
     for (int i = 0; i < dnabh.getNumTids(); i++) {
-        int tid = ref->getSeqId(dnabh.getChrName(i));
+        string name = dnabh.getChrName(i);
+        int tid = ref->getSeqIdByOriginalName(name);
+        if (tid < 0) {
+            name = getStdChrName(name);
+            tid = ref->getSeqIdByMappedName(name);
+        }
         DNA2Ref.insert(pair<int, int>(i, tid));
         Ref2DNA.insert(pair<int, int>(tid, i));
     }

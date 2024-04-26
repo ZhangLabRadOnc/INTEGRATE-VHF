@@ -19,8 +19,6 @@
 
 using namespace std;
 
-const string CHRS[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X", "Y", "M"};
-
 class Reference {
   public:
     struct RefItem {
@@ -42,9 +40,10 @@ class Reference {
   public:
     Reference(string filePath);
     virtual ~Reference();
-    string getSeqMappedName(int id);
     string getSeqOriginalName(int id);
-    int getSeqId(const string &name);
+    string getSeqMappedName(int id);
+    int getSeqIdByOriginalName(const string &name);
+    int getSeqIdByMappedName(const string &name);
     int getSeqLength(int id);
     int getSeqCount();
     const char *getSeq(int id);

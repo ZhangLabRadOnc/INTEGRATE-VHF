@@ -170,7 +170,7 @@ int Rna::getGraph(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
 
                         // cout<<"222"<<endl;
 
-                        if (g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2) == 0) // in gene guarentee not the ones with diff locus.
+                        if (!g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2)) // in gene guarentee not the ones with diff locus.
                             continue;
                         // cout<<"333"<<endl;
 
@@ -323,7 +323,7 @@ int Rna::getGraph_second(const char *rnaFile, TidHandler &th, Gene &g, HitsCount
 
                         // cout<<"222"<<endl;
 
-                        if (g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2) == 0) // in gene guarentee not the ones with diff locus.
+                        if (!g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2)) // in gene guarentee not the ones with diff locus.
                             continue;
                         // cout<<"333"<<endl;
 
@@ -493,7 +493,7 @@ int Rna::getGraph_second_read_normal(const char *rnaFile, TidHandler &th, Gene &
 
                         // cout << "222" << endl;
 
-                        if (g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2) == 0) // in gene guarentee not the ones with diff locus.
+                        if (!g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2)) // in gene guarentee not the ones with diff locus.
                             continue;
                         // cout << "333" << endl;
 
@@ -2478,29 +2478,25 @@ int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &
                     int isInOne = checkInSomeOneGene(g, tmp[j - 1]);
 
                     // cout<<"in here7"<<endl;
-                    if (hasMaxSmall == 1 && phr <= 0.4 && isBoth == 1 && countPos(tmp2) >= localCutOff && sameRead == 0 && !isInOne) {
+                    if (hasMaxSmall == 1 && phr <= 0.4 && countPos(tmp2) >= localCutOff && sameRead == 0 && !isInOne) {
+                        double trueFreq = 0.0;
+                        // cout<<"in here8"<<endl;
+                        // cout<<"num="<<num<<endl;
+                        for (int x = 1; x <= num; x++) {
+                            // cout<<"trueFreq+=1.0/"<<(tmp[j-x].hits)<<endl;
+                            trueFreq += 1.0 / (double)(tmp[j - x].hits);
+                            // cout<<"trueFreq="<<trueFreq<<endl;
+                        }
 
-                        if (hasGoodEncompass(g, sprna[tmp[j - 1].spId], enIds) == 1) {
-
-                            double trueFreq = 0.0;
-                            // cout<<"in here8"<<endl;
-                            // cout<<"num="<<num<<endl;
+                        if (trueFreq >= localCutOff) {
+                            // cout<<"if"<<endl;
+                            cn++;
                             for (int x = 1; x <= num; x++) {
-                                // cout<<"trueFreq+=1.0/"<<(tmp[j-x].hits)<<endl;
-                                trueFreq += 1.0 / (double)(tmp[j - x].hits);
-                                // cout<<"trueFreq="<<trueFreq<<endl;
+                                // cout<<"for"<<endl;
+                                ids.push_back(tmp[j - x].spId);
+                                sprna[tmp[j - x].spId].clusterId = cn;
                             }
-
-                            if (trueFreq >= localCutOff) {
-                                // cout<<"if"<<endl;
-                                cn++;
-                                for (int x = 1; x <= num; x++) {
-                                    // cout<<"for"<<endl;
-                                    ids.push_back(tmp[j - x].spId);
-                                    sprna[tmp[j - x].spId].clusterId = cn;
-                                }
-                                // cout<<"in here9"<<endl;
-                            }
+                            // cout<<"in here9"<<endl;
                         }
                     }
                 }
@@ -3920,7 +3916,7 @@ struct TraversePrint {
         if (!edge.spannings.empty()) {
             vector<int> const &enIds = edge.encompass;
             vector<int> const &spIds = edge.spannings;
-            // cout<<g.getName2(x1)<<"<---->"<<g.getName2(x2)<<" "<<enIds.size()<<endl;
+            cout << g.getName2(x1) << "<---->" << g.getName2(x2) << " " << enIds.size() << endl;
 
             result_t rt;
             rt.nm5p = g.getName2(x1);
@@ -4665,7 +4661,7 @@ int Rna::readSTAR(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc,
                         if (geneIds1[i] == geneIds2[j])
                             continue;
 
-                        if (g.isPairPossibleFusion(geneIds1[i], geneIds2[j], strand1, strand2) == 0) // in gene guarentee not the ones with diff locus.
+                        if (!g.isPairPossibleFusion(geneIds1[i], geneIds2[j], strand1, strand2)) // in gene guarentee not the ones with diff locus.
                             continue;
 
                         if (rnafg.isGeneIn(geneIds1[i]) == 0) {

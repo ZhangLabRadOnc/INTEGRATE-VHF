@@ -28,9 +28,8 @@ ENV TZ=UTC DEBIAN_FRONTEND=noninteractive
 
 RUN \
     apt-get update && \
-    apt-get install -y --no-install-recommends && \
-        vim && \
-        libomp5 libhts3 libdivsufsort3 && \
+    apt-get install -y --no-install-recommends \
+        libomp5 libhts3 libdivsufsort3 \
         samtools && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

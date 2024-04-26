@@ -25,7 +25,7 @@ ostream &operator<<(ostream &out, const ALGraph<int, FusionEdge> &g) {
     int verNum = g.getVertexCount(), edgeNum = g.getEdgeCount();
 
     out << "This graph has " << verNum << " vertexes and " << edgeNum << " edges." << endl;
-#if PRINTME
+    #if PRINTME
     for (int i = 0; i < verNum; ++i) {
         int x1 = g.getData(i);
         out << x1 << " :    ";

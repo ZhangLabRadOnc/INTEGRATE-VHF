@@ -7,6 +7,7 @@
 
 #include "VirusLoader.h"
 #include "Gene.h"
+#include "Util.h"
 
 Gene::Gene() {
     this->bwts = nullptr;
@@ -97,7 +98,7 @@ int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::Viru
         if (!(pls >= ple || *pls == '#'))
         {
             int lineLen = ple - pls + 1;
-            char *line = new char[lineLen + 1];
+            char *line = (char *)malloc(sizeof(char) * (lineLen + 1));
             copy(pls, ple + 1, line);
             line[lineLen] = '\0';
 
@@ -119,19 +120,12 @@ int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::Viru
                     }
                 }
             } else {
-                if (tt.chrName.starts_with("chr"))
-                {
-                    tt.chrName = tt.chrName.substr(3);
-                }
-                if (tt.chrName.compare("MT") == 0)
-                {
-                    tt.chrName = "M";
-                }
+                tt.chrName = getStdChrName(tt.chrName);
             }
-            tt.tid = ref.getSeqId(tt.chrName);
+            tt.tid = ref.getSeqIdByMappedName(tt.chrName);
             if (tt.tid < 0)
             {
-                delete[] line;
+                free(line);
                 pls = ple + strcspn(ple, "\n") + 1;
                 continue;
             }
@@ -153,7 +147,7 @@ int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::Viru
             char *exonEndsC = strdup(token);
             token = strtok(nullptr, delimiters);
             tt.name2 = string(token);
-            delete[] line;
+            free(line);
 
             uint32_t *pes = new uint32_t[tt.exonCount];
             uint32_t *pee = new uint32_t[tt.exonCount];
@@ -198,7 +192,7 @@ int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::Viru
                 count++;
             }
         }
-        pls = ple + strcspn(ple, "\n") + 1;
+        pls = ple + strcspn(ple, "\n") + 2;
     }
     closeFileForRead(pfs, fd, fileLen);
 
@@ -337,13 +331,13 @@ int Gene::isInGene(int tid, uint32_t pos, vector<int> &geneIds) {
         return 0;
 }
 
-int Gene::isPairPossibleFusion(int id1, int id2, int strand1, int strand2) {
+bool Gene::isPairPossibleFusion(int id1, int id2, int strand1, int strand2) {
 
     // if(genes[id1].fakeId !=-1 && genes[id1].fakeId==genes[id2].fakeId)
     //	return 0;
 
     if (genes[id1].name2.compare(genes[id2].name2) == 0) {
-        return 0;
+        return false;
     }
 
     bool found = false;
@@ -353,9 +347,9 @@ int Gene::isPairPossibleFusion(int id1, int id2, int strand1, int strand2) {
             break;
         }
     }
-    if (!found)
+    if (!found && viruses.size() > 0)
     {
-        return 0;
+        return false;
     }
 
     int gStrand1 = genes[id1].strand;
@@ -375,9 +369,13 @@ int Gene::isPairPossibleFusion(int id1, int id2, int strand1, int strand2) {
     }
 
     if (UoD1 + UoD2 != 1)
-        return 0;
+    {
+        return false;
+    }
     else
-        return 1;
+    {
+        return true;
+    }
 }
 
 gene_t *Gene::getGene(int index) { return &(genes[index]); }
@@ -477,16 +475,14 @@ int Gene::buildOneSuffix(int geneId, int isForward, Reference &ref) {
 
     char *tmp = new char[length + 2];
 
-    // cout<<"Length,with $="<<length+1<<endl;
-
     const char *seqRef = ref.getSeq(genes[geneId].tid);
 
     if (isForward == 1) {
-        copy(seqRef + genes[geneId].leftLimit - 1, seqRef + genes[geneId].rightLimit, tmp);
+        copy(seqRef + genes[geneId].leftLimit, seqRef + genes[geneId].rightLimit + 1, tmp);
     } else {
         int x = 0;
         for (int j = length - 1; j >= 0; j--) {
-            tmp[x++] = getCharComp(seqRef[genes[geneId].leftLimit + j - 1]);
+            tmp[x++] = getCharComp(seqRef[genes[geneId].leftLimit + j]);
         }
     }
     tmp[length] = '$';

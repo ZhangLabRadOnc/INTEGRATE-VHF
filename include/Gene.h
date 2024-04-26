@@ -66,7 +66,7 @@ class Gene {
     int isInGene(int tid, uint32_t pos, vector<int> &geneIds);
 
     /*Given the ids of two genes, and the strands of an possible encompassing paied-end reads, is fusion possible*/
-    int isPairPossibleFusion(int id1, int id2, int strand1, int strand2);
+    bool isPairPossibleFusion(int id1, int id2, int strand1, int strand2);
     gene_t *getGene(int index);
     int addRnaAnchor(int anId, int geneId);
 

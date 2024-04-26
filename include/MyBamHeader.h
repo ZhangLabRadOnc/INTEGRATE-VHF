@@ -34,16 +34,12 @@ class MyBamHeader {
     int numTids;
 
   public:
-    map<string, int> tidM;
-
     MyBamHeader();
     int myBamOpen(const char *fileName);
     int getRGs();
     int getRGStd(int std);
     int getPI(char *rgp);
     int getStd(char *rgp);
-    int setTidM();
-    int getTid(string &chrName);
     // int run(const char * fileName);
     int run2(const char *fileName);
     string getChrName(int tid);

@@ -5,97 +5,19 @@
  *      Author: jinzhang
  */
 
+#include <filesystem>
+#include "BWT.h"
+#include "Reference.h"
+#include "Util.h"
 #include "HitsCounter.h"
 
-// int MIN_BWT_LEN=10000000;
-// int MIN_BWT_LEN=10;
+using namespace std;
+namespace fs = std::filesystem;
 
 HitsCounter::HitsCounter() {
-    // TODO Auto-generated constructor stub
     bwts = nullptr;
     rbwts = nullptr;
 }
-
-/*
-
-int HitsCounter::getGenomeBWTF(Reference & ref) {
-cout<<"in getGenomeBWTF"<<endl;
-        uint32_t length=ref.getRefLength();
-        length=10000000;
-        char * tmp=new char [length+2];
-cout<<"mem "<<length<<endl;
-        for(uint32_t i=0;i<length;i++)
-        {
-                tmp[i]=ref.getRefChar(i+1);
-        }
-        tmp[length]='$';
-        tmp[length+1]='\0';
-cout<<"got tmp"<<endl;
-cout<<tmp<<endl;
-        SuffixArray2 sfa;
-        sfa.builtArray(tmp, length+1);
-cout<<"got suffix"<<endl;
-
-        bwt->create(tmp,length+1,&sfa);
-cout<<"created"<<endl;
-        bwt->getOccAndOB(tmp,length+1);
-cout<<"occed"<<endl;
-
-        delete [] tmp;
-cout<<"rmed"<<endl;
-
-        bwt->writeTofile("tmpBWT.txt");
-
-        return 0;
-}
-
-int HitsCounter::getGenomeBWTR(Reference & ref) {
-return 0;
-        uint32_t length=ref.getRefLength();
-        char * tmp=new char [length+2];
-
-        uint32_t x=0;
-        for(int j=length-1;j>=0;j--)
-        {
-                uint32_t refPos=j+1;
-                tmp[x++]=getCharComp(ref.getRefChar(refPos));
-        }
-
-
-        tmp[length]='$';
-        tmp[length+1]='\0';
-
-
-        SuffixArray2 sfa;
-        sfa.builtArray(tmp, length+1);
-
-        rbwt->create(tmp,length+1,&sfa);
-        rbwt->getOccAndOB(tmp,length+1);
-
-
-        delete [] tmp;
-
-        return 0;
-}
-
-int HitsCounter::getCount(char* seq, int len) {
-
-        int k,l,mapped;
-        if(bwt->exactSplitMap(k,l,seq,len,mapped,1)==1)
-        {
-                return l-k+1;
-        }
-        else
-                return 0;
-
-}
-
-
-
-
-
-
-*/
 
 int HitsCounter::allocate(int size) {
     bwts = new BWT[size];
@@ -104,45 +26,23 @@ int HitsCounter::allocate(int size) {
 }
 
 int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
-    struct stat sb;
-    if (stat(directory, &sb) == 0 && S_ISDIR(sb.st_mode)) {
-        //  cout<<"directoy exist.OK!"<<endl;
-    } else {
-        cout << directory << " does not exsits. Please mkdir " << directory << endl;
-        exit(0);
+    fs::path bwtPath = fs::path(directory);
+    if (!fs::exists(bwtPath)) {
+        cerr << directory << " does not exist. Please mkdir " << directory << endl;
+        exit(EXIT_FAILURE);
     }
 
     int size = ref.getSeqCount();
-    char fileDirectory[1024];
-    fileDirectory[0] = '\0';
-    strcat(fileDirectory, directory);
-    if (fileDirectory[strlen(fileDirectory) - 1] != '/')
-        strcat(fileDirectory, "/");
 
     for (int i = 0; i < size; i++) {
         uint32_t length = ref.getSeqLength(i);
 
         if (length > MIN_BWT_LEN) {
-            cout << "Building BWT and rBWT for " << ref.getSeqMappedName(i) << "..." << endl;
+            cout << "Building BWT and rBWT for " << ref.getSeqOriginalName(i) << "..." << endl;
             float t = clock();
-            char fileName[1024];
-            fileName[0] = '\0';
-            strcat(fileName, fileDirectory);
-            strcat(fileName, ref.getSeqMappedName(i).c_str());
-
-            char fileUse1[1024];
-            fileUse1[0] = '\0';
-            strcat(fileUse1, fileName);
-            strcat(fileUse1, ".bwt");
 
             const char *tmp = ref.getSeq(i);
-            getOne(tmp, length, fileUse1);
-
-            char fileUse2[1024];
-            fileUse2[0] = '\0';
-            strcat(fileUse2, fileName);
-
-            strcat(fileUse2, ".rbwt");
+            getOne(tmp, length, bwtPath / (ref.getSeqOriginalName(i) + ".bwt"));
 
             char *rtmp = new char[length + 2];
 
@@ -154,50 +54,35 @@ int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
             rtmp[length] = '$';
             rtmp[length + 1] = '\0';
 
-            getOne(rtmp, length, fileUse2);
-            cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
-
+            getOne(rtmp, length, bwtPath / (ref.getSeqOriginalName(i) + ".rbwt"));
             delete[] rtmp;
+
+            cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
         }
     }
 
     return 0;
 }
 
-int HitsCounter::getOne(const char *seqRef, uint32_t length, const char *fileName) {
-
-    //	cout<<"in getOne "<<fileName<<endl;
-
+int HitsCounter::getOne(const char *seqRef, uint32_t length, const fs::path &filePath) {
     SuffixArray2 sfa;
     BWT bwt;
 
-    // float t=clock();
     sfa.builtArray(seqRef, length + 1);
-    // cout<<"array"<<endl;
-    // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
-    // t=clock();
     bwt.create(seqRef, length + 1, &sfa);
-    // cout<<"bwt"<<endl;
-    // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
-    // t=clock();
     bwt.getOccAndOB(seqRef, length + 1);
-    // cout<<"occ ob"<<endl;
-    // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
-    // t=clock();
-    bwt.writeTofile(fileName);
-    // cout<<"write"<<endl;
-    // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
+    bwt.writeTofile(filePath.c_str());
     return 0;
 }
 
 int HitsCounter::loadChromBWTs(Reference &ref, const char *directory) {
+    fs::path bwtPath = fs::path(directory);
+    if (!fs::exists(bwtPath)) {
+        cerr << directory << " does not exist. Please mkdir " << directory << endl;
+        exit(EXIT_FAILURE);
+    }
 
     int size = ref.getSeqCount();
-    char fileDirectory[1024];
-    fileDirectory[0] = '\0';
-    strcat(fileDirectory, directory);
-    if (fileDirectory[strlen(fileDirectory) - 1] != '/')
-        strcat(fileDirectory, "/");
 
     int sizeBWTs = 0;
 
@@ -214,8 +99,8 @@ int HitsCounter::loadChromBWTs(Reference &ref, const char *directory) {
 
     for (int i = 0; i < size; i++) {
         if (ref.getSeqLength(i) > MIN_BWT_LEN) {
-            loadOne(&bwts[id], (fileDirectory + ref.getSeqOriginalName(i) + ".bwt").c_str());
-            loadOne(&rbwts[id], (fileDirectory + ref.getSeqOriginalName(i) + ".rbwt").c_str());
+            loadOne(&bwts[id], bwtPath / (ref.getSeqOriginalName(i) + ".bwt"));
+            loadOne(&rbwts[id], bwtPath / (ref.getSeqOriginalName(i) + ".rbwt"));
 
             id++;
         }
@@ -224,46 +109,37 @@ int HitsCounter::loadChromBWTs(Reference &ref, const char *directory) {
     return 0;
 }
 
-int HitsCounter::loadOne(BWT *bwt, const char *bwtfile) {
-
+int HitsCounter::loadOne(BWT *bwt, const fs::path &filePath) {
     FILE *pFile;
-    pFile = fopen(bwtfile, "r");
+    pFile = fopen(filePath.c_str(), "r");
 
     if (pFile == nullptr) {
-        cout << "fail to open " << bwtfile << endl;
+        cout << "fail to open " << filePath << endl;
         exit(0);
     } else {
         char tmp[1024];
         fgets(tmp, 1024, pFile);
-        // cout<<tmp<<endl;
         tmp[strlen(tmp) - 1] = '\0';
         uint32_t length = atoi(tmp);
-        // cout<<"got length="<<length<<endl;
 
         bwt->setLength(length);
 
         char *seq = new char[length + 1];
         fgets(seq, length + 1, pFile);
         seq[length] = '\0';
-        // cout<<seq<<endl;
         bwt->setBwtSeq(seq);
-        // cout<<"got seq"<<endl;
 
         fgets(tmp, 1024, pFile);
         fgets(tmp, 1024, pFile);
-        // cout<<"tmp="<<tmp<<endl;
         tmp[strlen(tmp) - 1] = '\0';
         int distance = atoi(tmp);
         bwt->setDistance(distance);
-        // cout<<"got dis="<<distance<<endl;
 
         int *Occ = new int[256];
 
         fgets(tmp, 1024, pFile);
-        // cout<<"here "<<tmp<<endl;
         char *cu = tmp;
         char *ne;
-        // tmp solution
         char tmptmp[6];
         tmptmp[0] = '$';
         tmptmp[1] = 'A';
@@ -274,57 +150,40 @@ int HitsCounter::loadOne(BWT *bwt, const char *bwtfile) {
 
         for (int i = 0; i <= 4; i++) {
             ne = strchr(cu, ' ');
-            // cout<<"here2 "<<ne<<endl;
             ne[0] = '\0';
             Occ[tmptmp[i]] = atoi(cu);
             cu = ne + 1;
         }
         Occ['T'] = atoi(cu);
 
-        // cout<<Occ['$']<<" "<<Occ['A']<<" "<<Occ['C']<<" "<<Occ['G']<<" "<<Occ['T']<<" "<<Occ['N']<<endl;
-
         bwt->setOcc(Occ);
 
         int saLen = length / distance;
         if (length % distance != 0)
             saLen++;
-        // cout<<"saLen="<<saLen<<endl;
         char *buffer = new char[(length / distance + 1) * 6 * 10];
         fgets(buffer, (length / distance + 1) * 6 * 10, pFile);
         cu = buffer;
-        // cout<<"cu"<<cu<<"cu"<<endl;
-        // cout<<"saLan"<<saLen<<endl;
         int *ob = new int[6 * saLen];
         for (int i = 0; i < saLen - 1; i++) {
             for (int j = 0; j < 6; j++) {
                 ne = strchr(cu, ' ');
-                // cout<<"cuat"<<cu-buffer<<endl;
-                // cout<<"next n"<<ne-buffer<<endl;
                 ne[0] = '\0';
                 ob[6 * i + j] = atoi(cu);
-                // cout<<atoi(cu)<<endl;
-                // cu=ne+1;
-                cu = ne + 2; // tmptmp
+                cu = ne + 1; // tmptmp
             }
         }
         for (int j = 0; j < 5; j++) {
             ne = strchr(cu, ' ');
-            // cout<<"cuat"<<cu-buffer<<endl;
-            // cout<<"next n"<<ne-buffer<<endl;
-            // cout<<"nenene"<<ne<<"nenene"<<endl;
             ne[0] = '\0';
             ob[6 * (saLen - 1) + j] = atoi(cu);
-            // cout<<"hh"<<atoi(cu)<<endl;
-            // cu=ne+1;
-            cu = ne + 2; // tmptmp
+            cu = ne + 1; // tmptmp
         }
         ob[6 * saLen - 1] = atoi(cu);
-        // cout<<"hh"<<atoi(cu)<<endl;
         bwt->setOBs(ob);
 
         int *sa = new int[saLen];
         fgets(buffer, length / distance * 6 * 10, pFile);
-        // cout<<"buffer for sa="<<buffer<<endl;
         cu = buffer;
         for (int i = 0; i < saLen - 1; i++) {
             ne = strchr(cu, ' ');

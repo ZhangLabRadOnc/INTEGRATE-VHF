@@ -112,7 +112,7 @@ int RunCode::runBuildBWTs(int argc, const char *argv[]) {
     }
 
     float t = clock();
-    cout << "Load ref" << endl;
+    cout << "Loading reference from: " << argv[opStart] << endl;
     Reference ref(argv[opStart]);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
@@ -764,8 +764,8 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     cout << "\nGetting graph by encompassing RNA reads..." << endl;
     Rna rna;
     rna.getGraph(argv[opStart + 3], th, g, hc);
-    rna.getGraph_second(argv[opStart+3],th, g, hc);
-    rna.getGraph_second_read_normal(argv[opStart+3],th, g, hc);
+    //rna.getGraph_second(argv[opStart+3],th, g, hc);
+    //rna.getGraph_second_read_normal(argv[opStart+3],th, g, hc);
     // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
 
     // t=clock();

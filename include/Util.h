@@ -15,6 +15,10 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+string trimString(const string &str);
+vector<string> splitString(const string &str, const string &delim);
+string replaceString(const string &str, const string &from, const string &to);
+
 size_t getFileSize(fs::path filePath);
 
 const char* openFileForRead(string fileName, int &fd, size_t &length);

@@ -36,23 +36,25 @@ VirusLoader::VirusLoader(const string &indexFilePath, const unordered_map<string
                     refPathStr = filePathStr.substr(0, iPos);
                     annotPathStr = filePathStr.substr(iPos + 1);
                 } else {
-                    refPathStr = filePathStr;
+                    annotPathStr = filePathStr;
                 }
             } else {
                 originalName = key;
-                refPathStr = value;
+                annotPathStr = value;
             }
 
-            fs::path refPath = fs::path(refPathStr);
-            if (!fs::exists(refPath))
-            {
-                refPath = fs::path(indexFilePath).parent_path() / refPathStr;
+            if (!refPathStr.empty()) {
+                fs::path refPath = fs::path(refPathStr);
                 if (!fs::exists(refPath))
                 {
-                    cerr << "Virus reference file does not exist: " << refPathStr << endl;
-                    continue;
-                } else {
-                    refPathStr = refPath.string();
+                    refPath = fs::path(indexFilePath).parent_path() / refPathStr;
+                    if (!fs::exists(refPath))
+                    {
+                        cerr << "Virus reference file does not exist: " << refPathStr << endl;
+                        continue;
+                    } else {
+                        refPathStr = refPath.string();
+                    }
                 }
             }
 
@@ -138,11 +140,13 @@ void VirusLoader::loadHPVEM(const fs::path &filePath)
                     if (pair.first == hpv)
                     {
                         found = true;
-                        if (this->selRefMap.find(pair.second.refPath) == selRefMap.end())
-                        {
-                            this->selRefMap[pair.second.refPath] = vector<VirusLoader::VirusNamePair>();
+                        if (!pair.second.refPath.empty()) {
+                            if (this->selRefMap.find(pair.second.refPath) == selRefMap.end())
+                            {
+                                this->selRefMap[pair.second.refPath] = vector<VirusLoader::VirusNamePair>();
+                            }
+                            this->selRefMap[pair.second.refPath].push_back(VirusNamePair(pair.second.originalName, pair.first));
                         }
-                        this->selRefMap[pair.second.refPath].push_back(VirusNamePair(pair.second.originalName, pair.first));
                         if (!pair.second.annotPath.empty())
                         {
                             if (this->selAnnotMap.find(pair.second.annotPath) == selAnnotMap.end())
@@ -151,7 +155,15 @@ void VirusLoader::loadHPVEM(const fs::path &filePath)
                             }
                             this->selAnnotMap[pair.second.annotPath].push_back(VirusNamePair(pair.second.originalName, pair.first));
                         }
-                        cout << "Found HPV type: " << pair.first << " as " << pair.second.originalName << " in file " << pair.second.refPath << endl;
+                        cout << "Found HPV type: " << pair.first << " as " << pair.second.originalName << endl;
+                        if (!pair.second.refPath.empty())
+                        {
+                            cout << pair.second.refPath << endl;
+                        }
+                        if (!pair.second.annotPath.empty())
+                        {
+                            cout << pair.second.annotPath << endl;
+                        }
                         break;
                     }
                 }

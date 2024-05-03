@@ -11,6 +11,7 @@ set(SOURCES
     FocalRegionHandler.cpp
     FusionGraph.cpp
     Gene.cpp
+    GffHelper.cpp
     HitsCounter.cpp
     LowComplexFinder.cpp
     MyBamHeader.cpp

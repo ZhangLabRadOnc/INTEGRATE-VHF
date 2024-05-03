@@ -5,9 +5,10 @@
  *      Author: jinzhang
  */
 
+#include "GffHelper.h"
+#include "Util.h"
 #include "VirusLoader.h"
 #include "Gene.h"
-#include "Util.h"
 
 Gene::Gene() {
     this->bwts = nullptr;
@@ -84,6 +85,11 @@ int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::Viru
     while (pls <= pfe)
     {
         ple = pls + strcspn(pls, "\n") - 1;
+        if (ple <= pls) {
+            pls++;
+            ple = pls;
+            continue;
+        }
         if (*ple == '\r') {
             ple--;
         }
@@ -192,27 +198,156 @@ int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::Viru
                 count++;
             }
         }
-        pls = ple + strcspn(ple, "\n") + 2;
+        pls = ple + strcspn(ple, "\n") + 1;
     }
     closeFileForRead(pfs, fd, fileLen);
 
-    sort(transcripts.begin(), transcripts.end(), myTransSortFunc);
     cout << count << " transcripts loaded from file: " << fileName << endl;
 
     return 0;
 }
 
-void Gene::readVirusLoader(const VirusLoader &virusLoader, Reference &ref) {
-    for (const auto &v : virusLoader.selAnnotMap) {
-        loadGenesFromFile(v.first.c_str(), &v.second, ref);
-        for (const auto &p : v.second) {
-            viruses.push_back(p.mappedName);
-        }
+void Gene::readVirusLoaderTSV(const string &k, const vector<VirusLoader::VirusNamePair> &v, Reference &ref)
+{
+    loadGenesFromFile(k.c_str(), &v, ref);
+    for (const auto &p : v)
+    {
+        viruses.push_back(p.mappedName);
     }
 }
 
-int Gene::setGene() {
+bool compareGffSeqFeature(const GffSequenceFeature &a, const GffSequenceFeature &b) {
+    return a.start < b.start;
+}
 
+void Gene::readVirusLoaderGFF(const string &k, const vector<VirusLoader::VirusNamePair> &v, Reference &ref)
+{
+    string filePath = k;
+    for (const auto &p : v)
+    {
+        viruses.push_back(p.mappedName);
+    }
+    int fd;
+    size_t fileLen;
+    const char *pfs = openFileForRead(filePath, fd, fileLen);
+    // End pointer of the file (exclusive)
+    const char *pfe = pfs + fileLen - 1;
+
+    GffFile gf = parseGff(pfs, pfe, filePath);
+    if (ref.getSeqIdByOriginalName(gf.seqRegions[0].seqName) < 0) {
+        ref.readVirusLoaderGff(gf, pfs, v);
+    }
+    vector<transcript_t> gffTranscripts;
+
+    for (GffSequenceFeature &seqFeature : gf.seqFeatures)
+    {
+        if (seqFeature.attribute.contains("ID"))
+        {
+            seqFeature.attribute["ID"] = replaceString(seqFeature.attribute.at("ID"), "%2A", "*");
+        }
+        if (seqFeature.attribute.contains("Name"))
+        {
+            seqFeature.attribute["Name"] = replaceString(seqFeature.attribute.at("Name"), "%2A", "*");
+        }
+        if (seqFeature.attribute.contains("Parent"))
+        {
+            seqFeature.attribute["Parent"] = replaceString(seqFeature.attribute.at("Parent"), "%2A", "*");
+        }
+    }
+    unordered_map<string, vector<GffSequenceFeature>> cdsFeaturesMap;
+    for (int i = 0; i < gf.seqFeatures.size(); i++)
+    {
+        const GffSequenceFeature &seqFeature = gf.seqFeatures[i];
+
+        if (seqFeature.feature.compare("CDS") == 0)
+        {
+            string ID = seqFeature.attribute.at("ID");
+            if (cdsFeaturesMap.contains(ID))
+            {
+                cdsFeaturesMap[ID].push_back(seqFeature);
+            }
+            else
+            {
+                cdsFeaturesMap[ID] = {seqFeature};
+            }
+        }
+    }
+    int idx = 0;
+    for (auto it = cdsFeaturesMap.begin(); it != cdsFeaturesMap.end(); ++it)
+    {
+        vector<GffSequenceFeature> &cdsFeatures = it->second;
+        const GffSequenceFeature &cdsFeature = cdsFeatures[0];
+        sort(cdsFeatures.begin(), cdsFeatures.end(), compareGffSeqFeature);
+        if (cdsFeatures.size() >= 2)
+        {
+            GffSequenceFeature &featureFirst = cdsFeatures[0];
+            if (featureFirst.end - featureFirst.start + 1 < 300)
+            {
+                featureFirst.start = max(featureFirst.end - 300, 0);
+            }
+            GffSequenceFeature &featureLast = cdsFeatures[cdsFeatures.size() - 1];
+            if (featureLast.end - featureLast.start + 1 < 300)
+            {
+                featureLast.end = featureLast.start + 300;
+            }
+        }
+        sort(cdsFeatures.begin(), cdsFeatures.end(), compareGffSeqFeature);
+        string name2 = "N/A";
+        for (int i = 0; i < gf.seqFeatures.size(); i++)
+        {
+            const GffSequenceFeature &seqFeature = gf.seqFeatures[i];
+
+            if (seqFeature.feature.compare("gene") == 0)
+            {
+                if (seqFeature.attribute.at("ID").compare(cdsFeature.attribute.at("Parent")) == 0)
+                {
+                    name2 = seqFeature.attribute.at("Name");
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i < cdsFeatures.size(); i++, ++idx)
+        {
+            const GffSequenceFeature &cdsFeature = cdsFeatures[i];
+            transcript_t tt;
+            tt.name = to_string(idx);
+            tt.chrName = cdsFeature.seqName;
+            for (const auto &p : v)
+            {
+                if (p.originalName.compare(cdsFeature.seqName) == 0)
+                {
+                    tt.chrName = p.mappedName;
+                    break;
+                }
+            }
+            tt.tid = ref.getSeqIdByMappedName(tt.chrName);
+            tt.strand = cdsFeature.strand.compare("+") == 0 ? 0 : 1;
+            tt.txStart = cdsFeature.start;
+            tt.txEnd = cdsFeature.end;
+            tt.cdsStart = cdsFeature.end;
+            tt.cdsEnd = cdsFeature.end;
+            tt.exonCount = 1;
+            tt.exonStarts = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
+            tt.exonEnds = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
+            tt.exonStarts[0] = cdsFeature.start;
+            tt.exonEnds[0] = cdsFeature.end;
+            tt.name2 = name2;
+            if (!(tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd))))
+            {
+                gffTranscripts.push_back(tt);
+            }
+        }
+    }
+    closeFileForRead(pfs, fd, fileLen);
+    transcripts.insert(transcripts.end(), gffTranscripts.begin(), gffTranscripts.end());
+    cout << gffTranscripts.size() << " transcripts loaded from file: " << filePath << endl;
+}
+
+void Gene::sortTranscripts() {
+    sort(this->transcripts.begin(), this->transcripts.end(), myTransSortFunc);
+}
+
+int Gene::setGene() {
     int fid = 0;
     if (transcripts.size() < 1) {
         cerr << "No gene annotation" << endl;
@@ -341,6 +476,7 @@ bool Gene::isPairPossibleFusion(int id1, int id2, int strand1, int strand2) {
     }
 
     bool found = false;
+
     for (auto &v : viruses) {
         if (v.compare(genes[id1].chrName) == 0 || v.compare(genes[id2].chrName) == 0) {
             found = true;
@@ -351,7 +487,7 @@ bool Gene::isPairPossibleFusion(int id1, int id2, int strand1, int strand2) {
     {
         return false;
     }
-
+    
     int gStrand1 = genes[id1].strand;
     int gStrand2 = genes[id2].strand;
 

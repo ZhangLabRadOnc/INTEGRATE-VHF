@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "GffHelper.h"
 #include "VirusLoader.h"
 
 using namespace std;
@@ -25,8 +26,9 @@ class Reference {
       string originalName;
       string mappedName;
       faidx_t *f = nullptr;
+      int seqLength = 0;
       RefItem() = default;
-      RefItem(string originalName, string mappedName, faidx_t *f) : originalName(originalName), mappedName(mappedName), f(f) {}
+      RefItem(string originalName, string mappedName, faidx_t *f, int seqLength) : originalName(originalName), mappedName(mappedName), f(f), seqLength(seqLength) {}
     };
 
   private:
@@ -47,5 +49,6 @@ class Reference {
     int getSeqLength(int id);
     int getSeqCount();
     const char *getSeq(int id);
-    void readVirusLoader(const VirusLoader &virusLoader);
+    void readVirusLoaderFA(const VirusLoader &virusLoader);
+    void readVirusLoaderGff(const GffFile &gffFile, const char *pfs, const vector<VirusLoader::VirusNamePair> &virusNamePairs);
 };

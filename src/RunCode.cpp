@@ -727,7 +727,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
         float t = clock();
         cout << "Loading virus..." << endl;
         vl = new VirusLoader(opt.fileVirus, opt.virusTypes);
-        ref.readVirusLoader(*vl);
+        ref.readVirusLoaderFA(*vl);
         cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
     }
 
@@ -739,10 +739,20 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     cout << "Loading genes..." << endl;
     g.loadGenesFromFile(argv[opStart + 1], nullptr, ref);
     if (vl != nullptr && !opt.virusTypes.empty()) {
-        g.readVirusLoader(*vl, ref);
+        for (auto const &[k, v] : vl->selAnnotMap) {
+            if (k.ends_with("tsv")) {
+                g.readVirusLoaderTSV(k, v, ref);
+            } else if (k.ends_with("gff")) {
+                g.readVirusLoaderGFF(k, v, ref);
+            } else {
+                cerr << "Unsupported annotation file: " << k << endl;
+                exit(EXIT_FAILURE);
+            }
+        }
         delete vl;
         vl = nullptr;
     }
+    g.sortTranscripts();
     g.setGene();
     g.allocate();
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
@@ -764,8 +774,8 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     cout << "\nGetting graph by encompassing RNA reads..." << endl;
     Rna rna;
     rna.getGraph(argv[opStart + 3], th, g, hc);
-    //rna.getGraph_second(argv[opStart+3],th, g, hc);
-    //rna.getGraph_second_read_normal(argv[opStart+3],th, g, hc);
+    rna.getGraph_second(argv[opStart+3],th, g, hc);
+    rna.getGraph_second_read_normal(argv[opStart+3],th, g, hc);
     // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
 
     // t=clock();

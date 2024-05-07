@@ -1619,9 +1619,9 @@ int Result::getAllJunctionsStep6(const char *filename, Gene &g, Reference &ref) 
         // cout<<"here1"<<endl;
         if (last_pos5 != p5_pos || last_pos3 != p3_pos) {
             if (fjtvec2[i].isCano == 1)
-                outFile << ref.getSeqMappedName(fjtvec2[i].p5.tid) << "\t";
+                outFile << ref.getSeqOriginalName(fjtvec2[i].p5.tid) << "\t";
             else
-                outFile << ref.getSeqMappedName(g.getTid(fjtvec2[i].geneId5p)) << "\t";
+                outFile << ref.getSeqOriginalName(g.getTid(fjtvec2[i].geneId5p)) << "\t";
             // cout<<"here1.1"<<endl;
             int strand1;
             if (fjtvec2[i].isCano == 1)

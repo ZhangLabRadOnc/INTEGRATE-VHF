@@ -614,11 +614,11 @@ int Gene::buildOneSuffix(int geneId, int isForward, Reference &ref) {
     const char *seqRef = ref.getSeq(genes[geneId].tid);
 
     if (isForward == 1) {
-        copy(seqRef + genes[geneId].leftLimit, seqRef + genes[geneId].rightLimit + 1, tmp);
+        copy(seqRef + genes[geneId].leftLimit - 1, seqRef + genes[geneId].rightLimit, tmp);
     } else {
         int x = 0;
         for (int j = length - 1; j >= 0; j--) {
-            tmp[x++] = getCharComp(seqRef[genes[geneId].leftLimit + j]);
+            tmp[x++] = getCharComp(seqRef[genes[geneId].leftLimit + j - 1]);
         }
     }
     tmp[length] = '$';

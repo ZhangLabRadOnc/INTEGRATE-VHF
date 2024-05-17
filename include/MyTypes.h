@@ -251,22 +251,22 @@ typedef struct {
 
 } split_dna_t;
 
-typedef struct {
+struct result_t {
     string nm5p;
     string nm3p;
-    int geneId1;
-    int geneId2;
-    int isCanonical;
-    int isReci;
-    int numOfEnRna;
-    int numOfSpRna;
-    int numOfEnDnaT;
-    int numOfSpDnaT;
-    int numOfEnDnaN;
-    int numOfSpDnaN;
-    int tier;
+    int geneId1 = 0;
+    int geneId2 = 0;
+    int isCanonical = 0;
+    int isReci = 0;
+    int numOfEnRna = 0;
+    int numOfSpRna = 0;
+    int numOfEnDnaT = 0;
+    int numOfSpDnaT = 0;
+    int numOfEnDnaN = 0;
+    int numOfSpDnaN = 0;
+    int tier = 0;
 
-    int numOfClusters;
+    int numOfClusters = 0;
     vector<int> types;
     vector<int> primeOKs;
     vector<int> canos;
@@ -281,9 +281,9 @@ typedef struct {
     vector<encompass_dna_t> endna2;
     vector<split_dna_t> spdna2;
 
-    int realPrint;
+    int realPrint = 0;
 
-} result_t;
+};
 
 typedef struct {
     int min_seq_bwt;

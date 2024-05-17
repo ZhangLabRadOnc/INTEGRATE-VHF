@@ -126,7 +126,7 @@ GffFile parseGff(const char *start, const char *end, const string &fileName) {
                             lineStr = lineStr.substr(15);
                             vector<string> fields = splitString(lineStr, " ");
                             if (fields.size() == 3) {
-                                seqRegions.push_back(GffSequenceRegion(fields[0], stoi(fields[1]) - 1, stoi(fields[2])));
+                                seqRegions.push_back(GffSequenceRegion(fields[0], stoi(fields[1]), stoi(fields[2])));
                             }
                         }
                     }
@@ -142,7 +142,7 @@ GffFile parseGff(const char *start, const char *end, const string &fileName) {
                                     attribute[trimString(keyValue[0])] = trimString(keyValue[1]);
                                 }
                             }
-                            GffSequenceFeature seqFeature(fields[0], fields[1], fields[2], stoi(fields[3]) - 1, stoi(fields[4]), fields[5], fields[6], fields[7], attribute);
+                            GffSequenceFeature seqFeature(fields[0], fields[1], fields[2], stoi(fields[3]), stoi(fields[4]), fields[5], fields[6], fields[7], attribute);
                             seqFeatures.push_back(seqFeature);
                         }
                     } else {

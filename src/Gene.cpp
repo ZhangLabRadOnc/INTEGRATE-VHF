@@ -283,7 +283,7 @@ void Gene::readVirusLoaderGFF(const string &k, const vector<VirusLoader::VirusNa
             GffSequenceFeature &featureFirst = cdsFeatures[0];
             if (featureFirst.end - featureFirst.start + 1 < 300)
             {
-                featureFirst.start = max(featureFirst.end - 300, 0);
+                featureFirst.start = max(featureFirst.end - 300, 1);
             }
             GffSequenceFeature &featureLast = cdsFeatures[cdsFeatures.size() - 1];
             if (featureLast.end - featureLast.start + 1 < 300)

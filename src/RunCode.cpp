@@ -737,7 +737,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
 
     t = clock();
     cout << "Loading genes..." << endl;
-    g.loadGenesFromFile(argv[opStart + 1], nullptr, ref);
+    g.loadGenesFromFile(argv[opStart + 1], ref);
     if (vl != nullptr && !opt.virusTypes.empty()) {
         for (auto const &[k, v] : vl->selAnnotMap) {
             if (k.ends_with("tsv")) {

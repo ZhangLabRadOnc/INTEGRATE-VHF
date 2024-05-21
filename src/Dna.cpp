@@ -513,7 +513,7 @@ int printPartial(Gene &g, Reference &ref, encompass_dna_t &et) {
     cout << " ";
     cout << et.strand1;
     cout << " ";
-    cout << ref.getSeqMappedName(et.tid1);
+    cout << ref.getSeqOriginalName(et.tid1);
     cout << " ";
     cout << et.pos1;
     cout << " ";
@@ -521,7 +521,7 @@ int printPartial(Gene &g, Reference &ref, encompass_dna_t &et) {
     cout << " ";
     cout << et.strand2;
     cout << " ";
-    cout << ref.getSeqMappedName(et.tid2);
+    cout << ref.getSeqOriginalName(et.tid2);
     cout << " ";
     cout << et.pos2;
     cout << " ";
@@ -610,7 +610,7 @@ int printTmpEncompass(Gene &g, Reference &ref, vector<encompass_dna_t> &tmp) {
         cout << " ";
         cout << et.strand1;
         cout << " ";
-        cout << ref.getSeqMappedName(et.tid1);
+        cout << ref.getSeqOriginalName(et.tid1);
         cout << " ";
         cout << et.pos1;
         cout << " ";
@@ -618,7 +618,7 @@ int printTmpEncompass(Gene &g, Reference &ref, vector<encompass_dna_t> &tmp) {
         cout << " ";
         cout << et.strand2;
         cout << " ";
-        cout << ref.getSeqMappedName(et.tid2);
+        cout << ref.getSeqOriginalName(et.tid2);
         cout << " ";
         cout << et.pos2;
         cout << " ";
@@ -1524,7 +1524,7 @@ int Dna::printEncompass(Gene &g, Reference &ref) {
         cout << " ";
         cout << et.strand1;
         cout << " ";
-        cout << ref.getSeqMappedName(et.tid1);
+        cout << ref.getSeqOriginalName(et.tid1);
         cout << " ";
         cout << et.pos1;
         cout << " ";
@@ -1532,7 +1532,7 @@ int Dna::printEncompass(Gene &g, Reference &ref) {
         cout << " ";
         cout << et.strand2;
         cout << " ";
-        cout << ref.getSeqMappedName(et.tid2);
+        cout << ref.getSeqOriginalName(et.tid2);
         cout << " ";
         cout << et.pos2;
         cout << " ";
@@ -1959,12 +1959,12 @@ int Dna::printSpDna(Gene &g, Reference &ref) {
         cout << st.name << "\t";
 
         cout << st.strand1 << "\t";
-        cout << ref.getSeqMappedName(st.tid1);
+        cout << ref.getSeqOriginalName(st.tid1);
         cout << st.pos1 << "\t";
         cout << st.len1 << "\t";
 
         cout << st.strand2 << "\t";
-        cout << ref.getSeqMappedName(st.tid2);
+        cout << ref.getSeqOriginalName(st.tid2);
         cout << st.pos2 << "\t";
         cout << st.len2 << "\t";
 

@@ -57,6 +57,15 @@ string replaceString(const string &str, const string &from, const string &to) {
     return result;
 }
 
+string lowerString(const string &str) {
+    string result = str;
+    for (size_t i = 0; i < result.length(); i++) {
+        result[i] = tolower(result[i]);
+    }
+
+    return result;
+}
+
 size_t getFileSize(fs::path filePath) {
     try {
         if (fs::exists(filePath)) {

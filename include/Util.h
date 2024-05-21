@@ -18,6 +18,7 @@ namespace fs = std::filesystem;
 string trimString(const string &str);
 vector<string> splitString(const string &str, const string &delim);
 string replaceString(const string &str, const string &from, const string &to);
+string lowerString(const string &str);
 
 size_t getFileSize(fs::path filePath);
 

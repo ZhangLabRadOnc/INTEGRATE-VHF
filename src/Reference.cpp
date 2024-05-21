@@ -63,14 +63,6 @@ string Reference::getSeqOriginalName(int id) {
     return this->refItems[id].originalName;
 }
 
-string Reference::getSeqMappedName(int id) {
-    if (id < 0 || id >= this->seqCount) {
-        return "";
-    }
-
-    return this->refItems[id].mappedName;
-}
-
 int Reference::getSeqIdByOriginalName(const string &name) {
     if (this->nameOriginalToId.find(name) == this->nameOriginalToId.end()) {
         return -1;
@@ -127,7 +119,8 @@ const char *Reference::getSeq(int id) {
 void Reference::readVirusLoaderFA(const VirusLoader &virusLoader) {
     for (const auto &v : virusLoader.selRefMap) {
         string filePath = v.first;
-        if (filePath.ends_with(".fa") || filePath.ends_with(".fasta")) {
+        string filePathLower = lowerString(filePath);
+        if (filePathLower.ends_with(".fa") || filePathLower.ends_with(".fasta")) {
             faidx_t *f = fai_load(filePath.c_str());
             this->faSet.insert(f);
             for (const auto &n : v.second) {
@@ -137,7 +130,7 @@ void Reference::readVirusLoaderFA(const VirusLoader &virusLoader) {
                 this->refItems[this->refItems.size()] = RefItem(n.originalName, n.mappedName, f, seqLength);
                 this->seqCount++;
             }
-        } else if (filePath.ends_with(".gff")) {
+        } else if (filePathLower.ends_with(".gff")) {
             continue;
         } else {
             cerr << "Unsupported reference file: " << filePath << endl;

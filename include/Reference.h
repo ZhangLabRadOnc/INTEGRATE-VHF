@@ -43,7 +43,6 @@ class Reference {
     Reference(string filePath);
     virtual ~Reference();
     string getSeqOriginalName(int id);
-    string getSeqMappedName(int id);
     int getSeqIdByOriginalName(const string &name);
     int getSeqIdByMappedName(const string &name);
     int getSeqLength(int id);

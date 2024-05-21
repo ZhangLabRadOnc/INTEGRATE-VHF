@@ -70,7 +70,7 @@ bool myTransSortFunc(transcript_t i, transcript_t j) {
         return false;
 }
 
-int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::VirusNamePair> *namePairs, Reference &ref) {
+int Gene::loadGenesFromFile(const char *fileName, Reference &ref) {
     int fd;
     size_t fileLen;
     int count = 0;
@@ -114,21 +114,11 @@ int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::Viru
             tt.name = string(token);
             token = strtok(nullptr, delimiters);
             tt.chrName = string(token);
-            tt.tid = -1;
-            if (namePairs != nullptr)
-            {
-                for (const auto &pair : *namePairs)
-                {
-                    if (pair.originalName.compare(tt.chrName) == 0)
-                    {
-                        tt.chrName = pair.mappedName;
-                        break;
-                    }
-                }
-            } else {
+            tt.tid = ref.getSeqIdByOriginalName(tt.chrName);
+            if (tt.tid < 0) {
                 tt.chrName = getStdChrName(tt.chrName);
+                tt.tid = ref.getSeqIdByMappedName(tt.chrName);
             }
-            tt.tid = ref.getSeqIdByMappedName(tt.chrName);
             if (tt.tid < 0)
             {
                 free(line);
@@ -209,7 +199,7 @@ int Gene::loadGenesFromFile(const char *fileName, const vector<VirusLoader::Viru
 
 void Gene::readVirusLoaderTSV(const string &k, const vector<VirusLoader::VirusNamePair> &v, Reference &ref)
 {
-    loadGenesFromFile(k.c_str(), &v, ref);
+    loadGenesFromFile(k.c_str(), ref);
     for (const auto &p : v)
     {
         viruses.push_back(p.mappedName);

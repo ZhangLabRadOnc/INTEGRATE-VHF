@@ -739,13 +739,13 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     cout << "Loading genes..." << endl;
     g.loadGenesFromFile(argv[opStart + 1], ref);
     if (vl != nullptr && !opt.virusTypes.empty()) {
-        for (auto const &[k, v] : vl->selAnnotMap) {
-            if (k.ends_with("tsv")) {
-                g.readVirusLoaderTSV(k, v, ref);
-            } else if (k.ends_with("gff")) {
-                g.readVirusLoaderGFF(k, v, ref);
+        for (auto const &[v1, v2, v3] : vl->selAnnots) {
+            if (v1.ends_with("tsv")) {
+                g.readVirusLoaderTSV(v1, v2, v3, ref);
+            } else if (v1.ends_with("gff")) {
+                g.readVirusLoaderGFF(v1, v2, v3, ref, *vl);
             } else {
-                cerr << "Unsupported annotation file: " << k << endl;
+                cerr << "Unsupported annotation file: " << v1 << endl;
                 exit(EXIT_FAILURE);
             }
         }

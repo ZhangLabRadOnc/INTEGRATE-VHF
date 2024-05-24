@@ -49,5 +49,5 @@ class Reference {
     int getSeqCount();
     const char *getSeq(int id);
     void readVirusLoaderFA(const VirusLoader &virusLoader);
-    void readVirusLoaderGff(const GffFile &gffFile, const char *pfs, const vector<VirusLoader::VirusNamePair> &virusNamePairs);
+    void readVirusLoaderGff(const GffFile &gffFile, const char *pfs, const string &originalName, const string &mappedName, VirusLoader &vl);
 };

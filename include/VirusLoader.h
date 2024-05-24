@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -20,16 +21,19 @@ public:
 private:
     struct VirusNameFile {
         string originalName;
-        string refPath;
+        string gffName;
+        string gffPath;
+        string fastaName;
+        string fastaPath;
+        string annotName;
         string annotPath;
         VirusNameFile() = default;
-        VirusNameFile(string originalName, string refPath) : originalName(originalName), refPath(refPath) {}
-        VirusNameFile(string originalName, string refPath, string annotPath) : originalName(originalName), refPath(refPath), annotPath(annotPath) {}
+        VirusNameFile(string originalName, string gffName, string gffPath, string fastaName, string fastaPath, string annotName, string annotPath) :
+            originalName(originalName), gffName(gffName), gffPath(gffPath), fastaName(fastaName), fastaPath(fastaPath), annotName(annotName), annotPath(annotPath) {}
     };
-    unordered_map<string, VirusNameFile> virusMap;
     void loadHPVEM(const fs::path &filePath);
 public:
-    unordered_map<string, vector<VirusNamePair>> selRefMap;
-    unordered_map<string, vector<VirusNamePair>> selAnnotMap;
+    unordered_map<string, VirusNameFile> virusMap;
+    vector<tuple<string, string, string>> selRefs, selAnnots;
     VirusLoader(const string &indexFilePath, const unordered_map<string, string> &virusTypes);
 };

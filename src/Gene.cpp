@@ -5,6 +5,8 @@
  *      Author: jinzhang
  */
 
+#include <map>
+#include <unordered_map>
 #include "GffHelper.h"
 #include "Util.h"
 #include "VirusLoader.h"
@@ -197,26 +199,19 @@ int Gene::loadGenesFromFile(const char *fileName, Reference &ref) {
     return 0;
 }
 
-void Gene::readVirusLoaderTSV(const string &k, const vector<VirusLoader::VirusNamePair> &v, Reference &ref)
+void Gene::readVirusLoaderTSV(const string &filePath, const string &originalName, const string &mappedName, Reference &ref)
 {
-    loadGenesFromFile(k.c_str(), ref);
-    for (const auto &p : v)
-    {
-        viruses.push_back(p.mappedName);
-    }
+    viruses.push_back(mappedName);
+    loadGenesFromFile(filePath.c_str(), ref);
 }
 
 bool compareGffSeqFeature(const GffSequenceFeature &a, const GffSequenceFeature &b) {
     return a.start < b.start;
 }
 
-void Gene::readVirusLoaderGFF(const string &k, const vector<VirusLoader::VirusNamePair> &v, Reference &ref)
+void Gene::readVirusLoaderGFF(const string &filePath, const string &originalName, const string &mappedName, Reference &ref, VirusLoader &vl)
 {
-    string filePath = k;
-    for (const auto &p : v)
-    {
-        viruses.push_back(p.mappedName);
-    }
+    viruses.push_back(mappedName);
     int fd;
     size_t fileLen;
     const char *pfs = openFileForRead(filePath, fd, fileLen);
@@ -224,13 +219,20 @@ void Gene::readVirusLoaderGFF(const string &k, const vector<VirusLoader::VirusNa
     const char *pfe = pfs + fileLen - 1;
 
     GffFile gf = parseGff(pfs, pfe, filePath);
-    if (ref.getSeqIdByOriginalName(gf.seqRegions[0].seqName) < 0) {
-        ref.readVirusLoaderGff(gf, pfs, v);
+    if (ref.getSeqIdByOriginalName(mappedName) < 0) {
+        ref.readVirusLoaderGff(gf, pfs, originalName, mappedName, vl);
     }
     vector<transcript_t> gffTranscripts;
 
-    for (GffSequenceFeature &seqFeature : gf.seqFeatures)
+    for (auto it = gf.seqFeatures.begin(); it != gf.seqFeatures.end();)        
     {
+        GffSequenceFeature &seqFeature = *it;
+        if (originalName.compare(seqFeature.seqName) != 0)
+        {
+            it = gf.seqFeatures.erase(it);
+            continue;
+        }
+        seqFeature.seqName = mappedName;
         if (seqFeature.attribute.contains("ID"))
         {
             seqFeature.attribute["ID"] = replaceString(seqFeature.attribute.at("ID"), "%2A", "*");
@@ -243,89 +245,75 @@ void Gene::readVirusLoaderGFF(const string &k, const vector<VirusLoader::VirusNa
         {
             seqFeature.attribute["Parent"] = replaceString(seqFeature.attribute.at("Parent"), "%2A", "*");
         }
+        ++it;
     }
-    unordered_map<string, vector<GffSequenceFeature>> cdsFeaturesMap;
+    map<string, GffSequenceFeature> geneIdMap;
+    map<string, vector<GffSequenceFeature>> geneCDSMap;
     for (int i = 0; i < gf.seqFeatures.size(); i++)
     {
         const GffSequenceFeature &seqFeature = gf.seqFeatures[i];
-
-        if (seqFeature.feature.compare("CDS") == 0)
+        if (seqFeature.feature.compare("gene") == 0)
         {
-            string ID = seqFeature.attribute.at("ID");
-            if (cdsFeaturesMap.contains(ID))
+            geneIdMap[seqFeature.attribute.at("ID")] = seqFeature;
+        } else if (seqFeature.feature.compare("CDS") == 0)
+        {
+            string ID = seqFeature.attribute.at("Parent");
+            if (geneCDSMap.contains(ID))
             {
-                cdsFeaturesMap[ID].push_back(seqFeature);
+                geneCDSMap[ID].push_back(seqFeature);
             }
             else
             {
-                cdsFeaturesMap[ID] = {seqFeature};
+                geneCDSMap[ID] = {seqFeature};
             }
         }
     }
-    int idx = 0;
-    for (auto it = cdsFeaturesMap.begin(); it != cdsFeaturesMap.end(); ++it)
+    for (auto it = geneIdMap.begin(); it != geneIdMap.end(); it++)
     {
-        vector<GffSequenceFeature> &cdsFeatures = it->second;
-        const GffSequenceFeature &cdsFeature = cdsFeatures[0];
-        sort(cdsFeatures.begin(), cdsFeatures.end(), compareGffSeqFeature);
-        if (cdsFeatures.size() >= 2)
+        const GffSequenceFeature &gene = it->second;
+        const string geneId = it->first;
+        vector<GffSequenceFeature> cdsList = (geneCDSMap.find(geneId) != geneCDSMap.end()) ? geneCDSMap[geneId] : vector<GffSequenceFeature>();
+        sort(cdsList.begin(), cdsList.end(), compareGffSeqFeature);
+        if (cdsList.size() >= 2)
         {
-            GffSequenceFeature &featureFirst = cdsFeatures[0];
+            GffSequenceFeature &featureFirst = cdsList[0];
             if (featureFirst.end - featureFirst.start + 1 < 300)
             {
                 featureFirst.start = max(featureFirst.end - 300, 1);
             }
-            GffSequenceFeature &featureLast = cdsFeatures[cdsFeatures.size() - 1];
+            GffSequenceFeature &featureLast = cdsList[cdsList.size() - 1];
             if (featureLast.end - featureLast.start + 1 < 300)
             {
                 featureLast.end = featureLast.start + 300;
             }
         }
-        sort(cdsFeatures.begin(), cdsFeatures.end(), compareGffSeqFeature);
-        string name2 = "N/A";
-        for (int i = 0; i < gf.seqFeatures.size(); i++)
-        {
-            const GffSequenceFeature &seqFeature = gf.seqFeatures[i];
+        sort(cdsList.begin(), cdsList.end(), compareGffSeqFeature);
 
-            if (seqFeature.feature.compare("gene") == 0)
-            {
-                if (seqFeature.attribute.at("ID").compare(cdsFeature.attribute.at("Parent")) == 0)
-                {
-                    name2 = seqFeature.attribute.at("Name");
-                    break;
-                }
-            }
-        }
-        for (int i = 0; i < cdsFeatures.size(); i++, ++idx)
+        transcript_t tt;
+        tt.name = geneId;
+        tt.chrName = gene.seqName;
+        if (mappedName.compare(tt.chrName) != 0)
         {
-            const GffSequenceFeature &cdsFeature = cdsFeatures[i];
-            transcript_t tt;
-            tt.name = to_string(idx);
-            tt.chrName = cdsFeature.seqName;
-            for (const auto &p : v)
-            {
-                if (p.originalName.compare(cdsFeature.seqName) == 0)
-                {
-                    tt.chrName = p.mappedName;
-                    break;
-                }
-            }
-            tt.tid = ref.getSeqIdByMappedName(tt.chrName);
-            tt.strand = cdsFeature.strand.compare("+") == 0 ? 0 : 1;
-            tt.txStart = cdsFeature.start;
-            tt.txEnd = cdsFeature.end;
-            tt.cdsStart = cdsFeature.end;
-            tt.cdsEnd = cdsFeature.end;
-            tt.exonCount = 1;
-            tt.exonStarts = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
-            tt.exonEnds = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
-            tt.exonStarts[0] = cdsFeature.start;
-            tt.exonEnds[0] = cdsFeature.end;
-            tt.name2 = name2;
-            if (!(tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd))))
-            {
-                gffTranscripts.push_back(tt);
-            }
+            continue;
+        }
+        tt.tid = ref.getSeqIdByMappedName(tt.chrName);
+        tt.strand = gene.strand.compare("+") == 0 ? 0 : 1;
+        tt.txStart = gene.start;
+        tt.txEnd = gene.end;
+        tt.cdsStart = gene.end;
+        tt.cdsEnd = gene.end;
+        tt.exonCount = cdsList.size();
+        tt.exonStarts = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
+        tt.exonEnds = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
+        for (int j = 0; j < cdsList.size(); j++)
+        {
+            tt.exonStarts[j] = cdsList[j].start;
+            tt.exonEnds[j] = cdsList[j].end;
+        }
+        tt.name2 = gene.attribute.at("Name");
+        if (!(tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd))))
+        {
+            gffTranscripts.push_back(tt);
         }
     }
     closeFileForRead(pfs, fd, fileLen);

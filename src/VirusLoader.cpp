@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "VirusLoader.h"
 
@@ -15,72 +16,116 @@ namespace fs = std::filesystem;
 VirusLoader::VirusLoader(const string &indexFilePath, const unordered_map<string, string> &virusTypes)
 {
     ifstream indexFile(indexFilePath);
-    string line;
+    string line, current;
 
-    while (getline(indexFile, line))
-    {
-        size_t iPos = line.find('=');
-        if (iPos != string::npos)
-        {
-            string key = line.substr(0, iPos);
-            string value = line.substr(iPos + 1);
-            string originalName, mappedName = key, filePathStr, refPathStr, annotPathStr;
-            iPos = value.find(' ');
-            if (iPos != string::npos)
-            {
-                originalName = value.substr(0, iPos);
-                filePathStr = value.substr(iPos + 1);
-                iPos = filePathStr.find(' ');
-                if (iPos != string::npos)
-                {
-                    refPathStr = filePathStr.substr(0, iPos);
-                    annotPathStr = filePathStr.substr(iPos + 1);
-                } else {
-                    annotPathStr = filePathStr;
+    map<string, map<string, string>> indexFileMap;
+    while (getline(indexFile, line)) {
+        if (line.empty() || line[0] == ';')
+            continue;
+
+        if (line[0] == '[' && line[line.size() - 1] == ']') {
+            current = line.substr(1, line.size() - 2);
+            continue;
+        }
+
+        size_t delimiterPos = line.find('=');
+        if (delimiterPos == string::npos) {
+            continue;
+        }
+        string key = line.substr(0, delimiterPos);
+        string value = line.substr(delimiterPos + 1);
+
+        key.erase(0, key.find_first_not_of(" \t"));
+        key.erase(key.find_last_not_of(" \t") + 1);
+        value.erase(0, value.find_first_not_of(" \t"));
+        value.erase(value.find_last_not_of(" \t") + 1);
+
+        indexFileMap[current][key] = value;
+    }
+
+    for (const auto &pair : indexFileMap) {
+        const string &mappedName = pair.first;
+        const map<string, string> &values = pair.second;
+        if (values.find("NAME") == values.end()) {
+            continue;
+        }
+        const string &originalName = values.at("NAME");
+        string gffName, gffPathStr, fastaName, fastaPathStr, annotName, annotPathStr;
+        for (const auto &value : values) {
+            if (value.first.starts_with("GFF")) {
+                gffName = originalName;
+                gffPathStr = value.second;
+                if (value.first.ends_with("}") && value.first.contains("{")) {
+                    gffName = value.first.substr(4, value.first.size() - 5);
                 }
-            } else {
-                originalName = key;
-                annotPathStr = value;
-            }
-
-            if (!refPathStr.empty()) {
-                fs::path refPath = fs::path(refPathStr);
-                if (!fs::exists(refPath))
-                {
-                    refPath = fs::path(indexFilePath).parent_path() / refPathStr;
-                    if (!fs::exists(refPath))
-                    {
-                        cerr << "Virus reference file does not exist: " << refPathStr << endl;
-                        continue;
-                    } else {
-                        refPathStr = refPath.string();
-                    }
+            } else if (value.first.starts_with("FASTA")) {
+                fastaName = originalName;
+                fastaPathStr = value.second;
+                if (value.first.ends_with("}") && value.first.contains("{")) {
+                    fastaName = value.first.substr(6, value.first.size() - 7);
+                }
+            } else if (value.first.starts_with("ANNOT")) {
+                annotName = originalName;
+                annotPathStr = value.second;
+                if (value.first.ends_with("}") && value.first.contains("{")) {
+                    annotName = value.first.substr(6, value.first.size() - 7);
                 }
             }
-
-            if (!annotPathStr.empty())
+        }
+        if (!gffPathStr.empty()) {
+            fs::path gffPath = fs::path(gffPathStr);
+            if (!fs::exists(gffPath))
             {
-                fs::path annotPath = fs::path(annotPathStr);
+                gffPath = fs::path(indexFilePath).parent_path() / gffPathStr;
+                if (!fs::exists(gffPath))
+                {
+                    cerr << "Virus GFF file does not exist: " << gffPathStr << endl;
+                    continue;
+                }
+                else
+                {
+                    gffPathStr = gffPath.string();
+                }
+            }
+        }
+        if (!fastaPathStr.empty()) {
+            fs::path fastaPath = fs::path(fastaPathStr);
+            if (!fs::exists(fastaPath))
+            {
+                fastaPath = fs::path(indexFilePath).parent_path() / fastaPathStr;
+                if (!fs::exists(fastaPath))
+                {
+                    cerr << "Virus FASTA file does not exist: " << fastaPathStr << endl;
+                    continue;
+                }
+                else
+                {
+                    fastaPathStr = fastaPath.string();
+                }
+            }
+        }
+        if (!annotPathStr.empty()) {
+            fs::path annotPath = fs::path(annotPathStr);
+            if (!fs::exists(annotPath))
+            {
+                annotPath = fs::path(indexFilePath).parent_path() / annotPathStr;
                 if (!fs::exists(annotPath))
                 {
-                    annotPath = fs::path(indexFilePath).parent_path() / annotPathStr;
-                    if (!fs::exists(annotPath))
-                    {
-                        cerr << "Virus annotation file does not exist: " << annotPathStr << endl;
-                        continue;
-                    } else {
-                        annotPathStr = annotPath.string();
-                    }
+                    cerr << "Virus annotation file does not exist: " << annotPathStr << endl;
+                    continue;
+                }
+                else
+                {
+                    annotPathStr = annotPath.string();
                 }
             }
+        }
 
-            if (this->virusMap.find(mappedName) == this->virusMap.end())
-            {
-                this->virusMap[mappedName] = VirusNameFile(originalName, refPathStr, annotPathStr);
-            } else {
-                cerr << "Duplicate virus name: " << mappedName << endl;
-                continue;
-            }
+        if (this->virusMap.find(mappedName) == this->virusMap.end()) {
+            this->virusMap[mappedName] = VirusNameFile(originalName, gffName, gffPathStr, fastaName, fastaPathStr, annotName, annotPathStr);
+        } else {
+            cerr << "Duplicate virus name: " << mappedName << endl;
+            break;
         }
     }
     indexFile.close();
@@ -137,32 +182,45 @@ void VirusLoader::loadHPVEM(const fs::path &filePath)
                 cout << "Loading HPV type: " << hpv << "" << endl;
                 for (const auto &pair : this->virusMap)
                 {
-                    if (pair.first == hpv)
+                    if (pair.first.compare(hpv) == 0)
                     {
                         found = true;
-                        if (!pair.second.refPath.empty()) {
-                            if (this->selRefMap.find(pair.second.refPath) == selRefMap.end())
-                            {
-                                this->selRefMap[pair.second.refPath] = vector<VirusLoader::VirusNamePair>();
+                        if (!pair.second.gffPath.empty()) {
+                            this->selAnnots.push_back(make_tuple(pair.second.gffPath, pair.second.gffName, pair.second.originalName));
+                        }
+                        if (!pair.second.fastaPath.empty()) {
+                            this->selRefs.push_back(make_tuple(pair.second.fastaPath, pair.second.fastaName, pair.second.originalName));
+                        }
+                        if (!pair.second.annotPath.empty()) {
+                            this->selAnnots.push_back(make_tuple(pair.second.annotPath, pair.second.annotName, pair.second.originalName));
+                        }
+                        cout << "Found HPV type: " << pair.first << " => " << pair.second.originalName << endl;
+                        if (!pair.second.gffPath.empty())
+                        {
+                            if (pair.second.gffName.compare(pair.second.originalName) == 0) {
+                                cout << pair.second.gffName;
+                            } else {
+                                cout << pair.second.originalName << " => " << pair.second.gffName;
                             }
-                            this->selRefMap[pair.second.refPath].push_back(VirusNamePair(pair.second.originalName, pair.first));
+                            cout << " in file: " << pair.second.gffPath << endl;
+                        }
+                        if (!pair.second.fastaPath.empty())
+                        {
+                            if (pair.second.fastaName.compare(pair.second.originalName) == 0) {
+                                cout << pair.second.fastaName;
+                            } else {
+                                cout << pair.second.originalName << " => " << pair.second.fastaName;
+                            }
+                            cout << " in file: " << pair.second.fastaPath << endl;
                         }
                         if (!pair.second.annotPath.empty())
                         {
-                            if (this->selAnnotMap.find(pair.second.annotPath) == selAnnotMap.end())
-                            {
-                                this->selAnnotMap[pair.second.annotPath] = vector<VirusLoader::VirusNamePair>();
+                            if (pair.second.annotName.compare(pair.second.originalName) == 0) {
+                                cout << pair.second.annotName;
+                            } else {
+                                cout << pair.second.originalName << " => " << pair.second.annotName;
                             }
-                            this->selAnnotMap[pair.second.annotPath].push_back(VirusNamePair(pair.second.originalName, pair.first));
-                        }
-                        cout << "Found HPV type: " << pair.first << " as " << pair.second.originalName << endl;
-                        if (!pair.second.refPath.empty())
-                        {
-                            cout << pair.second.refPath << endl;
-                        }
-                        if (!pair.second.annotPath.empty())
-                        {
-                            cout << pair.second.annotPath << endl;
+                            cout << " in file: " << pair.second.annotPath << endl;
                         }
                         break;
                     }

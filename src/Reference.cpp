@@ -117,19 +117,19 @@ const char *Reference::getSeq(int id) {
 }
 
 void Reference::readVirusLoaderFA(const VirusLoader &virusLoader) {
-    for (const auto &v : virusLoader.selRefMap) {
-        string filePath = v.first;
+    for (const auto &v : virusLoader.selRefs) {
+        string filePath = get<0>(v);
         string filePathLower = lowerString(filePath);
         if (filePathLower.ends_with(".fa") || filePathLower.ends_with(".fasta")) {
             faidx_t *f = fai_load(filePath.c_str());
             this->faSet.insert(f);
-            for (const auto &n : v.second) {
-                this->nameOriginalToId[n.originalName] = this->refItems.size();
-                this->nameMappedToId[n.mappedName] = this->refItems.size();
-                int seqLength = faidx_seq_len(f, n.originalName.c_str());
-                this->refItems[this->refItems.size()] = RefItem(n.originalName, n.mappedName, f, seqLength);
-                this->seqCount++;
-            }
+            const string &originalName = get<1>(v);
+            const string &mappedName = get<2>(v);
+            this->nameOriginalToId[originalName] = this->refItems.size();
+            this->nameMappedToId[originalName] = this->refItems.size();
+            int seqLength = faidx_seq_len(f, originalName.c_str());
+            this->refItems[this->refItems.size()] = RefItem(originalName, mappedName, f, seqLength);
+            this->seqCount++;
         } else if (filePathLower.ends_with(".gff")) {
             continue;
         } else {
@@ -139,8 +139,23 @@ void Reference::readVirusLoaderFA(const VirusLoader &virusLoader) {
     }
 }
 
-void Reference::readVirusLoaderGff(const GffFile &gffFile, const char *pfs, const vector<VirusLoader::VirusNamePair> &virusNamePairs) {
+void Reference::readVirusLoaderGff(const GffFile &gffFile, const char *pfs, const string &originalName, const string &mappedName, VirusLoader &vl) {
     for (const FaSequenceIndex &seqIdx : gffFile.seqIndices) {
+        if (originalName.compare(seqIdx.seqName) != 0) {
+            continue;
+        }
+        string trueName;
+        bool found = false;
+        for (const auto &v : vl.virusMap) {
+            if (v.second.originalName.compare(mappedName) == 0) {
+                trueName = v.first;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            continue;
+        }
         const char *pfas = pfs + gffFile.faOffset + seqIdx.offset;
         char *seq = (char *)malloc(seqIdx.seqLength + 1);
         seq[seqIdx.seqLength] = '\0';
@@ -152,19 +167,11 @@ void Reference::readVirusLoaderGff(const GffFile &gffFile, const char *pfs, cons
                 memcpy(seq + i * seqIdx.lineBasesLength, pfas + (seqIdx.lineBasesLength + seqIdx.newlineSize) * i, seqIdx.seqLength - seqIdx.lineBasesLength * i);
             }
         }
-        string originalName = "N/A";
-        string mappedName = "N/A";
-        for (const VirusLoader::VirusNamePair &v : virusNamePairs) {
-            if (seqIdx.seqName.compare(v.originalName) == 0) {
-                originalName = v.originalName;
-                mappedName = v.mappedName;
-                break;
-            }
-        }
-        this->nameOriginalToId[originalName] = this->refItems.size();
-        this->nameMappedToId[mappedName] = this->refItems.size();
-        this->refItems[this->refItems.size()] = RefItem(originalName, mappedName, nullptr, seqIdx.seqLength);
+        this->nameOriginalToId[mappedName] = this->refItems.size();
+        this->nameMappedToId[trueName] = this->refItems.size();
+        this->refItems[this->refItems.size()] = RefItem(mappedName, trueName, nullptr, seqIdx.seqLength);
         this->seqCount++;
         this->seqs[this->seqCount - 1] = seq;
+        break;
     }
 }

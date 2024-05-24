@@ -30,6 +30,9 @@ struct GffSequenceFeature
     string frame;
     unordered_map<string, string> attribute;
 
+    GffSequenceFeature()
+    { }
+
     GffSequenceFeature(string seqName, string source, string feature, int start, int end, string score, string strand, string frame, unordered_map<string, string> attribute)
     {
         this->seqName = seqName;

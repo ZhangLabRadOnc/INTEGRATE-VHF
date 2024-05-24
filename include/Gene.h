@@ -52,8 +52,8 @@ class Gene {
 
     /*load transcripts from input annotation file with 9 columns.*/
     int loadGenesFromFile(const char *fileName, Reference &ref);
-    void readVirusLoaderTSV(const string &k, const vector<VirusLoader::VirusNamePair> &v, Reference &ref);
-    void readVirusLoaderGFF(const string &k, const vector<VirusLoader::VirusNamePair> &v, Reference &ref);
+    void readVirusLoaderTSV(const string &filePath, const string &originalName, const string &mappedName, Reference &ref);
+    void readVirusLoaderGFF(const string &filePath, const string &originalName, const string &mappedName, Reference &ref, VirusLoader &vl);
     void sortTranscripts();
 
     int setGene();

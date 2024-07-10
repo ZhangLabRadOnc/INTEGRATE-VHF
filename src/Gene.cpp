@@ -37,6 +37,14 @@ Gene::~Gene()
         {
             delete[] this->transcripts[i].exonEnds;
         }
+        if (this->transcripts[i].exonRealStarts != nullptr)
+        {
+            delete[] this->transcripts[i].exonRealStarts;
+        }
+        if (this->transcripts[i].exonRealEnds != nullptr)
+        {
+            delete[] this->transcripts[i].exonRealEnds;
+        }
     }
     this->transcripts.clear();
     this->viruses.clear();
@@ -184,7 +192,8 @@ int Gene::loadGenesFromFile(const char *fileName, Reference &ref) {
             tt.exonEnds = pee;
 
             // Dec 2015, let us not use the transcripts truncated in coding region
-            if (!(tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd))))
+            // if (!(tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd))))
+            if (!(tt.cdsStart != tt.cdsEnd && ((tt.cdsStart < tt.txStart) || (tt.cdsEnd > tt.txEnd))))
             {
                 transcripts.push_back(tt);
                 count++;
@@ -254,17 +263,28 @@ void Gene::readVirusLoaderGFF(const string &filePath, const string &originalName
         const GffSequenceFeature &seqFeature = gf.seqFeatures[i];
         if (seqFeature.feature.compare("gene") == 0)
         {
-            geneIdMap[seqFeature.attribute.at("ID")] = seqFeature;
-        } else if (seqFeature.feature.compare("CDS") == 0)
-        {
-            string ID = seqFeature.attribute.at("Parent");
-            if (geneCDSMap.contains(ID))
+            string geneId = seqFeature.attribute.at("ID");
+            if (geneIdMap.contains(geneId)) {
+                if (seqFeature.start < geneIdMap[geneId].start)
+                {
+                    geneIdMap[geneId].start = seqFeature.start;
+                }
+                if (seqFeature.end > geneIdMap[geneId].end)
+                {
+                    geneIdMap[geneId].end = seqFeature.end;
+                }
+            } else {
+                geneIdMap[geneId] = seqFeature;
+            }
+        } else if (seqFeature.feature.compare("CDS") == 0) {
+            string parentId = seqFeature.attribute.at("Parent");
+            if (geneCDSMap.contains(parentId))
             {
-                geneCDSMap[ID].push_back(seqFeature);
+                geneCDSMap[parentId].push_back(seqFeature);
             }
             else
             {
-                geneCDSMap[ID] = {seqFeature};
+                geneCDSMap[parentId] = {seqFeature};
             }
         }
     }
@@ -272,43 +292,75 @@ void Gene::readVirusLoaderGFF(const string &filePath, const string &originalName
     {
         const GffSequenceFeature &gene = it->second;
         const string geneId = it->first;
+        const int minLength = 300;
         vector<GffSequenceFeature> cdsList = (geneCDSMap.find(geneId) != geneCDSMap.end()) ? geneCDSMap[geneId] : vector<GffSequenceFeature>();
         sort(cdsList.begin(), cdsList.end(), compareGffSeqFeature);
+        for (int i = 0; i < cdsList.size(); i++)
+        {
+            cdsList[i].realStart = cdsList[i].start;
+            cdsList[i].realEnd = cdsList[i].end;
+        }
         if (cdsList.size() >= 2)
         {
             GffSequenceFeature &featureFirst = cdsList[0];
-            if (featureFirst.end - featureFirst.start + 1 < 300)
+            if (featureFirst.end - featureFirst.start + 1 < minLength)
             {
-                featureFirst.start = max(featureFirst.end - 300, 1);
+                featureFirst.start = max(featureFirst.end - minLength, 1);
             }
             GffSequenceFeature &featureLast = cdsList[cdsList.size() - 1];
-            if (featureLast.end - featureLast.start + 1 < 300)
+            if (featureLast.end - featureLast.start + 1 < minLength)
             {
-                featureLast.end = featureLast.start + 300;
+                featureLast.end = featureLast.start + minLength;
             }
         }
         sort(cdsList.begin(), cdsList.end(), compareGffSeqFeature);
 
+        int cdsStart, cdsEnd;
+        for (int i = 0; i < cdsList.size(); i++)
+        {
+            if (i == 0)
+            {
+                cdsStart = cdsList[i].start;
+                cdsEnd = cdsList[i].end;
+            }
+            else
+            {
+                cdsStart = min(cdsStart, cdsList[i].start);
+                cdsEnd = max(cdsEnd, cdsList[i].end);
+            }
+        }
+        int txStart = min(gene.start, cdsStart);
+        int txEnd = max(gene.end, cdsEnd);
+
         transcript_t tt;
+        tt.isVirus = true;
         tt.name = geneId;
         tt.chrName = gene.seqName;
         if (mappedName.compare(tt.chrName) != 0)
         {
             continue;
         }
-        tt.tid = ref.getSeqIdByMappedName(tt.chrName);
+        tt.tid = ref.getSeqIdByOriginalName(tt.chrName);
+        if (tt.tid < 0)
+        {
+            continue;
+        }
         tt.strand = gene.strand.compare("+") == 0 ? 0 : 1;
-        tt.txStart = gene.start;
-        tt.txEnd = gene.end;
-        tt.cdsStart = gene.end;
-        tt.cdsEnd = gene.end;
+        tt.txStart = txStart;
+        tt.txEnd = txEnd;
+        tt.cdsStart = txEnd;
+        tt.cdsEnd = txEnd;
         tt.exonCount = cdsList.size();
         tt.exonStarts = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
         tt.exonEnds = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
+        tt.exonRealStarts = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
+        tt.exonRealEnds = (uint32_t *)malloc(sizeof(uint32_t) * tt.exonCount);
         for (int j = 0; j < cdsList.size(); j++)
         {
             tt.exonStarts[j] = cdsList[j].start;
             tt.exonEnds[j] = cdsList[j].end;
+            tt.exonRealStarts[j] = cdsList[j].realStart;
+            tt.exonRealEnds[j] = cdsList[j].realEnd;
         }
         tt.name2 = gene.attribute.at("Name");
         if (!(tt.cdsStart != tt.cdsEnd && ((tt.txStart == tt.cdsStart) || (tt.txEnd == tt.cdsEnd))))
@@ -319,7 +371,7 @@ void Gene::readVirusLoaderGFF(const string &filePath, const string &originalName
     closeFileForRead(pfs, fd, fileLen);
     transcripts.insert(transcripts.end(), gffTranscripts.begin(), gffTranscripts.end());
     cout << gffTranscripts.size() << " transcripts loaded from file: " << filePath << endl;
-}
+    }
 
 void Gene::sortTranscripts() {
     sort(this->transcripts.begin(), this->transcripts.end(), myTransSortFunc);
@@ -329,7 +381,7 @@ int Gene::setGene() {
     int fid = 0;
     if (transcripts.size() < 1) {
         cerr << "No gene annotation" << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     } else {
         gene_t gt;
         gt.name2 = transcripts[0].name2;
@@ -340,6 +392,7 @@ int Gene::setGene() {
         gt.rightLimit = transcripts[0].txEnd;
         gt.tid = transcripts[0].tid;
         gt.fakeId = -1;
+        gt.isVirus = transcripts[0].isVirus;
         genes.push_back(gt);
     }
 
@@ -354,6 +407,7 @@ int Gene::setGene() {
             gt.rightLimit = transcripts[i].txEnd;
             gt.tid = transcripts[i].tid;
             gt.fakeId = -1;
+            gt.isVirus = transcripts[i].isVirus;
             genes.push_back(gt);
         } else {
 
@@ -372,6 +426,7 @@ int Gene::setGene() {
                     genes[genes.size() - 1].fakeId = fid++;
                     gt.fakeId = fid++;
                 }
+                gt.isVirus = transcripts[i].isVirus;
                 genes.push_back(gt);
                 continue;
             } else {
@@ -390,6 +445,7 @@ int Gene::setGene() {
                         genes[genes.size() - 1].fakeId = fid++;
                         gt.fakeId = fid++;
                     }
+                    gt.isVirus = transcripts[i].isVirus;
                     genes.push_back(gt);
                     continue;
                 }
@@ -420,7 +476,6 @@ int Gene::setGene() {
 }
 
 int Gene::isInGene(int tid, uint32_t pos, vector<int> &geneIds) {
-
     gene_t dumbGene;
     dumbGene.tid = tid;
     dumbGene.leftLimit = pos;
@@ -746,22 +801,33 @@ string Gene::getName2(int geneId) { return genes[geneId].name2; }
 
 BWT *Gene::getRBWT(int geneId) { return &(rbwts[geneId]); }
 
-int Gene::getExonBoundry(int gid, int isbkLeft, vector<uint32_t> &boundry) {
+int Gene::getExonBoundary(int gid, int isbkLeft, vector<uint32_t> &boundary) {
 
     for (int i = 0; i < genes[gid].transIds.size(); i++) {
         int tranId = genes[gid].transIds[i];
         int count = transcripts[tranId].exonCount;
         for (int j = 0; j < count; j++) {
-            if (isbkLeft == 1)
-                boundry.push_back(transcripts[tranId].exonStarts[j]);
-            else
-                boundry.push_back(transcripts[tranId].exonEnds[j]);
+            if (isbkLeft == 1) {
+                if (transcripts[tranId].exonRealStarts != nullptr)
+                {
+                    boundary.push_back(transcripts[tranId].exonRealStarts[j]);
+                } else {
+                    boundary.push_back(transcripts[tranId].exonStarts[j]);
+                }
+            } else {
+                if (transcripts[tranId].exonRealStarts != nullptr)
+                {
+                    boundary.push_back(transcripts[tranId].exonRealEnds[j]);
+                } else {
+                    boundary.push_back(transcripts[tranId].exonEnds[j]);
+                }
+            }
         }
     }
 
-    sort(boundry.begin(), boundry.end());
-    vector<uint32_t>::iterator it = unique(boundry.begin(), boundry.end());
-    boundry.resize(distance(boundry.begin(), it));
+    sort(boundary.begin(), boundary.end());
+    vector<uint32_t>::iterator it = unique(boundary.begin(), boundary.end());
+    boundary.resize(distance(boundary.begin(), it));
     /*
             for(int i=0;i<boundry.size();i++)
             {

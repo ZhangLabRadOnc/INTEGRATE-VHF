@@ -1819,7 +1819,7 @@ int isCanonical(Gene &g, split_rna_t &st, int bacc) {
         pos2 = st.pos2 + st.len2 - 1;
 
     vector<uint32_t> boundry;
-    g.getExonBoundry(st.geneId1, st.bkLeft1, boundry);
+    g.getExonBoundary(st.geneId1, st.bkLeft1, boundry);
 
     if (st.bkLeft1 == 1) {
         for (int x = 0; x < boundry.size(); x++) {
@@ -1859,7 +1859,7 @@ int isCanonical(Gene &g, split_rna_t &st, int bacc) {
     }
 
     vector<uint32_t> boundry2;
-    g.getExonBoundry(st.geneId2, st.bkLeft2, boundry2);
+    g.getExonBoundary(st.geneId2, st.bkLeft2, boundry2);
 
     if (st.bkLeft2 == 1) {
         for (int x = 0; x < boundry2.size(); x++) {
@@ -6055,4 +6055,75 @@ int Rna::reduceGraphEmptyEn(Gene &g) {
     rnafg.printFg(g);
 
     return 0;
+}
+
+void Rna::correctVirusGene(Gene &g) {
+    map<int, vector<int>> geneIdsCache;
+    for (auto it = this->sprna.begin(); it != this->sprna.end(); ++it) {
+        if (g.getGene(it->geneId1)->isVirus) {
+            vector<int> geneIds;
+            if (geneIdsCache.find(it->pos1) == geneIdsCache.end()) {
+                g.isInGene(it->tid1, it->pos1, geneIds);
+                geneIdsCache[it->pos1] = geneIds;
+            } else {
+                geneIds = geneIdsCache[it->pos1];
+            }
+            if (geneIds.size() <= 1) {
+                continue;
+            }
+            int endingPos = it->pos1 + it->len1 - 1;
+            int minDistance = INT_MAX;
+            int minGeneId = -1;
+            for (auto geneId = geneIds.begin(); geneId != geneIds.end(); ++geneId) {
+                vector<uint32_t> boundaries;
+                g.getExonBoundary(*geneId, it->bkLeft1, boundaries);
+                for (int i = 0; i < boundaries.size(); i++) {
+                    int boundary = boundaries[i];
+                    if (it->pos1 > boundary) {
+                        continue;
+                    }
+                    int distance = abs(boundary - endingPos);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        minGeneId = *geneId;
+                    }
+                }
+            }
+            if (minGeneId != -1) {
+                it->geneId1 = minGeneId;
+            }
+        } else if (g.getGene(it->geneId2)->isVirus) {
+            vector<int> geneIds;
+            if (geneIdsCache.find(it->pos2) == geneIdsCache.end()) {
+                g.isInGene(it->tid2, it->pos2, geneIds);
+                geneIdsCache[it->pos2] = geneIds;
+            } else {
+                geneIds = geneIdsCache[it->pos2];
+            }
+            if (geneIds.size() <= 1) {
+                continue;
+            }
+            int endingPos = it->pos2 + it->len2 - 1;
+            int minDistance = INT_MAX;
+            int minGeneId = -1;
+            for (auto geneId = geneIds.begin(); geneId != geneIds.end(); ++geneId) {
+                vector<uint32_t> boundaries;
+                g.getExonBoundary(*geneId, it->bkLeft2, boundaries);
+                for (int i = 0; i < boundaries.size(); i++) {
+                    int boundary = boundaries[i];
+                    if (it->pos2 > boundary) {
+                        continue;
+                    }
+                    int distance = abs(boundary - endingPos);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        minGeneId = *geneId;
+                    }
+                }
+            }
+            it->geneId2 = minGeneId;
+        } else {
+            continue;
+        }
+    }
 }

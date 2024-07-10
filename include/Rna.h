@@ -165,4 +165,5 @@ class Rna {
 
     int readSTAR(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2);
     int getHardClipReads(Gene &, MyBamWrap &, TidHandler &);
+    void correctVirusGene(Gene &g);
 };

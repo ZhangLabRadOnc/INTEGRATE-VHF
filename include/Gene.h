@@ -97,7 +97,7 @@ class Gene {
     BWT *getBWT(int geneId);
     BWT *getRBWT(int geneId);
 
-    int getExonBoundry(int gid, int isbkLeft, vector<uint32_t> &boundry);
+    int getExonBoundary(int gid, int isbkLeft, vector<uint32_t> &boundry);
 
     int getSize() { return genes.size(); };
 

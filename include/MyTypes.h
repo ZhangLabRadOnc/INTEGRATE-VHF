@@ -14,7 +14,7 @@
 
 using namespace std;
 
-typedef struct {
+struct transcript_t{
     // int bin;
     string name;
     string chrName;
@@ -25,12 +25,14 @@ typedef struct {
     uint32_t cdsStart; // Dec 7, 2015 start to use cdsStart and cdsEnd for in/out-of-frame and peptide
     uint32_t cdsEnd;
     int exonCount;
-    uint32_t *exonStarts;
-    uint32_t *exonEnds;
+    uint32_t *exonStarts = nullptr;
+    uint32_t *exonEnds = nullptr;
+    uint32_t *exonRealStarts = nullptr;
+    uint32_t *exonRealEnds = nullptr;
     // int score;
     string name2;
-
-} transcript_t;
+    bool isVirus = false;
+};
 
 typedef struct {
     uint32_t start;
@@ -49,7 +51,7 @@ typedef struct {
 
 } exon_map_t;
 
-typedef struct {
+struct gene_t{
     int tid;
     int strand;
     uint32_t leftLimit;
@@ -61,8 +63,8 @@ typedef struct {
     int fakeId; //-1 for no complex genes at multiple locations. 0-upper means yes. so that you see diff locations of the same gene;
 
     vector<int> anchors;
-
-} gene_t;
+    bool isVirus = false;
+};
 
 typedef struct {
     string name;

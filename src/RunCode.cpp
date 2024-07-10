@@ -848,6 +848,10 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     rna.handleTmpTopHatSplits(hc, g);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
+    cout << "Trying to correct gene names ..." << endl;
+    rna.correctVirusGene(g);
+    cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+
     t = clock();
     cout << "Getting anchors from unaligned reads" << endl;
     rna.getAnchors(g, mbw, th, hc);

@@ -25,6 +25,8 @@ struct GffSequenceFeature
     string feature;
     int start = 0;
     int end = 0;
+    int realStart = 0;
+    int realEnd = 0;
     string score;
     string strand;
     string frame;

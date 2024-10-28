@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
@@ -44,16 +45,18 @@ class Gene {
     vector<transcript_t> transcripts;
     BWT *bwts;
     BWT *rbwts;
-    vector<string> viruses;
 
   public:
     Gene();
     virtual ~Gene();
+    unordered_set<string> viruses;
+    map<int, map<int, vector<int>>> geneIdsCache;
 
     /*load transcripts from input annotation file with 9 columns.*/
     int loadGenesFromFile(const char *fileName, Reference &ref);
     void readVirusLoaderTSV(const string &filePath, const string &originalName, const string &mappedName, Reference &ref);
     void readVirusLoaderGFF(const string &filePath, const string &originalName, const string &mappedName, Reference &ref, VirusLoader &vl);
+    void readVirusLoaderGFF(const string &filePath, const string &originalName, const string &mappedName, Reference &ref, VirusLoader &vl, const bool silent);
     void sortTranscripts();
 
     int setGene();
@@ -68,7 +71,7 @@ class Gene {
     int isInGene(int tid, uint32_t pos, vector<int> &geneIds);
 
     /*Given the ids of two genes, and the strands of an possible encompassing paied-end reads, is fusion possible*/
-    bool isPairPossibleFusion(int id1, int id2, int strand1, int strand2);
+    bool isGenePairPossibleFusion(int id1, int id2, int strand1, int strand2);
     gene_t *getGene(int index);
     int addRnaAnchor(int anId, int geneId);
 

@@ -13,31 +13,28 @@
 
 #pragma once
 
-#include <map>
-
-using namespace std;
-
+#include <unordered_map>
 #include "MyBamHeader.h"
 #include "Reference.h"
 
 class TidHandler {
 
-  private:
-    Reference *ref;
-    map<int, int> DNA2Ref;
-    map<int, int> Ref2DNA;
-    map<int, int> RNA2Ref;
-    map<int, int> Ref2RNA;
+    private:
+        Reference *ref;
+        unordered_map<int, int> DNA2Ref;
+        unordered_map<int, int> Ref2DNA;
+        unordered_map<int, int> RNA2Ref;
+        unordered_map<int, int> Ref2RNA;
 
-  public:
-    TidHandler(Reference *ref);
-    virtual ~TidHandler();
+    public:
+        TidHandler(Reference *ref);
+        virtual ~TidHandler();
 
-    int setRNAAndRef(MyBamHeader &rnabh);
-    int getRNAFromRef(int tid);
-    int getRefFromRNA(int rnaTid);
+        int setRNAAndRef(MyBamHeader &rnabh);
+        int getRNAFromRef(int tid) const;
+        int getRefFromRNA(int tid) const;
 
-    int setDNAAndRef(MyBamHeader &dnabh);
-    int getDNAFromRef(int tid);
-    int getRefFromDNA(int dnaTid);
+        int setDNAAndRef(MyBamHeader &dnabh);
+        int getDNAFromRef(int tid) const;
+        int getRefFromDNA(int tid) const;
 };

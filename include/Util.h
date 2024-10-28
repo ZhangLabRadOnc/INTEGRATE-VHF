@@ -9,6 +9,7 @@
 
 #include <cstdio>
 #include <filesystem>
+#include <htslib/sam.h>
 #include <string>
 #include <regex>
 
@@ -71,3 +72,11 @@ inline string getStdChrName(string name) {
 
     return name;
 }
+
+string getSeqFromBam(const bam1_t *b);
+
+void getRevCompSeq(string &seq);
+
+void getRevCompSeq(vector<char> &seq);
+
+int countMismatches(const string &str1, const string &str2);

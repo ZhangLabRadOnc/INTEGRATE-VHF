@@ -246,11 +246,8 @@ int BWT::bwtToSA(int pos) {
     return (sa[id] + add) % length;
 }
 
-int BWT::exactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int min) {
-
+int BWT::exactSplitMap(int &k, int &l, const char *seq, int len, int &mapped, int min) {
     // cout<<"in exactsplit"<<endl;
-
-    seq[len] = '\0';
     // cout<<seq<<endl;
 
     k = 0;

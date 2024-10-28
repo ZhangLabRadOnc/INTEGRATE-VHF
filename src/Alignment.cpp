@@ -1057,7 +1057,7 @@ int Alignment::runBWTSplitMap2(Gene &g, int geneId, bam1_t *b, int imgStrand, ve
     return isMap;
 }
 
-int Alignment::runBWTSplitMap(Gene &g, int geneId, vector<char> &seq, int anchorStrand, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, myFind2 &mf2, int &isLeftSmall,
+int Alignment::runBWTSplitMap(Gene &g, int geneId, const vector<char> &seq, int anchorStrand, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, myFind2 &mf2, int &isLeftSmall,
                               int mmdd) {
     // cout<<"runBWT1"<<endl;
     int strand = 1 - anchorStrand;
@@ -1232,7 +1232,7 @@ int Alignment::runBWTSplitMap(Gene &g, int geneId, vector<char> &seq, int anchor
     return isMap;
 }
 
-int Alignment::runBWTSplitMap2(Gene &g, int geneId, vector<char> &seq, int imgStrand, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, myFind2 &mf2, int &isLeftSmall,
+int Alignment::runBWTSplitMap2(Gene &g, int geneId, const vector<char> &seq, int imgStrand, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, myFind2 &mf2, int &isLeftSmall,
                                int mmdd) {
 
     // cout<<"runBWT2"<<endl;

@@ -7,8 +7,8 @@
 
 #include "MyBamHeader.h"
 #include "Reference.h"
-#include "TidHandler.h"
 #include "Util.h"
+#include "TidHandler.h"
 
 TidHandler::TidHandler(Reference *ref) {
     this->ref = ref;
@@ -32,20 +32,14 @@ int TidHandler::setRNAAndRef(MyBamHeader &rnabh) {
     return 0;
 }
 
-int TidHandler::getRNAFromRef(int tid) {
-    map<int, int>::iterator it = Ref2RNA.find(tid);
-    if (it == Ref2RNA.end())
-        return -1;
-    else
-        return it->second;
+int TidHandler::getRNAFromRef(int tid) const {
+    auto it = Ref2RNA.find(tid);
+    return it == Ref2RNA.end() ? -1 : it->second;
 }
 
-int TidHandler::getRefFromRNA(int rnaTid) {
-    map<int, int>::iterator it = RNA2Ref.find(rnaTid);
-    if (it == RNA2Ref.end())
-        return -1;
-    else
-        return it->second;
+int TidHandler::getRefFromRNA(int tid) const {
+    auto it = RNA2Ref.find(tid);
+    return it == RNA2Ref.end() ? -1 : it->second;
 }
 
 int TidHandler::setDNAAndRef(MyBamHeader &dnabh) {
@@ -62,18 +56,12 @@ int TidHandler::setDNAAndRef(MyBamHeader &dnabh) {
     return 0;
 }
 
-int TidHandler::getDNAFromRef(int tid) {
-    map<int, int>::iterator it = Ref2DNA.find(tid);
-    if (it == Ref2DNA.end())
-        return -1;
-    else
-        return it->second;
+int TidHandler::getDNAFromRef(int tid) const {
+    auto it = Ref2DNA.find(tid);
+    return it == Ref2DNA.end() ? -1 : it->second;
 }
 
-int TidHandler::getRefFromDNA(int dnaTid) {
-    map<int, int>::iterator it = DNA2Ref.find(dnaTid);
-    if (it == DNA2Ref.end())
-        return -1;
-    else
-        return it->second;
+int TidHandler::getRefFromDNA(int tid) const {
+    auto it = DNA2Ref.find(tid);
+    return it == DNA2Ref.end() ? -1 : it->second;
 }

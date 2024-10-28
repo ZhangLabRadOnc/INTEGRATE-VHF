@@ -9,6 +9,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <filesystem>
+#include <htslib/sam.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include "Util.h"
@@ -93,4 +94,49 @@ const char* openFileForRead(string fileName, int &fd, size_t &length) {
 void closeFileForRead(const char* p, const int fd, const size_t length) {
     munmap((void*)p, length);
     close(fd);
+}
+
+string getSeqFromBam(const bam1_t *b) {
+    string seq;
+    seq.reserve(b->core.l_qseq);
+    for (int i = 0; i < b->core.l_qseq; i++) {
+        int reada = bam_seqi(bam_get_seq(b), i);
+        seq += getCharA(reada);
+    }
+    return seq;
+}
+
+void getRevCompSeq(string &seq) {
+    size_t length = seq.length();
+    for (size_t i = 0; i < length / 2; i++) {
+        char tmp = seq[i];
+        seq[i] = getCharComp(seq[length - i - 1]);
+        seq[length - i - 1] = getCharComp(tmp);
+    }
+
+    if (length % 2 == 1) {
+        seq[length / 2] = getCharComp(seq[length / 2]);
+    }
+}
+
+void getRevCompSeq(vector<char> &seq) {
+    string seqStr(seq.begin(), seq.end());
+    getRevCompSeq(seqStr);
+    seq.assign(seqStr.begin(), seqStr.end());
+}
+
+int countMismatches(const string& str1, const string& str2) {
+    if (str1.length() != str2.length()) {
+        return -1;
+    }
+
+    int mismatchCount = 0;
+    
+    for (size_t i = 0; i < str1.length(); ++i) {
+        if (str1[i] != str2[i]) {
+            ++mismatchCount;
+        }
+    }
+
+    return mismatchCount;
 }

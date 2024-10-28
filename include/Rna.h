@@ -49,13 +49,13 @@ class MyHash {
 
 class Rna {
   private:
-    FusionGraph rnafg;
+    FusionGraph *rnafg = nullptr;
     vector<encompass_rna_t> enrna; // encompassing
     vector<anchor_rna_t> anrna;    // anchor
     vector<hardclip_t> hardrna;
     vector<vector<int>> hashVecAnchor;
-    vector<vector<int>> hashVecEncompass;
-    vector<vector<int>> hashVecHard;
+    // vector<vector<int>> hashVecEncompass;
+    unordered_map<string, vector<int>> hashVecHard;
     // vector<vector<int> > hashVecTopHat;
     int lastSPSize;
 
@@ -64,6 +64,8 @@ class Rna {
 
     int maxError;
 
+    bool isChrPairPossibleFusion(int tid, int mtid, const Reference &ref, const Gene &g);
+
   public:
     typedef FusionGraph::GraphType GraphType;
     typedef GraphType::EdgeList EdgeList;
@@ -71,34 +73,39 @@ class Rna {
     typedef EdgeList::const_iterator const_edge_iterator;
 
     Rna();
+    virtual ~Rna();
 
     encompass_rna_t getEnRna(int index) { return enrna[index]; };
+    void groupEnReads(const char *rnaFile, Reference &ref, TidHandler &th, Gene &g, unordered_map<string, pair<bam1_t *, bam1_t *>> &readGroups); 
+    void processEnReads(TidHandler &th, Gene &g, unordered_map<string, pair<bam1_t *, bam1_t *>> &readGroups);
+    void processEnHardReads(const char *rnaFile, Reference &ref, TidHandler &th, Gene &g); 
+    // int getGraph(const char *rnaFile, Reference &ref, TidHandler &th, Gene &g, HitsCounter &hc);
+    // int getGraph_second(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
+    // int getGraph_second_read_normal(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
 
-    int getGraph(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
-    int getGraph_second(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
-    int getGraph_second_read_normal(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc);
-
-    int cbEncompassRcs(Gene &g);
-    int combineOne(Gene &g, int gid1, int gid2, MyHash &mhh);
+    // int cbEncompassRcs(Gene &g);
+    // int combineOne(Gene &g, int gid1, int gid2, MyHash &mhh);
 
     int computeWeights(Gene &g);
     int computeWeights1(Gene &g); // added STAR secondary reads
 
-    int reduceGraph(const char *rnaFile, Gene &g, TidHandler &th);
+    // int reduceGraph(const char *rnaFile, Gene &g, TidHandler &th);
 
     int reduceGraph2(Gene &g, double minWeight);
 
     int getAnchors(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc);
 
     int addHash(int hashValue, int anId);
-    int addHashEn(int hashValue, int anId);
+    // int addHashEn(int hashValue, int anId);
     int lookUpHash(string name, MyHash &mhh, vector<int> &anIds);
-    int lookUpHashEn(string name, MyHash &mhh, vector<int> &enIds);
-    int addHashHd(int hashValue, int anId);
-    int lookUpHashHd(string name, MyHash &mhh, vector<int> &enIds);
+    // int lookUpHashEn(string name, MyHash &mhh, vector<int> &enIds);
+    // int addHashHd(int hashValue, int anId);
+    // int lookUpHashHd(string name, MyHash &mhh, vector<int> &enIds);
 
     // int addHashTopHat(int hashValue,int tpId);
     // int lookUpHashTopHat(string name, MyHash & mhh, vector<int> & tpIds);
+
+    void processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc, myFind2 &mf2);
 
     // int mapPartialSplit(const char * rnaFile, TidHandler & th, Gene & g, Reference & ref);
     // int traverseSplit(Gene & g, MyBamWrap & mbw, MyBamHeader & mbh, TidHandler & th);
@@ -120,7 +127,7 @@ class Rna {
     // match
     int matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, vector<map_emt_t2> &mets2, vector<map_emt_t2> &metsM2, int count,
                      myFind2 &mf2);
-    int matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, vector<map_emt_t2> &mets2, vector<map_emt_t2> &metsM2,
+    bool matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string &seq, const string &seqName, bool reversed, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, vector<map_emt_t2> &mets2, vector<map_emt_t2> &metsM2,
                      int count, myFind2 &mf2);
 
     int checkSame(bam1_t *b, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, vector<map_emt_t2> &mets2, vector<map_emt_t2> &metsM2);
@@ -146,7 +153,7 @@ class Rna {
     int countSp(vector<int> &spIds);
     int homoTest3(Gene &g, split_rna_t &st, myFind2 &mf2);
 
-    int traversePartialRight(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc, myFind2 &mf2);
+    int traversePartialRight(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc, myFind2 &mf2);
 
     // int sortTopHatSpByName();
 
@@ -164,6 +171,44 @@ class Rna {
     int hasGoodEncompass(Gene &g, split_rna_t &st, vector<int> enIds);
 
     int readSTAR(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2);
-    int getHardClipReads(Gene &, MyBamWrap &, TidHandler &);
-    void correctVirusGene(Gene &g);
+    void getHardClipReads(Reference &ref, Gene &g, MyBamWrap &, TidHandler &);
+    struct TraverseEnIds {
+        TraverseEnIds(Gene &g, FusionGraph *fg, Rna &rna, vector<int> &enIds)
+            : g(g), rnafg(fg), rna(rna), enIds(enIds) {}
+
+        bool operator()(int x1, int x2, FusionEdge const &edge) {
+            if (!edge.spannings.empty()) {
+                enIds.insert(enIds.end(), edge.encompass.begin(), edge.encompass.end());
+            }
+
+            return true;
+        }
+
+        Gene &g;
+        FusionGraph *rnafg;
+        Rna &rna;
+        vector<int> &enIds;
+    };
+    struct TraverseSpIds {
+        TraverseSpIds(Gene &g, FusionGraph *fg, Rna &rna, vector<int> &spIds)
+            : g(g), rnafg(fg), rna(rna), spIds(spIds) {}
+
+        bool operator()(int x1, int x2, FusionEdge const &edge) {
+            if (!edge.spannings.empty()) {
+                spIds.insert(spIds.end(), edge.spannings.begin(), edge.spannings.end());
+            }
+
+            return true;
+        }
+
+        Gene &g;
+        FusionGraph *rnafg;
+        Rna &rna;
+        vector<int> &spIds;
+    };
+    void getAllJunctions(Gene &g, unordered_map<string, pair<int, bool>> &junctions);
+    void filterUnmapped(const char *rnaFile, const unordered_map<string, pair<int, bool>> &junctions, vector<tuple<string, string, int>> &unmapped_seqs);
+    int processUnmapped(Reference &ref, Gene &g, myFind2 &mf2, HitsCounter &hc, TidHandler &th, vector<tuple<string, string, int>> &unmapped_bams);
+    void correctFg(Gene &g);
+    int getClosestGeneId(Gene &g, int tid, int pos, int len);
 };

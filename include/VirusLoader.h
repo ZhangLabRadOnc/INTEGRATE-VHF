@@ -32,8 +32,10 @@ private:
             originalName(originalName), gffName(gffName), gffPath(gffPath), fastaName(fastaName), fastaPath(fastaPath), annotName(annotName), annotPath(annotPath) {}
     };
     void loadHPVEM(const fs::path &filePath);
+    VirusLoader(const string &indexFilePath, const unordered_map<string, string> &virusTypes, const bool loadAll);
 public:
     unordered_map<string, VirusNameFile> virusMap;
     vector<tuple<string, string, string>> selRefs, selAnnots;
+    VirusLoader(const string &indexFilePath);
     VirusLoader(const string &indexFilePath, const unordered_map<string, string> &virusTypes);
 };

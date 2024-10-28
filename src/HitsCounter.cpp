@@ -201,7 +201,7 @@ int HitsCounter::loadOne(BWT *bwt, const fs::path &filePath) {
     return 0;
 }
 
-int HitsCounter::getHitsCount(char *seq, int len) {
+int HitsCounter::getHitsCount(const char *seq, int len) {
 
     char rseq[len + 1];
     int x = 0;

@@ -27,8 +27,10 @@ class Reference {
       string mappedName;
       faidx_t *f = nullptr;
       int seqLength = 0;
+      bool isVirus = false;
       RefItem() = default;
-      RefItem(string originalName, string mappedName, faidx_t *f, int seqLength) : originalName(originalName), mappedName(mappedName), f(f), seqLength(seqLength) {}
+      RefItem(string originalName, string mappedName, faidx_t *f, int seqLength) : originalName(originalName), mappedName(mappedName), f(f), seqLength(seqLength), isVirus(false) {}
+      RefItem(string originalName, string mappedName, faidx_t *f, int seqLength, bool isVirus) : originalName(originalName), mappedName(mappedName), f(f), seqLength(seqLength), isVirus(isVirus) {}
     };
 
   private:
@@ -38,15 +40,17 @@ class Reference {
     unordered_map<int, RefItem> refItems;
     unordered_map<string, int> nameMappedToId;
     unordered_map<string, int> nameOriginalToId;
+    static const std::string seqNameList[25];
 
   public:
     Reference(string filePath);
     virtual ~Reference();
-    string getSeqOriginalName(int id);
-    int getSeqIdByOriginalName(const string &name);
-    int getSeqIdByMappedName(const string &name);
-    int getSeqLength(int id);
-    int getSeqCount();
+    string getSeqOriginalName(const int id) const;
+    int getSeqIdByOriginalName(const string &name) const;
+    int getSeqIdByMappedName(const string &name) const;
+    int getSeqLength(int id) const;
+    int getSeqCount() const;
+    bool isSeqVirus(const int id) const;
     const char *getSeq(int id);
     void readVirusLoaderFA(const VirusLoader &virusLoader);
     void readVirusLoaderGff(const GffFile &gffFile, const char *pfs, const string &originalName, const string &mappedName, VirusLoader &vl);

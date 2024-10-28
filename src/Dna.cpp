@@ -435,8 +435,8 @@ int Dna::traverseFindDna(const char *dnaFile, Gene &g, TidHandler &th, MyBamHead
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mysam_open(dnaFile);
-    bw.myGetIndex(dnaFile);
+    bw.mySamOpen(dnaFile);
+    bw.myLoadIndex(dnaFile);
 
     int size = g.getSize();
     vector<int> indicator(size, 0);
@@ -663,8 +663,8 @@ int Dna::onlyDNA(const char *dnaFile, Gene &g, TidHandler &th, MyBamHeader &mbh,
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mysam_open(dnaFile);
-    bw.myGetIndex(dnaFile);
+    bw.mySamOpen(dnaFile);
+    bw.myLoadIndex(dnaFile);
 
     for (int i = 0; i < cand_g.size(); i++) {
         int x1 = cand_g[i].id1;
@@ -922,8 +922,8 @@ int Dna::onlyDNAByResult(const char *dnaFile, Gene &g, TidHandler &th, MyBamHead
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mysam_open(dnaFile);
-    bw.myGetIndex(dnaFile);
+    bw.mySamOpen(dnaFile);
+    bw.myLoadIndex(dnaFile);
 
     for (int i = 0; i < result.getSize(); i++) {
         // cout<<"for one result record"<<endl;
@@ -1021,8 +1021,8 @@ int Dna::onlyDNA1(const char *dnaFile, char *name1, char *name2, Gene &g, TidHan
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mysam_open(dnaFile);
-    bw.myGetIndex(dnaFile);
+    bw.mySamOpen(dnaFile);
+    bw.myLoadIndex(dnaFile);
 
     vector<int> ids;
     vector<int> ids2;
@@ -1131,8 +1131,8 @@ int Dna::traverseEncompass(const char *dnaFile, Gene &g, TidHandler &th, MyBamHe
     dna_mbh = &mbh;
 
     MyBamWrap bw;
-    bw.mysam_open(dnaFile);
-    bw.myGetIndex(dnaFile);
+    bw.mySamOpen(dnaFile);
+    bw.myLoadIndex(dnaFile);
 
     // int size = g.getSize();
 
@@ -1834,8 +1834,8 @@ int Dna::getSplitReadsAndRanges(const char *dnaFile) {
     cout << "get split reads and ranges" << endl;
 
     MyBamWrap bw;
-    bw.mysam_open(dnaFile);
-    bw.myGetIndex(dnaFile);
+    bw.mySamOpen(dnaFile);
+    bw.myLoadIndex(dnaFile);
 
     region_t rg1;
     region_t rg2;

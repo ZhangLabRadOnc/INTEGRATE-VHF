@@ -31,7 +31,7 @@ class HitsCounter {
     int loadChromBWTs(Reference &ref, const char *directory);
     int loadOne(BWT *bwt, const fs::path &filePath);
 
-    int getHitsCount(char *seq, int len);
+    int getHitsCount(const char *seq, int len);
 
     virtual ~HitsCounter();
 

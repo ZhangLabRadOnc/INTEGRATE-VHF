@@ -66,28 +66,27 @@ struct gene_t{
     bool isVirus = false;
 };
 
-typedef struct {
+struct encompass_rna_t {
     string name;
-    int strand1;
-    int tid1;
-    int pos1;
-    int len1;
-    int geneId1;
+    int strand1 = 0;
+    int tid1 = -1;
+    int pos1 = -1;
+    int len1 = -1;
+    int geneId1 = -1;
     vector<uint32_t> cigar1;
 
-    int strand2;
-    int tid2;
-    int pos2;
-    int len2;
-    int geneId2;
+    int strand2 = -1;
+    int tid2 = -1;
+    int pos2 = -1;
+    int len2 = -1;
+    int geneId2 = -1;
     vector<uint32_t> cigar2;
 
-    int numCopy;
+    int numCopy = 0;
 
     vector<char> seq1;
     vector<char> seq2;
-
-} encompass_rna_t;
+};
 
 typedef struct {
     string name;
@@ -153,41 +152,97 @@ typedef struct {
     int strand;
 } region_to_map_t;
 
-typedef struct {
-    string name;
-    int strand1;
-    int tid1;
-    uint32_t pos1;
-    int len1;
-    int bkLeft1;
+struct split_rna_t {
+    string name = "";
+    int strand1 = 0;
+    int tid1 = 0;
+    uint32_t pos1 = 0;
+    int len1 = 0;
+    int bkLeft1 = 0;
 
-    int isCMap;
-    int strandC;
-    int tidC;
-    uint32_t posC;
-    int lenC;
+    int isCMap = 0;
+    int strandC = 0;
+    int tidC = 0;
+    uint32_t posC = 0;
+    int lenC = 0;
 
-    int strand2;
-    int tid2;
-    uint32_t pos2;
-    int len2;
-    int bkLeft2;
+    int strand2 = 0;
+    int tid2 = 0;
+    uint32_t pos2 = 0;
+    int len2 = 0;
+    int bkLeft2 = 0;
 
-    int cwith1;
+    int cwith1 = 0;
 
-    int geneId1;
-    int geneId2;
+    int geneId1 = 0;
+    int geneId2 = 0;
 
     vector<char> seq;
 
-    int clusterId;
-    int spId;
+    int clusterId = 0;
+    int spId = 0;
 
-    int hits;
+    int hits = 0;
 
-    int small;
+    int small = 0;
+    bool reversed = false;
 
-} split_rna_t;
+    bool operator == (const split_rna_t &other) const {
+        return
+            name == other.name &&
+            strand1 == other.strand1 &&
+            tid1 == other.tid1 &&
+            pos1 == other.pos1 &&
+            len1 == other.len1 &&
+            bkLeft1 == other.bkLeft1 &&
+            strand2 == other.strand2 &&
+            tid2 == other.tid2 &&
+            pos2 == other.pos2 &&
+            len2 == other.len2 &&
+            bkLeft2 == other.bkLeft2 &&
+            geneId1 == other.geneId1 &&
+            geneId2 == other.geneId2 &&
+            seq == other.seq &&
+            reversed == other.reversed;
+    }
+
+    bool operator < (const split_rna_t &other) const {
+        if (name != other.name) return name < other.name;
+        if (tid1 != other.tid1) return tid1 < other.tid1;
+        if (strand1 != other.strand1) return strand1 < other.strand1;
+        if (pos1 != other.pos1) return pos1 < other.pos1;
+        if (tid2 != other.tid2) return tid2 < other.tid2;
+        if (strand2 != other.strand2) return strand2 < other.strand2;
+        if (pos2 != other.pos2) return pos2 < other.pos2;
+
+        return false;
+    }
+
+    public:
+        split_rna_t() {}
+        split_rna_t(const split_rna_t &other) {
+            name = other.name;
+            strand1 = other.strand1;
+            tid1 = other.tid1;
+            pos1 = other.pos1;
+            len1 = other.len1;
+            bkLeft1 = other.bkLeft1;
+            strand2 = other.strand2;
+            tid2 = other.tid2;
+            pos2 = other.pos2;
+            len2 = other.len2;
+            bkLeft2 = other.bkLeft2;
+            cwith1 = other.cwith1;
+            geneId1 = other.geneId1;
+            geneId2 = other.geneId2;
+            seq = other.seq;
+            clusterId = other.clusterId;
+            spId = other.spId;
+            hits = other.hits;
+            small = other.small;
+            reversed = other.reversed;
+        }
+};
 
 typedef struct {
     int strand;

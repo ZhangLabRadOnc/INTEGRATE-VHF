@@ -8,29 +8,25 @@
 
 #pragma once
 
+#include <functional>
 #include <htslib/sam.h>
-#include <cstring>
-#include <iostream>
 #include <string>
+#include "MyTypes.h"
 
 using namespace std;
 
-#include "MyTypes.h"
-
 class MyBamWrap {
-  private:
-    samFile *f;
-    sam_hdr_t *h;
-    hts_idx_t *idx;
+    private:
+        samFile *f;
+        sam_hdr_t *h;
+        hts_idx_t *idx;
 
-  public:
-    MyBamWrap();
-    int mysam_open(const char *fileName);
-    int myGetIndex(const char *fileName);
-    /*wrap*/
-    int myFetchWrap(region_t &region, int (*func)(const bam1_t *b));
-    int myPassRegion(region_t &region, const string chrName, int lpos, int rpos);
-    virtual ~MyBamWrap();
-
-    void testFetch(const char *fileName, string chrName, uint32_t lpos, uint32_t rpos);
+    public:
+        MyBamWrap();
+        virtual ~MyBamWrap();
+        void mySamOpen(const char *fileName);
+        void myLoadIndex(const char *fileName);
+        void myFetchWrap(region_t &region, const function<void(const bam1_t *)> &func) const;
+        // int myPassRegion(region_t &region, const string chrName, int lpos, int rpos);
+        // void testFetch(const char *fileName, string chrName, uint32_t lpos, uint32_t rpos);
 };

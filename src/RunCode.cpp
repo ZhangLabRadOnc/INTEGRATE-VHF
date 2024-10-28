@@ -23,13 +23,14 @@ void usageBuild() {
     cout << endl;
     cout << "Run subcommand mkbwt:" << endl;
     cout << endl;
-    cout << "    Integrate mkbwt (options) reference.fasta" << endl;
+    cout << "    integratevhf mkbwt (options) reference.fasta" << endl;
     cout << endl;
     cout << "    options:" << endl;
     cout << endl;
-    cout << "            -mb  integer  :     sequences in the reference fasta that are shorter than this value        default: 10000000" << endl;
-    cout << "                                are not included in the evaluation of repetitive reads.   " << endl;
-    cout << "            -dir string   :     directory to store the BWTs.                                             default: ./bwts" << endl;
+    cout << "            -mb         integer  :     sequences in the reference fasta that are shorter than this value        default: 100" << endl;
+    cout << "                                       are not included in the evaluation of repetitive reads.   " << endl;
+    cout << "            -dir        string   :     directory to store the BWTs.                                             default: ./bwts" << endl;
+    cout << "            -virusIndex string   :     file containing virus index.                                             default: ./bwts" << endl;
     exit(0);
 }
 
@@ -84,6 +85,21 @@ int getOptForBuild(int argc, const char *argv[], options_t &opt, int &optStart) 
                 exit(1);
             }
         }
+
+        if (tmp.compare("-virusIndex") == 0) {
+            if (i + 1 < argc) {
+                opt.fileVirus = argv[i + 1];
+
+                if (i + 2 < argc && i + 2 > optStart) {
+                    optStart = i + 2;
+                } else {
+                    usageBuild();
+                }
+            } else {
+                cout << "Please give a file name after -virusIndex" << endl;
+                exit(1);
+            }
+        }
     }
 
     return 0;
@@ -92,7 +108,7 @@ int getOptForBuild(int argc, const char *argv[], options_t &opt, int &optStart) 
 int RunCode::runBuildBWTs(int argc, const char *argv[]) {
 
     options_t opt;
-    opt.min_seq_bwt = 10000000;
+    opt.min_seq_bwt = 100; //10000000;
     opt.directoryBWT = "./bwts";
 
     int opStart = 2;
@@ -116,6 +132,25 @@ int RunCode::runBuildBWTs(int argc, const char *argv[]) {
     Reference ref(argv[opStart]);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
+    VirusLoader *vl = nullptr;
+    if (opt.fileVirus != nullptr) {
+        float t = clock();
+        cout << "Loading virus..." << endl;
+        vl = new VirusLoader(opt.fileVirus);
+        ref.readVirusLoaderFA(*vl);
+        cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+    }
+
+    Gene g;
+    for (auto const &[v1, v2, v3] : vl->selAnnots) {
+        if (v1.ends_with("tsv")) {
+        } else if (v1.ends_with("gff")) {
+            g.readVirusLoaderGFF(v1, v2, v3, ref, *vl, true);
+        } else {
+            continue;
+        }
+    }
+
     t = clock();
     cout << "build BWTs for whole genome" << endl;
     HitsCounter hc;
@@ -130,7 +165,7 @@ void usageFusion() {
     cout << endl;
     cout << "Make sure mkbwt has been run." << endl;
     cout << endl;
-    cout << "Integrate fusion (options) reference.fasta annotation.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)\n";
+    cout << "integratevhf fusion (options) reference.fasta annotation.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)\n";
     cout << endl;
     cout << "options: -cfn      integer : Cutoff of spanning RNA-Seq reads for fusions with non-canonical" << endl;
     cout << "                             exonic boundaries.                                                         default: 3" << endl;
@@ -143,7 +178,7 @@ void usageFusion() {
     cout << "                             this value.                                                                default: 400000" << endl;
     cout << "         -minW     float   : Mininum weight for the encompassing rna reads on an edge.                  default: 2.0" << endl;
     cout << "         -mb       integer : See subcommand \"mkbwt\"." << endl;
-    cout << "                             This value can be larger than used by mkbwt.                               default: 10000000" << endl;
+    cout << "                             This value can be larger than used by mkbwt.                               default: 100" << endl;
     cout << "         -minDel   int     : minimum size of a deletion that can cause a fusion.                        default: 5000" << endl;
     cout << "         -reads    string  : File to store all the reads.                                               default: reads.txt" << endl;
     cout << "         -sum      string  : File to store summary.                                                     default: summary.tsv" << endl;
@@ -622,7 +657,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     opt.rt = 0.0;
     opt.minIntra = 400000;
     opt.minW = 2.0;
-    opt.min_seq_bwt = 10000000;
+    opt.min_seq_bwt = 100; //10000000;
     opt.isRunningNormal = 0;
     opt.bacc = 1;
     opt.largeNum = 4;
@@ -773,36 +808,41 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     t = clock();
     cout << "\nGetting graph by encompassing RNA reads..." << endl;
     Rna rna;
-    rna.getGraph(argv[opStart + 3], th, g, hc);
-    //rna.getGraph_second(argv[opStart+3],th, g, hc);
-    //rna.getGraph_second_read_normal(argv[opStart+3],th, g, hc);
+    unordered_map<string, pair<bam1_t *, bam1_t *>> readGroupsEn;
+    rna.groupEnReads(argv[opStart + 3], ref, th, g, readGroupsEn);
+    rna.processEnReads(th, g, readGroupsEn);
+    rna.processEnHardReads(argv[opStart + 3], ref, th, g);
+    // rna.getGraph(argv[opStart + 3], ref, th, g, hc);
+    // rna.getGraph_second(argv[opStart + 3],th, g, hc);
+    // rna.getGraph_second_read_normal(argv[opStart + 3],th, g, hc);
     // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
 
     // t=clock();
     // cout<<"combine records"<<endl;
-    rna.cbEncompassRcs(g);
+    // rna.cbEncompassRcs(g);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
-    t = clock();
-    cout << "Reducing Graph by removing encompassing pair with a hit in one gene mapped in BAM ..." << endl;
-    rna.reduceGraph(argv[opStart + 3], g, th);
-    cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+    // t = clock();
+    // cout << "Reducing Graph by removing encompassing pair with a hit in one gene mapped in BAM ..." << endl;
+    // rna.reduceGraph(argv[opStart + 3], g, th);
+    // cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
     MyBamWrap mbw;
-    mbw.mysam_open(argv[opStart + 3]);
-    mbw.myGetIndex(argv[opStart + 3]);
+    mbw.mySamOpen(argv[opStart + 3]);
+    mbw.myLoadIndex(argv[opStart + 3]);
 
     t = clock();
     cout << "Getting BWTs for genes in the graph..." << endl;
     rna.runGetGeneBWT(g, ref);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
-    t = clock();
-    cout << "Adding spanning RNA reads from BAM file..." << endl;
-    rna.readTopHat2(argv[opStart + 3], th, g, hc, ref, mf2);
-    rna.handleTmpTopHatSplits(hc, g);
-    cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+    // t = clock();
+    // cout << "Adding spanning RNA reads from BAM file..." << endl;
+    // rna.readTopHat2(argv[opStart + 3], th, g, hc, ref, mf2);
+    // rna.handleTmpTopHatSplits(hc, g);
+    // cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
+    t = clock();
     cout << "Handle secondary split reads..." << endl;
     rna.readSTAR(argv[opStart + 3], th, g, hc, ref, mf2);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
@@ -838,29 +878,61 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     rna.reduceGraph2(g, opt.minW);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
-    cout << "Getting hard cliped secondary reads' sequences ..." << endl;
-    rna.getHardClipReads(g, mbw, th);
+    t = clock();
+    cout << "Processing split reads ..." << endl;
+    rna.processSpReads(ref, g, mbw, th, hc, mf2);
+    cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+
+    // t = clock();
+    // cout << "Getting hard cliped secondary reads' sequences ..." << endl;
+    // rna.getHardClipReads(ref, g, mbw, th);
+    // cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+
+    // t = clock();
+    // cout << "Mapping soft or hard clipped reads and reads that could be partially correctly mapped from BAM" << endl;
+    // rna.traversePartialRight(g, mbw, th, hc, mf2);
+    // rna.handleTmpTopHatSplits(hc, g);
+    // cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+
+    t = clock();
+    cout << "Trying to correct gene names and remove duplicates in fusion graph ..." << endl;
+    rna.correctFg(g);
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
     t = clock();
-    cout << "Mapping soft or hard clipped reads and reads that could be partially correctly mapped from BAM" << endl;
-    rna.traversePartialRight(g, mbw, th, hc, mf2);
-    rna.handleTmpTopHatSplits(hc, g);
-    cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
-
-    cout << "Trying to correct gene names ..." << endl;
-    rna.correctVirusGene(g);
+    cout << "Getting all fusion junctions ..." << endl;
+    unordered_map<string, pair<int, bool>> juncs;
+    rna.getAllJunctions(g, juncs);
+    cout << "Total number of junctions identified: " << juncs.size() << endl;
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
     t = clock();
-    cout << "Getting anchors from unaligned reads" << endl;
-    rna.getAnchors(g, mbw, th, hc);
+    cout << "Trying to find possible fusions in unmapped bam file ..." << endl;
+    vector<tuple<string, string, int>> unmapped_seqs;
+    rna.filterUnmapped(argv[opStart + 4], juncs, unmapped_seqs);
+    cout << "Number of unmapped reads with possible fusion: " << unmapped_seqs.size() << endl;
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
     t = clock();
-    cout << "Mapping the unmapped reads as split reads..." << endl;
-    rna.mapPartialSplitBWT(argv[opStart + 4], th, g, hc, mf2);
-    cout << "Total time : " << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+    cout << "Processing possible fusions in unmapped bam file ..." << endl;
+    int mappedSeqCount = rna.processUnmapped(ref, g, mf2, hc, th, unmapped_seqs);
+    cout << "Number of unmapped reads that are correctly mapped: " << mappedSeqCount << endl;
+    cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+
+    t = clock();
+    cout << "Trying to correct gene names and remove duplicates in fusion graph ..." << endl;
+    rna.correctFg(g);
+    cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+
+    // t = clock();
+    // cout << "Getting anchors from unaligned reads" << endl;
+    // rna.getAnchors(g, mbw, th, hc);
+    // cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+
+    // t = clock();
+    // cout << "Mapping the unmapped reads as split reads..." << endl;
+    // rna.mapPartialSplitBWT(argv[opStart + 4], th, g, hc, mf2);
+    // cout << "Total time : " << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
     t = clock();
     cout << "Handling mapped split reads..." << endl;

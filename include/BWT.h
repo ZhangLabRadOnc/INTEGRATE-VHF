@@ -76,7 +76,7 @@ class BWT {
 
     int bwtToSA(int pos);
 
-    int exactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int min);
+    int exactSplitMap(int &k, int &l, const char *seq, int len, int &mapped, int min);
 
     /*inexact */
     int inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int minLen, int maxDiff, int &mismatch, int &insertion, int &deletion, myFind2 &mf2);

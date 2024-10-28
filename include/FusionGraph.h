@@ -48,8 +48,8 @@ class FusionGraph {
     bool isGeneIn(int &gIndex);
     int addGene(int &gIndex);
 
-    int addEncompass(int &gIndex1, int &gIndex2, int index);
-    int addSpanning(int &gIndex1, int &gIndex2, int index);
+    void addEncompass(int gIndex1, int gIndex2, int index);
+    void addSpanning(int gIndex1, int gIndex2, int index);
     int removeEncompass(int gIndex1, int gIndex2, int index);
     int removeSpanning(int gIndex1, int gIndex2, int index);
 

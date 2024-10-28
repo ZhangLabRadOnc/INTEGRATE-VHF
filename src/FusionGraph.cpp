@@ -94,8 +94,7 @@ int FusionGraph::addGene(int &g) {
     return 0;
 }
 
-int FusionGraph::addEncompass(int &g1, int &g2, int index) {
-
+void FusionGraph::addEncompass(int g1, int g2, int index) {
     FusionEdge *pt = fg.getWeight(g1, g2);
     FusionEdge *pt2 = fg.getWeight(g2, g1);
 
@@ -104,18 +103,12 @@ int FusionGraph::addEncompass(int &g1, int &g2, int index) {
         eet.addIndex(index);
         eet.weight = 1.0;
         fg.insertEdge(g1, g2, eet);
-        return 0;
     } else {
         pt->addIndex(index);
         pt->weight += 1.0;
-        // fg.updateEdge(g1,g2,pt);
         pt2->addIndex(index);
         pt2->weight += 1.0;
-        // fg.updateEdge(g2,g1,pt2);
-        return 0;
     }
-
-    return 0;
 }
 
 int FusionGraph::addSTARweight(int &g1, int &g2) {
@@ -302,23 +295,18 @@ int FusionGraph::cleanVertex() {
     return 0;
 }
 
-int FusionGraph::addSpanning(int &gIndex1, int &gIndex2, int index) {
-
+void FusionGraph::addSpanning(int gIndex1, int gIndex2, int index) {
     FusionEdge *pt = fg.getWeight(gIndex1, gIndex2);
     FusionEdge *pt2 = fg.getWeight(gIndex2, gIndex1);
 
     if (pt == nullptr && pt2 == nullptr) {
         FusionEdge eet;
+        eet.spannings.push_back(index);
         fg.insertEdge(gIndex1, gIndex2, eet);
     } else {
-
         pt->spannings.push_back(index);
-
         pt2->spannings.push_back(index);
-
-        return 0;
     }
-    return 0;
 }
 
 int FusionGraph::removeEdge(int gIndex1, int gIndex2) {

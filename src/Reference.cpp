@@ -19,6 +19,11 @@
 
 using namespace std;
 
+const string Reference::seqNameList[25] = {
+    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+    "21", "22", "X", "Y", "MT"};
+
 Reference::Reference(string filePath) {
     faidx_t *f = fai_load(filePath.c_str());
     this->faSet.insert(f);
@@ -27,6 +32,16 @@ Reference::Reference(string filePath) {
     for (int i = 0; i < n; i++) {
         const string originalName = string(faidx_iseq(f, i));
         string mappedName = getStdChrName(originalName);
+        bool found = false;
+        for (const string &name : seqNameList) {
+            if (mappedName.compare(name) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            continue;
+        }
         this->nameOriginalToId[originalName] = this->refItems.size();
         this->nameMappedToId[mappedName] = this->refItems.size();
         int seqLength = faidx_seq_len(f, originalName.c_str());
@@ -55,39 +70,75 @@ Reference::~Reference() {
     this->faSet.clear();
 }
 
-string Reference::getSeqOriginalName(int id) {
+string Reference::getSeqOriginalName(const int id) const {
     if (id < 0 || id >= this->seqCount) {
         return "";
     }
 
-    return this->refItems[id].originalName;
+    auto it = this->refItems.find(id);
+    if (it == this->refItems.end()) {
+        return "";
+    }
+
+    return it->second.originalName;
 }
 
-int Reference::getSeqIdByOriginalName(const string &name) {
+int Reference::getSeqIdByOriginalName(const string &name) const {
     if (this->nameOriginalToId.find(name) == this->nameOriginalToId.end()) {
         return -1;
     }
-    return this->nameOriginalToId[name];
+
+    auto it = this->nameOriginalToId.find(name);
+    if (it == this->nameOriginalToId.end()) {
+        return -1;
+    }
+
+    return it->second;
 }
 
-int Reference::getSeqIdByMappedName(const string &name) {
+int Reference::getSeqIdByMappedName(const string &name) const {
     if (this->nameMappedToId.find(name) == this->nameMappedToId.end()) {
         return -1;
     }
-    return this->nameMappedToId[name];
+
+    auto it = this->nameMappedToId.find(name);
+    if (it == this->nameMappedToId.end()) {
+        return -1;
+    }
+
+    return it->second;
 }
 
-int Reference::getSeqLength(int id) {
+int Reference::getSeqLength(int id) const {
     if (id < 0 || id >= this->seqCount) {
         cerr << "Invalid seq id: " << id << endl;
         return -1;
     }
 
-    return this->refItems[id].seqLength;
+    auto it = this->refItems.find(id);
+    if (it == this->refItems.end()) {
+        return -1;
+    }
+
+    return it->second.seqLength;
 }
 
-int Reference::getSeqCount() {
+int Reference::getSeqCount() const {
     return this->seqCount;
+}
+
+bool Reference::isSeqVirus(const int id) const {
+    if (id < 0 || id >= this->seqCount) {
+        cerr << "Invalid seq id: " << id << endl;
+        return -1;
+    }
+
+    auto it = this->refItems.find(id);
+    if (it == this->refItems.end()) {
+        return false;
+    }
+
+    return it->second.isVirus;
 }
 
 const char *Reference::getSeq(int id) {
@@ -128,7 +179,7 @@ void Reference::readVirusLoaderFA(const VirusLoader &virusLoader) {
             this->nameOriginalToId[originalName] = this->refItems.size();
             this->nameMappedToId[originalName] = this->refItems.size();
             int seqLength = faidx_seq_len(f, originalName.c_str());
-            this->refItems[this->refItems.size()] = RefItem(originalName, mappedName, f, seqLength);
+            this->refItems[this->refItems.size()] = RefItem(originalName, mappedName, f, seqLength, true);
             this->seqCount++;
         } else if (filePathLower.ends_with(".gff")) {
             continue;
@@ -169,7 +220,7 @@ void Reference::readVirusLoaderGff(const GffFile &gffFile, const char *pfs, cons
         }
         this->nameOriginalToId[mappedName] = this->refItems.size();
         this->nameMappedToId[trueName] = this->refItems.size();
-        this->refItems[this->refItems.size()] = RefItem(mappedName, trueName, nullptr, seqIdx.seqLength);
+        this->refItems[this->refItems.size()] = RefItem(mappedName, trueName, nullptr, seqIdx.seqLength, true);
         this->seqCount++;
         this->seqs[this->seqCount - 1] = seq;
         break;

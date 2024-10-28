@@ -5,24 +5,25 @@
  *      Author: jinzhang
  */
 
-#include "Rna.h"
-#include "Timer.hpp"
-
+#include <cstdlib>
 #include <set>
+#include <sstream>
+#include "Timer.hpp"
+#include "Rna.h"
 
 namespace {
-typedef struct {
-    int localId;
-    int enId;
-    string name;
-} my_en_record_t;
+// typedef struct {
+//     int localId;
+//     int enId;
+//     string name;
+// } my_en_record_t;
 
-bool mysorttmp(my_en_record_t i, my_en_record_t j) {
-    if (i.name.compare(j.name) < 0)
-        return true;
-    else
-        return false;
-}
+// bool mysorttmp(my_en_record_t i, my_en_record_t j) {
+//     if (i.name.compare(j.name) < 0)
+//         return true;
+//     else
+//         return false;
+// }
 
 bool hasNoSpanningReads(FusionGraph::edge_iterator edge) { return edge->second.spannings.empty(); };
 
@@ -43,164 +44,86 @@ typedef struct {
 // vector<reads_to_rm_t> rrtv;
 
 Rna::Rna() {
-    // TODO Auto-generated constructor stub
-
+    rnafg = new FusionGraph();
     lastSPSize = 0;
-
     maxError = 2;
 
     vector<int> a;
     for (int i = 0; i < HASHSIZE; i++) {
         hashVecAnchor.push_back(a);
-        hashVecEncompass.push_back(a);
-        hashVecHard.push_back(a);
+        // hashVecEncompass.push_back(a);
+        // hashVecHard.push_back(a);
     }
 }
 
-int Rna::getGraph(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc) {
-    // cout<<"in getGraph"<<endl;
+Rna::~Rna() {
+    if (rnafg != nullptr) {
+        delete rnafg;
+    }
+}
+
+bool Rna::isChrPairPossibleFusion(int tid, int mtid, const Reference &ref, const Gene &g) {
+    if (tid < 0 || mtid < 0 ||
+    tid == mtid ||
+    (ref.isSeqVirus(tid) == ref.isSeqVirus(mtid))) {
+        return false;
+    }
+    if (g.viruses.find(
+        ref.isSeqVirus(tid) ?
+        ref.getSeqOriginalName(tid) :
+        ref.getSeqOriginalName(mtid)
+    ) == g.viruses.end()) {
+        return false;
+    }
+    return true;
+}
+
+void Rna::groupEnReads(const char *rnaFile, Reference &ref, TidHandler &th, Gene &g, unordered_map<string, pair<bam1_t *, bam1_t *>> &readGroups) {
     samFile *f = sam_open(rnaFile, "r");
-    if (f == nullptr)
-    {
+    if (f == nullptr) {
         cerr << "Failed to open " << rnaFile << " to read." << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     sam_hdr_t *h = sam_hdr_read(f);
-    if (h == nullptr)
-    {
+    if (h == nullptr) {
         cerr << "Failed to get header of file: " << rnaFile << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     bam1_t *b = bam_init1();
 
     while (true) {
-        if ((sam_read1(f, h, b)) < 0)
+        if ((sam_read1(f, h, b)) < 0) {
             break;
-        else {
-            bool isMap = !(b->core.flag & BAM_FUNMAP);
-            bool isMMap = !(b->core.flag & BAM_FMUNMAP);
-            // cout<<isMap<<" "<<isMap<<endl;
-            if (isMap && isMMap) {
-                int tid = b->core.tid;
-                uint32_t pos = b->core.pos + 1;
-
-                int mtid = b->core.mtid;
-                uint32_t mpos = b->core.mpos + 1;
-
-                int strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-                int strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
-
-                if (tid == mtid && strand1 + strand2 == 1) {
-                    uint32_t distance;
-                    if (mpos > pos)
-                        distance = mpos - pos;
-                    else
-                        distance = pos - mpos;
-                    if (distance < 1000)
-                        continue;
+        } else {
+            if ((b->core.flag & (BAM_FUNMAP | BAM_FMUNMAP)) ||
+            (b->core.flag & (BAM_FSECONDARY | BAM_FSUPPLEMENTARY))) {
+                continue;
+            }
+            int tid = th.getRefFromRNA(b->core.tid), mtid = th.getRefFromRNA(b->core.mtid);
+            if (!this->isChrPairPossibleFusion(tid, mtid, ref, g)) {
+                continue;
+            }
+            pair<bam1_t *, bam1_t *> &readGroup = readGroups[string(bam_get_qname(b))];
+            bam1_t *b1 = bam_init1();
+            if (bam_copy1(b1, b) == nullptr) {
+                bam_destroy1(b1);
+                continue;
+            }
+            if (b->core.flag & BAM_FREAD1) {
+                if (readGroup.first != nullptr) {
+                    bam_destroy1(readGroup.first);
                 }
-                // cout<<"here2"<<endl;
-                vector<int> geneIds1;
-                vector<int> geneIds2;
-                int tid1 = th.getRefFromRNA(tid);
-                int tid2 = th.getRefFromRNA(mtid);
-
-                if (tid1 == -1 || tid2 == -1)
-                    continue;
-
-                g.isInGene(tid1, pos, geneIds1);
-                g.isInGene(tid2, mpos, geneIds2);
-
-                if (geneIds1.size() == 0 || geneIds2.size() == 0) {
-                    continue;
+                readGroup.first = b1;
+            } else if (b->core.flag & BAM_FREAD2) {
+                if (readGroup.second != nullptr) {
+                    bam_destroy1(readGroup.second);
                 }
-                /////////////////////////////////////////////////////////////
-                /*
-                                char seqRead [1024];
-                                for(int aa=0;aa<b->core.l_qseq;aa++)
-                                {
-                                    int reada=bam_seqi(bam_get_seq(b),aa);
-                                    char chara=getCharA(reada);
-                                    seqRead[aa]=chara;
-                                }
-
-                                int count=hc.getHitsCount(seqRead,b->core.l_qseq);
-
-                                if(count>10)
-                                    continue;
-                */
-                // cout<<"here"<<endl;
-                encompass_rna_t et;
-
-                /////////////////////////////////////////////////////////////
-                //              et.numCopy=count;
-                et.numCopy = 1;
-                et.name = string(bam_get_qname(b));
-                et.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-                et.tid1 = tid1;
-                et.pos1 = pos;
-                et.len1 = b->core.l_qseq;
-                uint32_t *pc = bam_get_cigar(b);
-                for (int k = 0; k < b->core.n_cigar; k++) {
-                    uint32_t cg = (*pc);
-                    pc = pc + 1;
-                    et.cigar1.push_back(cg);
-                }
-
-                et.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
-                ;
-                et.tid2 = tid2;
-                et.pos2 = mpos;
-                et.len2 = -1;
-
-                /////////////////////////////////////////////////////////////
-                for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                    int reada = bam_seqi(bam_get_seq(b), aa);
-                    char chara = getCharA(reada);
-                    et.seq1.push_back(chara);
-                }
-
-                // int added=0;
-                // cout<<"before double"<<endl;
-                for (int i = 0; i < geneIds1.size(); i++) {
-                    for (int j = 0; j < geneIds2.size(); j++) {
-                        // cout<<"111"<<endl;
-                        if (geneIds1[i] == geneIds2[j])
-                            continue;
-
-                        // cout<<"222"<<endl;
-
-                        if (!g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2)) // in gene guarentee not the ones with diff locus.
-                            continue;
-                        // cout<<"333"<<endl;
-
-                        if (rnafg.isGeneIn(geneIds1[i]) == 0) {
-                            // cout<<g.getGene(geneIds1[i])->name2<<" ";
-                            rnafg.addGene(geneIds1[i]);
-                        }
-                        if (rnafg.isGeneIn(geneIds2[j]) == 0) {
-                            // cout<<g.getGene(geneIds2[j])->name2<<" ";
-                            rnafg.addGene(geneIds2[j]);
-                        }
-                        // if(added==0)
-                        //{
-
-                        et.geneId1 = geneIds1[i];
-                        et.geneId2 = geneIds2[j];
-                        enrna.push_back(et);
-                        // added=1;
-                        //}
-                        // cout<<"444"<<endl;
-                        rnafg.addEncompass(geneIds1[i], geneIds2[j], enrna.size() - 1);
-                    }
-                }
+                readGroup.second = b1;
             }
         }
     }
-    //    rnafg.printFg(g);
 
-    if (b != nullptr)
-    {
+    if (b != nullptr) {
         bam_destroy1(b);
     }
     if (h != nullptr) {
@@ -209,337 +132,574 @@ int Rna::getGraph(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
     if (f != nullptr) {
         sam_close(f);
     }
-
-    return 0;
 }
+
+void Rna::processEnReads(TidHandler &th, Gene &g, unordered_map<string, pair<bam1_t *, bam1_t*>> &readGroups) {
+    for (auto it = readGroups.begin(); it != readGroups.end(); it++) {
+        bam1_t *b1 = it->second.first, *b2 = it->second.second;
+        if (b1 == nullptr || b2 == nullptr) {
+            if (b1 != nullptr) {
+                bam_destroy1(b1);
+                it->second.first = nullptr;
+            }
+            if (b2 != nullptr) {
+                bam_destroy1(b2);
+                it->second.second = nullptr;
+            }
+            continue;
+        }
+        int tid1 = th.getRefFromRNA(b1->core.tid), tid2 = th.getRefFromRNA(b2->core.tid);
+        int pos1 = b1->core.pos + 1, pos2 = b2->core.pos + 1;
+        int len1 = b1->core.l_qseq, len2 = b2->core.l_qseq;
+        int strand1 = (b1->core.flag & BAM_FREVERSE) ? 1 : 0, strand2 = (b2->core.flag & BAM_FREVERSE) ? 1 : 0;
+        vector<int> geneIds1, geneIds2;
+        g.isInGene(tid1, pos1, geneIds1);
+        g.isInGene(tid2, pos2, geneIds2);
+        for (int i = 0; i < geneIds1.size(); i++) {
+            for (int j = 0; j < geneIds2.size(); j++) {
+                if (!g.isGenePairPossibleFusion(geneIds1[i], geneIds2[j], strand1, strand2)) {
+                    continue;
+                }
+                encompass_rna_t enc;
+                enc.numCopy = 1;
+                enc.name = it->first;
+                enc.strand1 = strand1;
+                enc.tid1 = tid1;
+                enc.pos1 = pos1;
+                enc.len1 = len1;
+                enc.geneId1 = geneIds1[i];
+                uint32_t *pcigar1 = bam_get_cigar(b1);
+                enc.cigar1 = vector<uint32_t>(pcigar1, pcigar1 + b1->core.n_cigar);
+                for (int i = 0; i < len1; i++) {
+                    int reada = bam_seqi(bam_get_seq(b1), i);
+                    enc.seq1.push_back(getCharA(reada));
+                }
+                enc.strand2 = strand2;
+                enc.tid2 = tid2;
+                enc.pos2 = pos2;
+                enc.len2 = len2;
+                enc.geneId2 = geneIds2[j];
+                uint32_t *pcigar2 = bam_get_cigar(b2);
+                enc.cigar2 = vector<uint32_t>(pcigar2, pcigar2 + b1->core.n_cigar);
+                for (int i = 0; i < len2; i++) {
+                    int reada = bam_seqi(bam_get_seq(b2), i);
+                    enc.seq2.push_back(getCharA(reada));
+                }
+                this->enrna.push_back(enc);
+                this->rnafg->addEncompass(geneIds1[i], geneIds2[j], this->enrna.size() - 1);
+            }
+        }
+        bam_destroy1(b1);
+        it->second.first = nullptr;
+        bam_destroy1(b2);
+        it->second.second = nullptr;
+    }
+    readGroups.clear();
+    this->rnafg->printFg(g);
+}
+
+void Rna::processEnHardReads(const char *rnaFile, Reference &ref, TidHandler &th, Gene &g) {
+    samFile *f = sam_open(rnaFile, "r");
+    if (f == nullptr) {
+        cerr << "Failed to open " << rnaFile << " to read." << endl;
+        exit(EXIT_FAILURE);
+    }
+    sam_hdr_t *h = sam_hdr_read(f);
+    if (h == nullptr) {
+        cerr << "Failed to get header of file: " << rnaFile << endl;
+        exit(EXIT_FAILURE);
+    }
+    bam1_t *b = bam_init1();
+
+    while (true) {
+        if ((sam_read1(f, h, b)) < 0) {
+            break;
+        } else {
+            if ((b->core.flag & (BAM_FUNMAP | BAM_FMUNMAP)) ||
+            (b->core.flag & (BAM_FSECONDARY)) ||
+            !(b->core.flag & (BAM_FSUPPLEMENTARY))) {
+                continue;
+            }
+            int tid = th.getRefFromRNA(b->core.tid), mtid = th.getRefFromRNA(b->core.mtid);
+            if (!this->isChrPairPossibleFusion(tid, mtid, ref, g)) {
+                continue;
+            }
+            int pos = b->core.pos + 1, mpos = b->core.mpos + 1;
+            int len = b->core.l_qseq;
+            int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0, mstrand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+            vector<int> geneIds1, geneIds2;
+            g.isInGene(tid, pos, geneIds1);
+            g.isInGene(mtid, mpos, geneIds2);
+            for (int i = 0; i < geneIds1.size(); i++) {
+                for (int j = 0; j < geneIds2.size(); j++) {
+                    if (!g.isGenePairPossibleFusion(geneIds1[i], geneIds2[j], strand, mstrand)) {
+                        continue;
+                    }
+                    encompass_rna_t enc;
+                    enc.numCopy = 1;
+                    enc.name = string(bam_get_qname(b));
+                    enc.strand1 = strand;
+                    enc.tid1 = tid;
+                    enc.pos1 = pos;
+                    enc.len1 = len;
+                    enc.geneId1 = geneIds1[i];
+                    uint32_t *pcigar1 = bam_get_cigar(b);
+                    enc.cigar1 = vector<uint32_t>(pcigar1, pcigar1 + b->core.n_cigar);
+                    for (int i = 0; i < len; i++) {
+                        int reada = bam_seqi(bam_get_seq(b), i);
+                        enc.seq1.push_back(getCharA(reada));
+                    }
+                    enc.strand2 = mstrand;
+                    enc.tid2 = mtid;
+                    enc.pos2 = mpos;
+                    enc.len2 = 0;
+                    enc.geneId2 = geneIds2[j];
+                    this->enrna.push_back(enc);
+                    this->rnafg->addEncompass(geneIds1[i], geneIds2[j], this->enrna.size() - 1);
+                }
+            }
+        }
+    }
+
+    if (b != nullptr) {
+        bam_destroy1(b);
+    }
+    if (h != nullptr) {
+        sam_hdr_destroy(h);
+    }
+    if (f != nullptr) {
+        sam_close(f);
+    }
+    this->rnafg->printFg(g);
+}
+
+// int Rna::getGraph(const char *rnaFile, Reference &ref, TidHandler &th, Gene &g, HitsCounter &hc) {
+//     samFile *f = sam_open(rnaFile, "r");
+//     if (f == nullptr) {
+//         cerr << "Failed to open " << rnaFile << " to read." << endl;
+//         exit(EXIT_FAILURE);
+//     }
+//     sam_hdr_t *h = sam_hdr_read(f);
+//     if (h == nullptr) {
+//         cerr << "Failed to get header of file: " << rnaFile << endl;
+//         exit(EXIT_FAILURE);
+//     }
+//     bam1_t *b = bam_init1();
+
+//     while (true) {
+//         if ((sam_read1(f, h, b)) < 0) {
+//             break;
+//         } else {
+//             if (!(b->core.flag & (BAM_FUNMAP | BAM_FMUNMAP))) {
+//                 int tid = th.getRefFromRNA(b->core.tid);
+//                 int mtid = th.getRefFromRNA(b->core.mtid);
+//                 if (tid < 0 ||
+//                 mtid < 0 ||
+//                 tid == mtid ||
+//                 (b->core.flag & (BAM_FSECONDARY | BAM_FSUPPLEMENTARY)) ||
+//                 (ref.isSeqVirus(tid) == ref.isSeqVirus(mtid))) {
+//                     continue;
+//                 }
+//                 if (ref.isSeqVirus(tid)) {
+//                     if (g.viruses.find(ref.getSeqOriginalName(tid)) == g.viruses.end()) {
+//                         continue;
+//                     }
+//                 } else if (ref.isSeqVirus(mtid)) {
+//                     if (g.viruses.find(ref.getSeqOriginalName(mtid)) == g.viruses.end()) {
+//                         continue;
+//                     }
+//                 }
+//                 int pos = b->core.pos + 1;
+//                 int mpos = b->core.mpos + 1;
+//                 vector<int> geneIds1, geneIds2;
+//                 g.isInGene(tid, pos, geneIds1);
+//                 g.isInGene(mtid, mpos, geneIds2);
+
+//                 if (geneIds1.size() == 0 || geneIds2.size() == 0) {
+//                     continue;
+//                 }
+//                 if (geneIds1[0] == geneIds2[0]) {
+//                     continue;
+//                 }
+                
+//                 encompass_rna_t et;
+//                 et.numCopy = 1;
+//                 et.name = string(bam_get_qname(b));
+//                 et.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+//                 et.tid1 = tid;
+//                 et.pos1 = pos;
+//                 et.len1 = b->core.l_qseq;
+//                 uint32_t *pc = bam_get_cigar(b);
+//                 for (int k = 0; k < b->core.n_cigar; k++) {
+//                     uint32_t cg = (*pc);
+//                     pc = pc + 1;
+//                     et.cigar1.push_back(cg);
+//                 }
+//                 et.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
+//                 et.tid2 = mtid;
+//                 et.pos2 = mpos;
+//                 et.len2 = -1;
+//                 for (int aa = 0; aa < b->core.l_qseq; aa++) {
+//                     int reada = bam_seqi(bam_get_seq(b), aa);
+//                     et.seq1.push_back(getCharA(reada));
+//                 }
+//                 for (int i = 0; i < geneIds1.size(); i++) {
+//                     for (int j = 0; j < geneIds2.size(); j++) {
+//                         if (geneIds1[i] == geneIds2[j]) {
+//                             continue;
+//                         }
+//                         if (!g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2)) { // in gene guarentee not the ones with diff locus.
+//                             continue;
+//                         }
+//                         et.geneId1 = geneIds1[i];
+//                         et.geneId2 = geneIds2[j];
+//                         enrna.push_back(et);
+//                         rnafg->addEncompass(geneIds1[i], geneIds2[j], enrna.size() - 1);
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     if (b != nullptr)
+//     {
+//         bam_destroy1(b);
+//     }
+//     if (h != nullptr) {
+//         sam_hdr_destroy(h);
+//     }
+//     if (f != nullptr) {
+//         sam_close(f);
+//     }
+
+//     return 0;
+// }
 
 //HPV
 
-vector<encompass_rna_t> secondary_ets;
-std::multimap<string, int> en_dict;
+// vector<encompass_rna_t> secondary_ets;
+// std::multimap<string, int> en_dict;
 
-int Rna::getGraph_second(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
-{
-    // cout << "in getGraph 2" << endl;
-    samFile *f = sam_open(rnaFile, "r");
-    if (f == nullptr)
-    {
-        cerr << "Failed to open " << rnaFile << " to read." << endl;
-        exit(1);
-    }
-    sam_hdr_t *h = sam_hdr_read(f);
-    if (h == nullptr)
-    {
-        cerr << "Failed to get header of file: " << rnaFile << endl;
-        exit(1);
-    }
-    bam1_t *b = bam_init1();
+// int Rna::getGraph_second(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
+// {
+//     // cout << "in getGraph 2" << endl;
+//     samFile *f = sam_open(rnaFile, "r");
+//     if (f == nullptr)
+//     {
+//         cerr << "Failed to open " << rnaFile << " to read." << endl;
+//         exit(1);
+//     }
+//     sam_hdr_t *h = sam_hdr_read(f);
+//     if (h == nullptr)
+//     {
+//         cerr << "Failed to get header of file: " << rnaFile << endl;
+//         exit(1);
+//     }
+//     bam1_t *b = bam_init1();
 
-    while (true)
-    {
-        if ((sam_read1(f, h, b)) < 0)
-            break;
-        else
-        {
-            bool isSecond = (b->core.flag & BAM_FSECONDARY);
-            if (isSecond)
-            {
-                int tid = b->core.tid;
-                uint32_t pos = b->core.pos + 1;
+//     while (true)
+//     {
+//         if ((sam_read1(f, h, b)) < 0)
+//             break;
+//         else
+//         {
+//             bool isSecond = (b->core.flag & BAM_FSUPPLEMENTARY);
+//             if (isSecond)
+//             {
+//                 int tid = b->core.tid;
+//                 uint32_t pos = b->core.pos + 1;
 
-                int mtid = b->core.mtid;
-                uint32_t mpos = b->core.mpos + 1;
+//                 int mtid = b->core.mtid;
+//                 uint32_t mpos = b->core.mpos + 1;
 
-                int strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-                int strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
+//                 int strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+//                 int strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
 
-                if (tid == mtid && strand1 + strand2 == 1)
-                {
-                    uint32_t distance;
-                    if (mpos > pos)
-                        distance = mpos - pos;
-                    else
-                        distance = pos - mpos;
-                    if (distance < 1000)
-                        continue;
-                }
-                // cout<<"here2"<<endl;
-                vector<int> geneIds1;
-                vector<int> geneIds2;
-                int tid1 = th.getRefFromRNA(tid);
-                int tid2 = th.getRefFromRNA(mtid);
+//                 if (tid == mtid && strand1 + strand2 == 1)
+//                 {
+//                     uint32_t distance;
+//                     if (mpos > pos)
+//                         distance = mpos - pos;
+//                     else
+//                         distance = pos - mpos;
+//                     if (distance < 1000)
+//                         continue;
+//                 }
+//                 // cout<<"here2"<<endl;
+//                 vector<int> geneIds1;
+//                 vector<int> geneIds2;
+//                 int tid1 = th.getRefFromRNA(tid);
+//                 int tid2 = th.getRefFromRNA(mtid);
 
-                if (tid1 == -1 || tid2 == -1)
-                    continue;
+//                 if (tid1 == -1 || tid2 == -1)
+//                     continue;
 
-                g.isInGene(tid1, pos, geneIds1);
-                g.isInGene(tid2, mpos, geneIds2);
+//                 g.isInGene(tid1, pos, geneIds1);
+//                 g.isInGene(tid2, mpos, geneIds2);
 
-                if (geneIds1.size() == 0 || geneIds2.size() == 0)
-                {
-                    continue;
-                }
-                encompass_rna_t et;
+//                 if (geneIds1.size() == 0 || geneIds2.size() == 0)
+//                 {
+//                     continue;
+//                 }
+//                 encompass_rna_t et;
 
-                /////////////////////////////////////////////////////////////
-                //              et.numCopy=count;
-                et.numCopy = 1;
-                et.name = string(bam_get_qname(b));
-                et.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-                et.tid1 = tid1;
-                et.pos1 = pos;
-                et.len1 = b->core.l_qseq;
-                uint32_t *pc = bam_get_cigar(b);
-                for (int k = 0; k < b->core.n_cigar; k++)
-                {
-                    uint32_t cg = (*pc);
-                    pc = pc + 1;
-                    et.cigar1.push_back(cg);
-                }
+//                 /////////////////////////////////////////////////////////////
+//                 //              et.numCopy=count;
+//                 et.numCopy = 1;
+//                 et.name = string(bam_get_qname(b));
+//                 et.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+//                 et.tid1 = tid1;
+//                 et.pos1 = pos;
+//                 et.len1 = b->core.l_qseq;
+//                 uint32_t *pc = bam_get_cigar(b);
+//                 for (int k = 0; k < b->core.n_cigar; k++)
+//                 {
+//                     uint32_t cg = (*pc);
+//                     pc = pc + 1;
+//                     et.cigar1.push_back(cg);
+//                 }
 
-                et.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
-                ;
-                et.tid2 = tid2;
-                et.pos2 = mpos;
-                et.len2 = -1;
+//                 et.strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
+//                 ;
+//                 et.tid2 = tid2;
+//                 et.pos2 = mpos;
+//                 et.len2 = -1;
 
-                /////////////////////////////////////////////////////////////
-                for (int aa = 0; aa < b->core.l_qseq; aa++)
-                {
-                    int reada = bam_seqi(bam_get_seq(b), aa);
-                    char chara = getCharA(reada);
-                    et.seq1.push_back(chara);
-                }
+//                 /////////////////////////////////////////////////////////////
+//                 for (int aa = 0; aa < b->core.l_qseq; aa++)
+//                 {
+//                     int reada = bam_seqi(bam_get_seq(b), aa);
+//                     char chara = getCharA(reada);
+//                     et.seq1.push_back(chara);
+//                 }
 
-                // int added=0;
-                // cout<<"before double"<<endl;
-                for (int i = 0; i < geneIds1.size(); i++)
-                {
-                    for (int j = 0; j < geneIds2.size(); j++)
-                    {
-                        // cout<<"111"<<endl;
-                        if (geneIds1[i] == geneIds2[j])
-                            continue;
+//                 // int added=0;
+//                 // cout<<"before double"<<endl;
+//                 for (int i = 0; i < geneIds1.size(); i++)
+//                 {
+//                     for (int j = 0; j < geneIds2.size(); j++)
+//                     {
+//                         // cout<<"111"<<endl;
+//                         if (geneIds1[i] == geneIds2[j])
+//                             continue;
 
-                        // cout<<"222"<<endl;
+//                         // cout<<"222"<<endl;
 
-                        if (!g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2)) // in gene guarentee not the ones with diff locus.
-                            continue;
-                        // cout<<"333"<<endl;
+//                         if (!g.isGenePairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2)) // in gene guarentee not the ones with diff locus.
+//                             continue;
+//                         // cout<<"333"<<endl;
 
-                        if (rnafg.isGeneIn(geneIds1[i]) == 0)
-                        {
-                            // cout<<g.getGene(geneIds1[i])->name2<<" ";
-                            rnafg.addGene(geneIds1[i]);
-                        }
-                        if (rnafg.isGeneIn(geneIds2[j]) == 0)
-                        {
-                            // cout<<g.getGene(geneIds2[j])->name2<<" ";
-                            rnafg.addGene(geneIds2[j]);
-                        }
-                        // if(added==0)
-                        //{
+//                         if (rnafg->isGeneIn(geneIds1[i]) == 0)
+//                         {
+//                             // cout<<g.getGene(geneIds1[i])->name2<<" ";
+//                             rnafg->addGene(geneIds1[i]);
+//                         }
+//                         if (rnafg->isGeneIn(geneIds2[j]) == 0)
+//                         {
+//                             // cout<<g.getGene(geneIds2[j])->name2<<" ";
+//                             rnafg->addGene(geneIds2[j]);
+//                         }
+//                         // if(added==0)
+//                         //{
 
-                        et.geneId1 = geneIds1[i];
-                        et.geneId2 = geneIds2[j];
-                        enrna.push_back(et);
+//                         et.geneId1 = geneIds1[i];
+//                         et.geneId2 = geneIds2[j];
+//                         enrna.push_back(et);
 
-                        secondary_ets.push_back(et);
-                        en_dict.insert(make_pair(et.name, secondary_ets.size() - 1));
-                        // added=1;
-                        // }
-                        // cout<<"444"<<endl;
-                        rnafg.addEncompass(geneIds1[i], geneIds2[j], enrna.size() - 1);
-                    }
-                }
-            }
-        }
-    }
-    rnafg.printFg(g);
-
-
-    if (b != nullptr)
-    {
-        bam_destroy1(b);
-    }
-    if (h != nullptr) {
-        sam_hdr_destroy(h);
-    }
-    if (f != nullptr) {
-        sam_close(f);
-    }
-
-    return 0;
-}
-
-int Rna::getGraph_second_read_normal(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
-{
-    // cout << "in getGraph 3" << endl;
-    samFile *f = sam_open(rnaFile, "r");
-    if (f == nullptr)
-    {
-        cerr << "Failed to open " << rnaFile << " to read." << endl;
-        exit(1);
-    }
-    sam_hdr_t *h = sam_hdr_read(f);
-    if (h == nullptr)
-    {
-        cerr << "Failed to get header of file: " << rnaFile << endl;
-        exit(1);
-    }
-    bam1_t *b = bam_init1();
-
-    while (true)
-    {
-        if ((sam_read1(f, h, b)) < 0)
-            break;
-        else
-        {
-            // cout<<"&&&&&&&&&&&&&&&&&&&&&&&&&&&&"<<endl;
-            string seq_name = string(bam_get_qname(b));
-            // cout<<seq_name<<endl;
-            bool isSecond = (b->core.flag & BAM_FSECONDARY);
-            pair<multimap<string, int>::iterator, multimap<string, int>::iterator> range;
-            if (!isSecond)
-            {
-                range = en_dict.equal_range(seq_name);
-            }
-            multimap<string, int>::iterator aa;
-            for (aa = range.first; aa != range.second; ++aa)
-            {
-
-                // et_second is the read mapped as secondary reads
-                // here fields for it were alreadsy assigned.
-
-                // cout << "#################" << endl;
-
-                encompass_rna_t et_second;
-                et_second = secondary_ets[aa->second];
-
-                cout << et_second.name << endl;
-
-                int tid = b->core.tid;            // for this primary read
-                int tid1 = th.getRefFromRNA(tid); // for this primary read
-                uint32_t pos1 = b->core.pos + 1;  // for this primary read
-
-                if (!(tid1 == et_second.tid2 && pos1 == et_second.pos2)) // this is not a pair
-                {
-                    continue;
-                }
-                // cout << "go on" << endl;
-
-                vector<int> geneIds1;
-                vector<int> geneIds2;
-
-                if (tid1 == -1 || et_second.tid1 == -1)
-                    continue;
-
-                // cout << "go on" << endl;
-
-                g.isInGene(tid1, pos1, geneIds1);
-                g.isInGene(et_second.tid1, et_second.pos1, geneIds2);
-
-                if (geneIds1.size() == 0 || geneIds2.size() == 0)
-                {
-                    continue;
-                }
-
-                // cout << "go on 3" << endl;
-                encompass_rna_t et;
-
-                /////////////////////////////////////////////////////////////
-                //              et.numCopy=count;
-                et.numCopy = 1;
-                et.name = string(bam_get_qname(b));
-                et.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-                et.tid1 = tid1;
-                et.pos1 = pos1;
-                et.len1 = b->core.l_qseq;
-                uint32_t *pc = bam_get_cigar(b);
-                for (int k = 0; k < b->core.n_cigar; k++)
-                {
-                    uint32_t cg = (*pc);
-                    pc = pc + 1;
-                    et.cigar1.push_back(cg);
-                }
-
-                et.strand2 = et_second.strand1;
-                et.tid2 = et_second.tid1;
-                et.pos2 = et_second.pos1;
-                et.len2 = -1;
-
-                // cout << "^^^^^^^^" << et.strand1 << " " << et.tid1 << " " << et.pos1 << endl;
-                // cout << "^^^^^^^^" << et.strand2 << " " << et.tid2 << " " << et.pos2 << endl;
-
-                /////////////////////////////////////////////////////////////
-                for (int aa = 0; aa < b->core.l_qseq; aa++)
-                {
-                    int reada = bam_seqi(bam_get_seq(b), aa);
-                    char chara = getCharA(reada);
-                    et.seq1.push_back(chara);
-                }
-
-                // cout << "set et read" << endl;
-
-                // int added=0;
-                // cout << "before double" << endl;
-                for (int i = 0; i < geneIds1.size(); i++)
-                {
-                    for (int j = 0; j < geneIds2.size(); j++)
-                    {
-                        // cout << "111" << endl;
-                        if (geneIds1[i] == geneIds2[j])
-                            continue;
-
-                        // cout << "222" << endl;
-
-                        if (!g.isPairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2)) // in gene guarentee not the ones with diff locus.
-                            continue;
-                        // cout << "333" << endl;
-
-                        if (rnafg.isGeneIn(geneIds1[i]) == 0)
-                        {
-                            cout << g.getGene(geneIds1[i])->name2 << " ";
-                            rnafg.addGene(geneIds1[i]);
-                        }
-                        if (rnafg.isGeneIn(geneIds2[j]) == 0)
-                        {
-                            cout << g.getGene(geneIds2[j])->name2 << " ";
-                            rnafg.addGene(geneIds2[j]);
-                        }
-                        // if(added==0)
-                        //{
-
-                        et.geneId1 = geneIds1[i];
-                        et.geneId2 = geneIds2[j];
-                        enrna.push_back(et);
-                        // cout << "add" << endl;
-                        // added=1;
-                        // }
-                        // cout<<"444"<<endl;
-                        rnafg.addEncompass(geneIds1[i], geneIds2[j], enrna.size() - 1);
-                        // cout << "here" << endl;
-                    }
-                }
-            }
-        }
-    }
-    rnafg.printFg(g);
+//                         secondary_ets.push_back(et);
+//                         en_dict.insert(make_pair(et.name, secondary_ets.size() - 1));
+//                         // added=1;
+//                         // }
+//                         // cout<<"444"<<endl;
+//                         rnafg->addEncompass(geneIds1[i], geneIds2[j], enrna.size() - 1);
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     rnafg->printFg(g);
 
 
-    if (b != nullptr)
-    {
-        bam_destroy1(b);
-    }
-    if (h != nullptr) {
-        sam_hdr_destroy(h);
-    }
-    if (f != nullptr) {
-        sam_close(f);
-    }
+//     if (b != nullptr)
+//     {
+//         bam_destroy1(b);
+//     }
+//     if (h != nullptr) {
+//         sam_hdr_destroy(h);
+//     }
+//     if (f != nullptr) {
+//         sam_close(f);
+//     }
 
-    return 0;
-}
+//     return 0;
+// }
+
+// int Rna::getGraph_second_read_normal(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc)
+// {
+//     // cout << "in getGraph 3" << endl;
+//     samFile *f = sam_open(rnaFile, "r");
+//     if (f == nullptr)
+//     {
+//         cerr << "Failed to open " << rnaFile << " to read." << endl;
+//         exit(1);
+//     }
+//     sam_hdr_t *h = sam_hdr_read(f);
+//     if (h == nullptr)
+//     {
+//         cerr << "Failed to get header of file: " << rnaFile << endl;
+//         exit(1);
+//     }
+//     bam1_t *b = bam_init1();
+
+//     while (true)
+//     {
+//         if ((sam_read1(f, h, b)) < 0)
+//             break;
+//         else
+//         {
+//             // cout<<"&&&&&&&&&&&&&&&&&&&&&&&&&&&&"<<endl;
+//             string seq_name = string(bam_get_qname(b));
+//             // cout<<seq_name<<endl;
+//             bool isSecond = (b->core.flag & BAM_FSUPPLEMENTARY);
+//             pair<multimap<string, int>::iterator, multimap<string, int>::iterator> range;
+//             if (!isSecond)
+//             {
+//                 range = en_dict.equal_range(seq_name);
+//             }
+//             multimap<string, int>::iterator aa;
+//             for (aa = range.first; aa != range.second; ++aa)
+//             {
+
+//                 // et_second is the read mapped as secondary reads
+//                 // here fields for it were alreadsy assigned.
+
+//                 // cout << "#################" << endl;
+
+//                 encompass_rna_t et_second;
+//                 et_second = secondary_ets[aa->second];
+
+//                 int tid = b->core.tid;            // for this primary read
+//                 int tid1 = th.getRefFromRNA(tid); // for this primary read
+//                 uint32_t pos1 = b->core.pos + 1;  // for this primary read
+
+//                 if (!(tid1 == et_second.tid2 && pos1 == et_second.pos2)) // this is not a pair
+//                 {
+//                     continue;
+//                 }
+//                 // cout << "go on" << endl;
+
+//                 vector<int> geneIds1;
+//                 vector<int> geneIds2;
+
+//                 if (tid1 == -1 || et_second.tid1 == -1)
+//                     continue;
+
+//                 // cout << "go on" << endl;
+
+//                 g.isInGene(tid1, pos1, geneIds1);
+//                 g.isInGene(et_second.tid1, et_second.pos1, geneIds2);
+
+//                 if (geneIds1.size() == 0 || geneIds2.size() == 0)
+//                 {
+//                     continue;
+//                 }
+
+//                 // cout << "go on 3" << endl;
+//                 encompass_rna_t et;
+
+//                 /////////////////////////////////////////////////////////////
+//                 //              et.numCopy=count;
+//                 et.numCopy = 1;
+//                 et.name = string(bam_get_qname(b));
+//                 et.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+//                 et.tid1 = tid1;
+//                 et.pos1 = pos1;
+//                 et.len1 = b->core.l_qseq;
+//                 uint32_t *pc = bam_get_cigar(b);
+//                 for (int k = 0; k < b->core.n_cigar; k++)
+//                 {
+//                     uint32_t cg = (*pc);
+//                     pc = pc + 1;
+//                     et.cigar1.push_back(cg);
+//                 }
+
+//                 et.strand2 = et_second.strand1;
+//                 et.tid2 = et_second.tid1;
+//                 et.pos2 = et_second.pos1;
+//                 et.len2 = -1;
+
+//                 // cout << "^^^^^^^^" << et.strand1 << " " << et.tid1 << " " << et.pos1 << endl;
+//                 // cout << "^^^^^^^^" << et.strand2 << " " << et.tid2 << " " << et.pos2 << endl;
+
+//                 /////////////////////////////////////////////////////////////
+//                 for (int aa = 0; aa < b->core.l_qseq; aa++)
+//                 {
+//                     int reada = bam_seqi(bam_get_seq(b), aa);
+//                     char chara = getCharA(reada);
+//                     et.seq1.push_back(chara);
+//                 }
+
+//                 // cout << "set et read" << endl;
+
+//                 // int added=0;
+//                 // cout << "before double" << endl;
+//                 for (int i = 0; i < geneIds1.size(); i++)
+//                 {
+//                     for (int j = 0; j < geneIds2.size(); j++)
+//                     {
+//                         // cout << "111" << endl;
+//                         if (geneIds1[i] == geneIds2[j])
+//                             continue;
+
+//                         // cout << "222" << endl;
+
+//                         if (!g.isGenePairPossibleFusion(geneIds1[i], geneIds2[j], et.strand1, et.strand2)) // in gene guarentee not the ones with diff locus.
+//                             continue;
+//                         // cout << "333" << endl;
+
+//                         if (rnafg->isGeneIn(geneIds1[i]) == 0)
+//                         {
+//                             cout << g.getGene(geneIds1[i])->name2 << " ";
+//                             rnafg->addGene(geneIds1[i]);
+//                         }
+//                         if (rnafg->isGeneIn(geneIds2[j]) == 0)
+//                         {
+//                             cout << g.getGene(geneIds2[j])->name2 << " ";
+//                             rnafg->addGene(geneIds2[j]);
+//                         }
+//                         // if(added==0)
+//                         //{
+
+//                         et.geneId1 = geneIds1[i];
+//                         et.geneId2 = geneIds2[j];
+//                         enrna.push_back(et);
+//                         // cout << "add" << endl;
+//                         // added=1;
+//                         // }
+//                         // cout<<"444"<<endl;
+//                         rnafg->addEncompass(geneIds1[i], geneIds2[j], enrna.size() - 1);
+//                         // cout << "here" << endl;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     rnafg->printFg(g);
+
+
+//     if (b != nullptr)
+//     {
+//         bam_destroy1(b);
+//     }
+//     if (h != nullptr) {
+//         sam_hdr_destroy(h);
+//     }
+//     if (f != nullptr) {
+//         sam_close(f);
+//     }
+
+//     return 0;
+// }
 
 // Done HPV
 
@@ -620,7 +780,7 @@ int Rna::getAnchors(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc) {
 
     lhc = &hc;
 
-    for (const_vertex_iterator iter = rnafg.fg.begin(); iter != rnafg.fg.end(); ++iter) {
+    for (const_vertex_iterator iter = rnafg->fg.begin(); iter != rnafg->fg.end(); ++iter) {
         int x1 = iter->first;
         gene_t *gt = g.getGene(x1);
 
@@ -649,62 +809,10 @@ region_t rg_h;
 
 bool isHardClip(const bam1_t *b);
 
-static int myGetHardFunc(const bam1_t *b) {
-    // cout<<"in myGetHardFunc"<<endl;
-    int isMapped = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
-    int isMateMapped = (b->core.flag & BAM_FMUNMAP) ? 0 : 1;
-    // int isSecond=(b->core.flag&BAM_FSECONDARY)?1:0;
-    // if(isSecond==1 && isMapped==1 && isMateMapped==1 && isHardClip(b))
-    if (isMapped == 1 && isMateMapped == 1 && isHardClip(b)) {
-        hardclip_t ht;
-        ht.name = string(bam_get_qname(b));
-
-        int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-        uint32_t *cigar = bam_get_cigar(b);
-        int nc = b->core.n_cigar;
-
-        int op1 = cigar[0] & 0xf;
-        int opn = cigar[nc - 1] & 0xf;
-        int cp1 = cigar[0] >> 4;
-        int cpn = cigar[nc - 1] >> 4;
-
-        ht.mtid = b->core.mtid;
-        ht.mpos = b->core.mpos;
-
-        // bool added = false;
-
-        if (strand == 0 and opn == BAM_CHARD_CLIP) {
-            // added = true;
-            ht.clipped = cpn;
-            for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                int reada = bam_seqi(bam_get_seq(b), aa);
-                char chara = getCharA(reada);
-                ht.seq.push_back(chara);
-            }
-        }
-
-        if (strand == 1 and op1 == BAM_CHARD_CLIP) {
-            // added = true;
-            ht.clipped = cp1;
-            for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
-                int reada = bam_seqi(bam_get_seq(b), aa);
-                char chara = getCharComp(getCharA(reada));
-                ht.seq.push_back(chara);
-            }
-        }
-
-        hardVec.push_back(ht);
-    }
-    // cout<<"out myGetHardFunc"<<endl;
-    return 0;
-}
-
-int Rna::getHardClipReads(Gene &g, MyBamWrap &mbw, TidHandler &th) {
-
+void Rna::getHardClipReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th) {
     MyHash mhh;
 
-    for (const_vertex_iterator iter = rnafg.fg.begin(); iter != rnafg.fg.end(); ++iter) {
-        // cout<<"at one gene node"<<endl;
+    for (const_vertex_iterator iter = rnafg->fg.begin(); iter != rnafg->fg.end(); ++iter) {
         int x1 = iter->first;
         gene_t *gt = g.getGene(x1);
 
@@ -712,36 +820,57 @@ int Rna::getHardClipReads(Gene &g, MyBamWrap &mbw, TidHandler &th) {
         rg_h.lpos = gt->leftLimit;
         rg_h.rpos = gt->rightLimit;
         hardVec.clear();
-        mbw.myFetchWrap(rg_h, myGetHardFunc);
+        mbw.myFetchWrap(rg_h, [this, &ref, &g, &th](const bam1_t *b) {
+            if (b->core.flag & (BAM_FUNMAP | BAM_FMUNMAP)) {
+                return;
+            }
+            int tid = th.getRefFromRNA(b->core.tid), mtid = th.getRefFromRNA(b->core.mtid);
+            if (!this->isChrPairPossibleFusion(tid, mtid, ref, g)) {
+                return;
+            }
+            if (!isHardClip(b)) {
+                return;
+            }
+            // int isSecond=(b->core.flag&BAM_FSECONDARY)?1:0;
+            // if(isSecond==1 && isMapped==1 && isMateMapped==1 && isHardClip(b))
+            hardclip_t ht;
+            ht.name = string(bam_get_qname(b));
 
-        // int rg_ref_tid_h = gt->tid;
+            int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+            uint32_t *cigar = bam_get_cigar(b);
+            int nc = b->core.n_cigar;
+            int op1 = cigar[0] & 0xf;
+            int opn = cigar[nc - 1] & 0xf;
+            int cp1 = cigar[0] >> 4;
+            int cpn = cigar[nc - 1] >> 4;
 
-        for (int j = 0; j < hardVec.size(); j++) {
-            // cout<<"j="<<j<<endl;
-            int mtid = th.getRefFromRNA(hardVec[j].mtid);
-            vector<int> mgenes;
-            g.isInGene(mtid, hardVec[j].mpos, mgenes);
+            ht.mtid = b->core.mtid;
+            ht.mpos = b->core.mpos;
 
-            bool isInSame = false;
-            for (int x = 0; x < mgenes.size(); x++) {
-                if (x1 == mgenes[x]) {
-                    isInSame = true;
+            if (strand == 0 and opn == BAM_CHARD_CLIP) {
+                ht.clipped = cpn;
+                for (int aa = 0; aa < b->core.l_qseq; aa++) {
+                    int reada = bam_seqi(bam_get_seq(b), aa);
+                    ht.seq.push_back(getCharA(reada));
                 }
             }
-            // cout<<"here"<<endl;
-            if (isInSame == false) {
-                hardrna.push_back(hardVec[j]);
-                // cout<<"here1"<<endl;
-                int hv = mhh.getHashValue(hardVec[j].name);
-                // cout<<"here1"<<endl;
-                addHashHd(hv, hardrna.size() - 1);
-                // cout<<"here2"<<endl;
+
+            if (strand == 1 and op1 == BAM_CHARD_CLIP) {
+                ht.clipped = cp1;
+                for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
+                    int reada = bam_seqi(bam_get_seq(b), aa);
+                    ht.seq.push_back(getCharComp(getCharA(reada)));
+                }
             }
-            // cout<<"here"<<endl;
+
+            hardVec.push_back(ht);
+        });
+
+        for (int j = 0; j < hardVec.size(); j++) {
+            hardrna.push_back(hardVec[j]);
+            this->hashVecHard[hardVec[j].name].push_back(hardrna.size() - 1);
         }
     }
-
-    return 0;
 }
 
 int Rna::addHash(int hashValue, int anId) {
@@ -749,18 +878,18 @@ int Rna::addHash(int hashValue, int anId) {
     return 0;
 }
 
-int Rna::addHashEn(int hashValue, int anId) {
-    hashVecEncompass[hashValue].push_back(anId);
-    return 0;
-}
+// int Rna::addHashEn(int hashValue, int anId) {
+//     hashVecEncompass[hashValue].push_back(anId);
+//     return 0;
+// }
 
-int Rna::addHashHd(int hashValue, int anId) {
-    // cout<<"pushed"<<endl;
-    // cout<<"hashValue="<<hashValue<<endl;
-    // cout<<"anId="<<anId<<endl;
-    hashVecHard[hashValue].push_back(anId);
-    return 0;
-}
+// int Rna::addHashHd(int hashValue, int anId) {
+//     // cout<<"pushed"<<endl;
+//     // cout<<"hashValue="<<hashValue<<endl;
+//     // cout<<"anId="<<anId<<endl;
+//     hashVecHard[hashValue].push_back(anId);
+//     return 0;
+// }
 
 /*
 
@@ -841,7 +970,7 @@ cout<<anIds.size()<<endl;
 
 
                         vector<int> neis;
-                        rnafg.getNeighbors(geneId,neis);
+                        rnafg->getNeighbors(geneId,neis);
 
 
                         for(int t=0;t<neis.size();t++)
@@ -891,32 +1020,32 @@ int Rna::lookUpHash(string name, MyHash &mhh, vector<int> &anIds) {
     return 0;
 }
 
-int Rna::lookUpHashEn(string name, MyHash &mhh, vector<int> &enIds) {
+// int Rna::lookUpHashEn(string name, MyHash &mhh, vector<int> &enIds) {
 
-    int hv = mhh.getHashValue(name);
-    for (int i = 0; i < hashVecEncompass[hv].size(); i++) {
-        if (name.compare(enrna[hashVecEncompass[hv][i]].name) == 0) {
-            int index = hashVecEncompass[hv][i];
-            enIds.push_back(index);
-        }
-    }
-    return 0;
-}
+//     int hv = mhh.getHashValue(name);
+//     for (int i = 0; i < hashVecEncompass[hv].size(); i++) {
+//         if (name.compare(enrna[hashVecEncompass[hv][i]].name) == 0) {
+//             int index = hashVecEncompass[hv][i];
+//             enIds.push_back(index);
+//         }
+//     }
+//     return 0;
+// }
 
-int Rna::lookUpHashHd(string name, MyHash &mhh, vector<int> &enIds) {
+// int Rna::lookUpHashHd(string name, MyHash &mhh, vector<int> &enIds) {
 
-    int hv = mhh.getHashValue(name);
-    // cout<<"hashValue in look="<<hv<<endl;
-    for (int i = 0; i < hashVecHard[hv].size(); i++) {
-        // cout<<"i="<<i<<endl;
-        if (name.compare(hardrna[hashVecHard[hv][i]].name) == 0) {
-            // cout<<"get"<<endl;
-            int index = hashVecHard[hv][i];
-            enIds.push_back(index);
-        }
-    }
-    return 0;
-}
+//     int hv = mhh.getHashValue(name);
+//     // cout<<"hashValue in look="<<hv<<endl;
+//     for (int i = 0; i < hashVecHard[hv].size(); i++) {
+//         // cout<<"i="<<i<<endl;
+//         if (name.compare(hardrna[hashVecHard[hv][i]].name) == 0) {
+//             // cout<<"get"<<endl;
+//             int index = hashVecHard[hv][i];
+//             enIds.push_back(index);
+//         }
+//     }
+//     return 0;
+// }
 
 /*
 
@@ -927,7 +1056,7 @@ int Rna::traverseSplit(Gene & g, MyBamWrap & mbw, MyBamHeader & mbh, TidHandler 
 
     //list<int> topoList;
     //list<int> notList;
-    int verNum = rnafg.fg.getVertexCount();
+    int verNum = rnafg->fg.getVertexCount();
 
         map<int,int> xixi;
         vector<map<int,int> > used (verNum,xixi);
@@ -981,7 +1110,7 @@ cout<<"######################################"<<endl;
         }
 
     k=i;
-        int x1 = rnafg.fg.getData(k);
+        int x1 = rnafg->fg.getData(k);
         int id1=k;
         //it=lower_bound(notList.begin(),notList.end(),id1);
         //notList.erase(it);
@@ -993,11 +1122,11 @@ cout<<"######################################"<<endl;
         //used.insert(pair<int,int>(id1,1));
 
 
-        int j = rnafg.fg.getNextDst(x1);
+        int j = rnafg->fg.getNextDst(x1);
         if( j != -1 )
         {
-            int x2 = rnafg.fg.getData(j);
-            int id2=rnafg.fg.getIndex(x2);
+            int x2 = rnafg->fg.getData(j);
+            int id2=rnafg->fg.getIndex(x2);
             //topoList.push_back(id2);
             //it=lower_bound(notList.begin(),notList.end(),id2);
             //notList.erase(it);
@@ -1026,11 +1155,11 @@ used[id1].insert(pair<int,int>(id2,1));
 
             do
             {
-                j = rnafg.fg.getNextDst( x1, x2 );
+                j = rnafg->fg.getNextDst( x1, x2 );
                 if( j != -1 )
                 {
-                    x2 = rnafg.fg.getData(j);
-                    int id2=rnafg.fg.getIndex(x2);
+                    x2 = rnafg->fg.getData(j);
+                    int id2=rnafg->fg.getIndex(x2);
                     //topoList.push_back(id2);
                     //it=lower_bound(notList.begin(),notList.end(),id2);
                     //notList.erase(it);
@@ -2359,7 +2488,7 @@ int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &
 
     int number = 0;
 
-    uint32_t pp1, pp2, ppm1, ppm2;
+    uint32_t pp1 = 0, pp2 = 0, ppm1 = -1, ppm2 = -1;
 
     // cout<<"size="<<tmp.size()<<endl;
     for (int j = 0; j <= tmp.size(); j++) {
@@ -2385,7 +2514,7 @@ int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &
         }
         // cout<<"here"<<endl;
         if ((j > 0 && j < tmp.size() &&
-             !((pp1 <= ppm1 + 5 && pp1 >= ppm1 - 5 && pp2 <= ppm2 + 5 && pp2 >= ppm2 - 5) || (pp2 <= ppm1 + 5 && pp2 >= ppm1 - 5 && pp1 <= ppm2 + 5 && pp1 >= ppm2 - 5))) ||
+             !((pp1 == ppm1 && pp2 == ppm2) || (pp2 == ppm1 && pp1 == ppm2))) ||
             j == tmp.size()) {
             int num = number - 1;
 
@@ -2507,8 +2636,8 @@ int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &
         }
     }
 
-    rnafg.updateSpanning(gid1, gid2, ids);
-    rnafg.updateSpanning(gid2, gid1, ids);
+    rnafg->updateSpanning(gid1, gid2, ids);
+    rnafg->updateSpanning(gid2, gid1, ids);
 
     // cout<<"size="<<ids.size()<<endl;
 
@@ -2620,18 +2749,14 @@ int Rna::mapPartialSplitBWT(const char *rnaFile, TidHandler &th, Gene &g, HitsCo
                 if (freq <= 0) {
                     continue;
                 } else {
-
-                    char seqReadAn[1024];
-                    for (int aa = 0; aa < anrna[anIds[0]].seq.size(); aa++) {
-                        seqReadAn[aa] = anrna[anIds[0]].seq[aa];
-                    }
-                    int countAn = hc.getHitsCount(seqReadAn, anrna[anIds[0]].seq.size());
+                    int countAn = hc.getHitsCount(anrna[anIds[0]].seq.data(), anrna[anIds[0]].seq.size());
                     if (countAn > 5)
                         continue;
                 }
                 int count;
                 if (freq > 0) {
-                    char seqRead[1024];
+                    char seqRead[b->core.l_qseq + 1];
+                    seqRead[b->core.l_qseq] = '\0';
                     for (int aa = 0; aa < b->core.l_qseq; aa++) {
                         int reada = bam_seqi(bam_get_seq(b), aa);
                         char chara = getCharA(reada);
@@ -2707,7 +2832,7 @@ int Rna::mapPartialSplitBWT(const char *rnaFile, TidHandler &th, Gene &g, HitsCo
                                 sprna.resize(lastSize);
 
                                 for (int t = 0; t < addspt.size(); t++) {
-                                    rnafg.removeSpanning(addspt[t].gid1, addspt[t].gid2, addspt[t].spId);
+                                    rnafg->removeSpanning(addspt[t].gid1, addspt[t].gid2, addspt[t].spId);
                                 }
 
                                 break; // not best way. for if one anchor explain it, not remove other anchors; will add a number and pop_back;
@@ -2727,7 +2852,7 @@ int Rna::mapPartialSplitBWT(const char *rnaFile, TidHandler &th, Gene &g, HitsCo
                                                 //umrna.push_back(ut);
                         */
                         vector<int> neis;
-                        rnafg.getNeighbors(geneId, neis);
+                        rnafg->getNeighbors(geneId, neis);
 
                         for (int t = 0; t < neis.size(); t++) {
 
@@ -2737,7 +2862,7 @@ int Rna::mapPartialSplitBWT(const char *rnaFile, TidHandler &th, Gene &g, HitsCo
                             int gId2 = neis[t];
 
                             ///////////////////////////////////////////
-                            if (rnafg.getEncompassNum(geneId, gId2) == 0)
+                            if (rnafg->getEncompassNum(geneId, gId2) == 0)
                                 continue;
 
                             int strand2 = g.getStrand(gId2);
@@ -2934,107 +3059,107 @@ int Rna::handleSpHits() {
 }
 
 int Rna::runGetGeneBWT(Gene &g, Reference &ref) {
-    rnafg.getBWTs(g, ref);
+    rnafg->getBWTs(g, ref);
     return 0;
 }
 
-struct Combiner {
-    Combiner(Gene &g, FusionGraph &fg, vector<encompass_rna_t> &enrna, Rna &rna) : g(g), rnafg(fg), rna(rna), enrna(enrna) {}
+// struct Combiner {
+//     Combiner(Gene &g, FusionGraph *fg, vector<encompass_rna_t> &enrna, Rna &rna) : g(g), rnafg(fg), rna(rna), enrna(enrna) {}
 
-    bool operator()(int gid1, int gid2, FusionEdge const &edge) {
+//     bool operator()(int gid1, int gid2, FusionEdge const &edge) {
 
-        MyHash mhh;
-        // cout<<"in combineOne"<<endl;
+//         MyHash mhh;
+//         // cout<<"in combineOne"<<endl;
 
-        vector<int> const &ens = edge.encompass;
-        vector<int> indi(ens.size(), 0);
-        /*
-                if(ens.size()>1000)
-                {
-                    cout<<"en.szie>1000"<<endl;
-                    cout<<g.getName2(gid1)<<" "<<g.getName2(gid2)<<" "<<ens.size()<<endl;
-                }
-        */
-        vector<my_en_record_t> tmpRecord;
+//         vector<int> const &ens = edge.encompass;
+//         vector<int> indi(ens.size(), 0);
+//         /*
+//                 if(ens.size()>1000)
+//                 {
+//                     cout<<"en.szie>1000"<<endl;
+//                     cout<<g.getName2(gid1)<<" "<<g.getName2(gid2)<<" "<<ens.size()<<endl;
+//                 }
+//         */
+//         vector<my_en_record_t> tmpRecord;
 
-        for (int i = 0; i < ens.size(); i++) {
-            my_en_record_t mt;
-            mt.localId = i;
-            mt.enId = ens[i];
-            mt.name = enrna[ens[i]].name;
-            tmpRecord.push_back(mt);
-        }
+//         for (int i = 0; i < ens.size(); i++) {
+//             my_en_record_t mt;
+//             mt.localId = i;
+//             mt.enId = ens[i];
+//             mt.name = enrna[ens[i]].name;
+//             tmpRecord.push_back(mt);
+//         }
 
-        sort(tmpRecord.begin(), tmpRecord.end(), mysorttmp);
+//         sort(tmpRecord.begin(), tmpRecord.end(), mysorttmp);
 
-        /*
-        for(int i=0;i<ens.size();i++)
-        {
-            cout<<enrna[ens[i]].name<<" "<<enrna[ens[i]].pos1<<" "<<enrna[ens[i]].pos2<<" "<<enrna[ens[i]].len1<<" "<<enrna[ens[i]].len2<<" "<<gid1<<" "<<gid2<<endl;
-        }
-        */
+//         /*
+//         for(int i=0;i<ens.size();i++)
+//         {
+//             cout<<enrna[ens[i]].name<<" "<<enrna[ens[i]].pos1<<" "<<enrna[ens[i]].pos2<<" "<<enrna[ens[i]].len1<<" "<<enrna[ens[i]].len2<<" "<<gid1<<" "<<gid2<<endl;
+//         }
+//         */
 
-        for (int i = 0; i < ens.size() - 1; ++i) {
-            int enid1 = tmpRecord[i].enId;
-            uint32_t pos1 = enrna[enid1].pos1;
-            int lid = tmpRecord[i].localId;
+//         for (int i = 0; i < ens.size() - 1; ++i) {
+//             int enid1 = tmpRecord[i].enId;
+//             uint32_t pos1 = enrna[enid1].pos1;
+//             int lid = tmpRecord[i].localId;
 
-            for (int j = i + 1; j < ens.size(); j++) {
-                if (tmpRecord[i].name.compare(tmpRecord[j].name) == 0) {
-                    int enid2 = tmpRecord[j].enId;
-                    if (enrna[enid2].pos2 == pos1) {
-                        enrna[enid1].len2 = enrna[enid2].len1;
-                        enrna[enid1].cigar2 = enrna[enid2].cigar1;
+//             for (int j = i + 1; j < ens.size(); j++) {
+//                 if (tmpRecord[i].name.compare(tmpRecord[j].name) == 0) {
+//                     int enid2 = tmpRecord[j].enId;
+//                     if (enrna[enid2].pos2 == pos1) {
+//                         enrna[enid1].len2 = enrna[enid2].len1;
+//                         enrna[enid1].cigar2 = enrna[enid2].cigar1;
 
-                        int lid2 = tmpRecord[j].localId;
+//                         int lid2 = tmpRecord[j].localId;
 
-                        enrna[enid1].seq2 = enrna[enid2].seq1;
+//                         enrna[enid1].seq2 = enrna[enid2].seq1;
 
-                        ////////////////////////////////////////////////////////////////////////////
-                        //                        if(enrna[enid1].numCopy > enrna[enid2].numCopy)
-                        //                            enrna[enid1].numCopy = enrna[enid2].numCopy;
+//                         ////////////////////////////////////////////////////////////////////////////
+//                         //                        if(enrna[enid1].numCopy > enrna[enid2].numCopy)
+//                         //                            enrna[enid1].numCopy = enrna[enid2].numCopy;
 
-                        indi[lid] = 1;
-                        indi[lid2] = -1;
+//                         indi[lid] = 1;
+//                         indi[lid2] = -1;
 
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
+//                         break;
+//                     }
+//                 } else {
+//                     break;
+//                 }
+//             }
+//         }
 
-        vector<int> ens2;
+//         vector<int> ens2;
 
-        for (int i = 0; i < ens.size(); i++) {
-            if (indi[i] == 1) {
-                ens2.push_back(ens[i]);
+//         for (int i = 0; i < ens.size(); i++) {
+//             if (indi[i] == 1) {
+//                 ens2.push_back(ens[i]);
 
-                string nm = enrna[ens[i]].name;
-                int hv = mhh.getHashValue(nm);
-                rna.addHashEn(hv, ens[i]);
-            }
-        }
+//                 string nm = enrna[ens[i]].name;
+//                 int hv = mhh.getHashValue(nm);
+//                 rna.addHashEn(hv, ens[i]);
+//             }
+//         }
 
-        rnafg.updateEncompass(gid1, gid2, ens2);
-        rnafg.updateEncompass(gid2, gid1, ens2);
+//         rnafg->updateEncompass(gid1, gid2, ens2);
+//         rnafg->updateEncompass(gid2, gid1, ens2);
 
-        return true;
-    }
+//         return true;
+//     }
 
-    Gene &g;
-    FusionGraph &rnafg;
-    Rna &rna;
-    vector<encompass_rna_t> &enrna;
-};
+//     Gene &g;
+//     FusionGraph *rnafg;
+//     Rna &rna;
+//     vector<encompass_rna_t> &enrna;
+// };
 
-int Rna::cbEncompassRcs(Gene &g) {
-    Combiner combiner(g, rnafg, enrna, *this);
-    rnafg.fg.foreachUniqueEdge(combiner);
-    rnafg.printFg(g);
-    return 0;
-}
+// int Rna::cbEncompassRcs(Gene &g) {
+//     Combiner combiner(g, rnafg, enrna, *this);
+//     rnafg->fg.foreachUniqueEdge(combiner);
+//     rnafg->printFg(g);
+//     return 0;
+// }
 
 bool my_sort_encompass_by_pos_func(encompass_rna_t i, encompass_rna_t j) {
     if (i.tid1 < j.tid1) {
@@ -3106,125 +3231,125 @@ int Rna::countEn(vector<int> &enIds, string name) {
     return count;
 }
 
-int Rna::reduceGraph(const char *rnaFile, Gene &g, TidHandler &th) {
+// int Rna::reduceGraph(const char *rnaFile, Gene &g, TidHandler &th) {
 
-    MyHash mhh;
+//     MyHash mhh;
 
-    samFile *f = sam_open(rnaFile, "r");
-    if (f == nullptr)
-    {
-        cerr << "Failed to open " << rnaFile << " to read." << endl;
-        exit(1);
-    }
-    sam_hdr_t *h = sam_hdr_read(f);
-    if (h == nullptr)
-    {
-        cerr << "Failed to get header of file: " << rnaFile << endl;
-        exit(1);
-    }
-    bam1_t *b = bam_init1();
+//     samFile *f = sam_open(rnaFile, "r");
+//     if (f == nullptr)
+//     {
+//         cerr << "Failed to open " << rnaFile << " to read." << endl;
+//         exit(1);
+//     }
+//     sam_hdr_t *h = sam_hdr_read(f);
+//     if (h == nullptr)
+//     {
+//         cerr << "Failed to get header of file: " << rnaFile << endl;
+//         exit(1);
+//     }
+//     bam1_t *b = bam_init1();
 
-    while (true) {
-        if ((sam_read1(f, h, b)) < 0)
-            break;
-        else {
+//     while (true) {
+//         if ((sam_read1(f, h, b)) < 0)
+//             break;
+//         else {
 
-            int isMapped = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
-            if (isMapped) {
-                string nm = string(bam_get_qname(b));
-                if (nm.length() > 2) {
-                    if (nm[nm.length() - 2] == '/')
-                        nm.resize(nm.length() - 2);
-                }
+//             int isMapped = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
+//             if (isMapped) {
+//                 string nm = string(bam_get_qname(b));
+//                 if (nm.length() > 2) {
+//                     if (nm[nm.length() - 2] == '/')
+//                         nm.resize(nm.length() - 2);
+//                 }
 
-                vector<int> enIds;
+//                 vector<int> enIds;
 
-                lookUpHashEn(nm, mhh, enIds);
+//                 lookUpHashEn(nm, mhh, enIds);
 
-                if (enIds.size() > 0) {
+//                 if (enIds.size() > 0) {
 
-                    // cout<<nm<<" is encompassing"<<endl;
+//                     // cout<<nm<<" is encompassing"<<endl;
 
-                    int tid = b->core.tid;
-                    uint32_t pos = b->core.pos + 1;
-                    int mtid = b->core.mtid;
-                    uint32_t mpos = b->core.mpos + 1;
+//                     int tid = b->core.tid;
+//                     uint32_t pos = b->core.pos + 1;
+//                     int mtid = b->core.mtid;
+//                     uint32_t mpos = b->core.mpos + 1;
 
-                    vector<int> geneIds1;
-                    vector<int> geneIds2;
-                    int tid1 = th.getRefFromRNA(tid);
-                    int tid2 = th.getRefFromRNA(mtid);
+//                     vector<int> geneIds1;
+//                     vector<int> geneIds2;
+//                     int tid1 = th.getRefFromRNA(tid);
+//                     int tid2 = th.getRefFromRNA(mtid);
 
-                    g.isInGene(tid1, pos, geneIds1);
-                    g.isInGene(tid2, mpos, geneIds2);
+//                     g.isInGene(tid1, pos, geneIds1);
+//                     g.isInGene(tid2, mpos, geneIds2);
 
-                    // cout<<"this one "<<geneIds1.size()<<" "<<geneIds2.size()<<endl;
+//                     // cout<<"this one "<<geneIds1.size()<<" "<<geneIds2.size()<<endl;
 
-                    int hasConcordant = 0;
+//                     int hasConcordant = 0;
 
-                    for (int i = 0; i < geneIds1.size(); i++) {
-                        for (int j = 0; j < geneIds2.size(); j++) {
-                            if (g.getName2(geneIds1[i]).compare(g.getName2(geneIds2[j])) == 0)
-                                hasConcordant = 1;
-                        }
-                    }
+//                     for (int i = 0; i < geneIds1.size(); i++) {
+//                         for (int j = 0; j < geneIds2.size(); j++) {
+//                             if (g.getName2(geneIds1[i]).compare(g.getName2(geneIds2[j])) == 0)
+//                                 hasConcordant = 1;
+//                         }
+//                     }
 
-                    // cout<<"hasConcordant="<<hasConcordant<<endl;
+//                     // cout<<"hasConcordant="<<hasConcordant<<endl;
 
-                    int count = countEn(enIds, nm);
+//                     int count = countEn(enIds, nm);
 
-                    if (hasConcordant == 0) {
+//                     if (hasConcordant == 0) {
 
-                        for (int i = 0; i < enIds.size(); i++) {
-                            if (enrna[enIds[i]].name.compare(nm) != 0) {
-                                continue;
-                            }
+//                         for (int i = 0; i < enIds.size(); i++) {
+//                             if (enrna[enIds[i]].name.compare(nm) != 0) {
+//                                 continue;
+//                             }
 
-                            int enId = enIds[i];
-                            // if(enIds.size()>enrna[enId].numCopy)
-                            if (count > enrna[enId].numCopy)
-                                enrna[enId].numCopy = enIds.size();
-                        }
-                    }
+//                             int enId = enIds[i];
+//                             // if(enIds.size()>enrna[enId].numCopy)
+//                             if (count > enrna[enId].numCopy)
+//                                 enrna[enId].numCopy = enIds.size();
+//                         }
+//                     }
 
-                    if (hasConcordant == 1) {
-                        for (int i = 0; i < enIds.size(); i++) {
-                            if (enrna[enIds[i]].name.compare(nm) != 0) {
-                                continue;
-                            }
-                            // this enIds[i] can be removed from the graph
-                            int enId = enIds[i];
-                            int gid1 = enrna[enId].geneId1;
-                            int gid2 = enrna[enId].geneId2;
+//                     if (hasConcordant == 1) {
+//                         for (int i = 0; i < enIds.size(); i++) {
+//                             if (enrna[enIds[i]].name.compare(nm) != 0) {
+//                                 continue;
+//                             }
+//                             // this enIds[i] can be removed from the graph
+//                             int enId = enIds[i];
+//                             int gid1 = enrna[enId].geneId1;
+//                             int gid2 = enrna[enId].geneId2;
 
-                            rnafg.removeEncompass(gid1, gid2, enId);
-                        }
-                    }
-                }
-            }
-        }
-    }
+//                             rnafg->removeEncompass(gid1, gid2, enId);
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
 
-    //    cout<<"Before clean"<<endl;
-    //    rnafg.printFg(g);
+//     //    cout<<"Before clean"<<endl;
+//     //    rnafg->printFg(g);
 
-    //    rnafg.cleanVertex();
+//     //    rnafg->cleanVertex();
 
-    rnafg.printFg(g);
+//     rnafg->printFg(g);
 
-    if (b != nullptr)
-    {
-        bam_destroy1(b);
-    }
-    if (h != nullptr) {
-        sam_hdr_destroy(h);
-    }
-    if (f != nullptr) {
-        sam_close(f);
-    }
+//     if (b != nullptr)
+//     {
+//         bam_destroy1(b);
+//     }
+//     if (h != nullptr) {
+//         sam_hdr_destroy(h);
+//     }
+//     if (f != nullptr) {
+//         sam_close(f);
+//     }
 
-    return 0;
-}
+//     return 0;
+// }
 
 struct ComputeWeights {
     ComputeWeights(ALGraph<int, FusionEdge> &graph, vector<encompass_rna_t> const &enrna, vector<split_rna_t> const &sprna) : graph(graph), enrna(enrna), sprna(sprna) {}
@@ -3284,16 +3409,16 @@ struct ComputeWeights1 { // works with or without star
 };
 
 int Rna::computeWeights(Gene &g) {
-    ComputeWeights w(rnafg.fg, enrna, sprna);
-    rnafg.fg.foreachUniqueEdge(w);
-    // rnafg.printFg(g);
+    ComputeWeights w(rnafg->fg, enrna, sprna);
+    rnafg->fg.foreachUniqueEdge(w);
+    // rnafg->printFg(g);
 
     return 0;
 }
 
 int Rna::computeWeights1(Gene &g) {
-    ComputeWeights1 w(rnafg.fg, enrna, sprna);
-    rnafg.fg.foreachUniqueEdge(w);
+    ComputeWeights1 w(rnafg->fg, enrna, sprna);
+    rnafg->fg.foreachUniqueEdge(w);
 
     return 0;
 }
@@ -3301,18 +3426,8 @@ int Rna::computeWeights1(Gene &g) {
 int Rna::computeOneNum(HitsCounter &hc, vector<int> &enIds) {
 
     for (int i = 0; i < enIds.size(); i++) {
-        char seqRead[1024];
-        for (int m = 0; m < enrna[enIds[i]].seq1.size(); m++) {
-            seqRead[m] = enrna[enIds[i]].seq1[m];
-        }
-
-        int count1 = hc.getHitsCount(seqRead, enrna[enIds[i]].seq1.size());
-
-        for (int m = 0; m < enrna[enIds[i]].seq2.size(); m++) {
-            seqRead[m] = enrna[enIds[i]].seq2[m];
-        }
-
-        int count2 = hc.getHitsCount(seqRead, enrna[enIds[i]].seq2.size());
+        int count1 = hc.getHitsCount(enrna[enIds[i]].seq1.data(), enrna[enIds[i]].seq1.size());
+        int count2 = hc.getHitsCount(enrna[enIds[i]].seq2.data(), enrna[enIds[i]].seq2.size());
 
         if (count1 > 1)
             enrna[enIds[i]].numCopy = count1;
@@ -3338,7 +3453,7 @@ struct TraverseNum {
 
 int Rna::computeNumCopy(HitsCounter &hc) {
     TraverseNum traverse(hc, *this);
-    rnafg.fg.foreachUniqueEdge(traverse);
+    rnafg->fg.foreachUniqueEdge(traverse);
     return 0;
 }
 
@@ -3352,11 +3467,11 @@ struct WeightLessThan {
 
 int Rna::reduceGraph2(Gene &g, double minWeight) {
     WeightLessThan predicate(minWeight);
-    rnafg.fg.removeEdgesIf(predicate);
+    rnafg->fg.removeEdgesIf(predicate);
 
-    rnafg.cleanVertex();
+    rnafg->cleanVertex();
     // cout<<"graph with weight>"<<minWeight<<endl;
-    rnafg.printFg(g);
+    rnafg->printFg(g);
 
     return 0;
 }
@@ -3663,7 +3778,7 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2>
                     // if(!isl && !isa1 && !isInOne)
                     if (!isl && !isa1) {
                         sprna.push_back(st);
-                        rnafg.addSpanning(gid1, gid2, sprna.size() - 1);
+                        rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
                         added_split_t apt;
                         apt.gid1 = gid1;
                         apt.gid2 = gid2;
@@ -3680,11 +3795,12 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2>
     return 0;
 }
 
-int Rna::matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, vector<map_emt_t2> &mets2, vector<map_emt_t2> &metsM2,
+bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string &seq, const string &seqName, bool reversed, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, vector<map_emt_t2> &mets2, vector<map_emt_t2> &metsM2,
                       int count, myFind2 &mf2) {
 
     // cout<<"in match for partial good"<<endl;
 
+    bool added = false;
     for (int i = 0; i < mets.size(); i++) {
         int strand1 = mets[i].strand;
         int len1 = mets[i].b - mets[i].a + 1;
@@ -3709,8 +3825,8 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_
 
             int small;
 
-            int small1 = srt.seq.size() - len1;
-            int small2 = srt.seq.size() - len2;
+            int small1 = seq.size() - len1;
+            int small2 = seq.size() - len2;
 
             int error1 = mets[i].miss + mets[i].insert;
             int error2 = mets2[j].miss + mets2[j].insert;
@@ -3746,7 +3862,7 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_
             split_rna_t st;
             // st.geneId1=gid1;
             // st.geneId2=gid2;
-            string nm = srt.name;
+            string nm = seqName;
             if (nm.length() > 2) {
                 if (nm[nm.length() - 2] == '/')
                     nm.resize(nm.length() - 2);
@@ -3763,8 +3879,8 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_
             st.tidC = 0;
 
             if (strand1 == 0) {
-                if (len1 + len2 >= srt.seq.size()) {
-                    st.len1 = srt.seq.size() - len1;
+                if (len1 + len2 >= seq.size()) {
+                    st.len1 = seq.size() - len1;
                     st.geneId1 = gid2;
                     st.geneId2 = gid1;
 
@@ -3788,7 +3904,7 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_
                     st.pos1 = mets2[j].pos;
                     st.bkLeft1 = 0;
                 } else {
-                    st.pos1 = mets2[j].pos + (len1 + len2 - srt.seq.size()); // do not change
+                    st.pos1 = mets2[j].pos + (len1 + len2 - seq.size()); // do not change
                     // st.pos1=mets2[j].pos;
                     st.bkLeft1 = 1;
                 }
@@ -3805,11 +3921,11 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_
 
             } else {
 
-                if (len1 + len2 >= srt.seq.size()) {
+                if (len1 + len2 >= seq.size()) {
 
                     st.geneId1 = gid1;
                     st.geneId2 = gid2;
-                    st.len1 = srt.seq.size() - len2;
+                    st.len1 = seq.size() - len2;
                     st.bkLeft1 = 0;
                     isReport = 1;
                 } else // if(len1+len2>=b->core.l_qseq-5)
@@ -3848,12 +3964,13 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_
 
             if (isReport == 1) {
 
-                st.seq = srt.seq;
+                st.seq = vector<char>(seq.begin(), seq.end());
 
                 st.small = small;
 
                 st.hits = count;
                 st.spId = sprna.size();
+                st.reversed = reversed;
 
                 if (homoTest2(g, st, mf2) != 1) {
                     // cout<<"passed homo2"<<endl;
@@ -3867,8 +3984,156 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_
 
                     // if(!isl && !isa1 && !isInOne)
                     if (!isl && !isa1) {
+                        int newGid1 = this->getClosestGeneId(g, st.tid1, st.pos1, st.len1);
+                        int newGid2 = this->getClosestGeneId(g, st.tid2, st.pos2, st.len2);
+                        if (newGid1 != -1) {
+                            st.geneId1 = newGid1;
+                        }
+                        if (newGid2 != -1) {
+                            st.geneId2 = newGid2;
+                        }
+                        vector<uint32_t> boundaries1, boundaries2;
+                        g.getExonBoundary(st.geneId1, 0, boundaries1);
+                        g.getExonBoundary(st.geneId2, 0, boundaries2);
+                        int posClosest1 = 0, posClosest2 = 0;
+                        int diff1 = INT_MAX, diff2 = INT_MAX;
+                        int posOriginal1 = st.pos1 + st.len1 - 1;
+                        int posOriginal2 = st.pos2 + st.len2 - 1;
+                        for (int i = 0; i < boundaries1.size(); i++) {
+                            if (abs((int)boundaries1[i] - (int)posOriginal1) < abs(diff1)) {
+                                diff1 = (int)boundaries1[i] - (int)posOriginal1;
+                                posClosest1 = boundaries1[i];
+                            }
+                        }
+                        for (int i = 0; i < boundaries2.size(); i++) {
+                            if (abs((int)boundaries2[i] - (int)posOriginal2) < abs(diff2)) {
+                                diff2 = (int)boundaries2[i] - (int)posOriginal2;
+                                posClosest2 = boundaries2[i];
+                            }
+                        }
+                        int diff = min(abs(diff1), abs(diff2));
+                        if (diff1 == 0 || diff2 == 0) {
+                            sprna.push_back(st);
+                            rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                            added = true;
+                            return added;
+                        }
+                        const char *seqWhole1 = ref.getSeq(st.tid1);
+                        const char *seqWhole2 = ref.getSeq(st.tid2);
+                        if (abs(diff1) == abs(diff2)) {
+                            char *seq1 = new char[diff + 1];
+                            int seq1PosStart, seq1PosEnd;
+                            if (diff1 > 0) {
+                                seq1PosStart = posClosest1 - diff1;
+                                seq1PosEnd = posClosest1 - 1;
+                            } else {
+                                seq1PosStart = posClosest1;
+                                seq1PosEnd = posClosest1 - diff1 - 1;
+                            }
+                            copy(seqWhole1 + seq1PosStart, seqWhole1 + seq1PosEnd + 1, seq1);
+                            seq1[diff] = '\0';
+                            char *seq2 = new char[diff + 1];
+                            int seq2PosStart, seq2PosEnd;
+                            if (diff2 > 0) {
+                                seq2PosStart = posClosest2 - diff2;
+                                seq2PosEnd = posClosest2 - 1;
+                            } else {
+                                seq2PosStart = posClosest2;
+                                seq2PosEnd = posClosest2 - diff2 - 1;
+                            }
+                            copy(seqWhole2 + seq2PosStart, seqWhole2 + seq2PosEnd + 1, seq2);
+                            seq2[diff] = '\0';
+                            string seq1Str(seq1);
+                            string seq2Str(seq2);
+                            delete[] seq1;
+                            delete[] seq2;
+                            if (st.strand1 == 1) {
+                                getRevCompSeq(seq1Str);
+                            }
+                            if (st.strand2 == 1) {
+                                getRevCompSeq(seq2Str);
+                            }
+                            if (seq1Str == seq2Str) {
+                                st.len1 = posClosest1 - st.pos1 + 1;
+                                st.len2 = posClosest2 - st.pos2 + 1;
+                            } else {
+                                string seqRead(st.seq.begin(), st.seq.end());
+                                if (st.reversed) {
+                                    if (diff2 < 0) {
+                                        seqRead = seqRead.substr(st.len2 + diff2, abs(diff2));
+                                    } else {
+                                        seqRead = seqRead.substr(st.len2, abs(diff2));
+                                    }
+                                } else {
+                                    if (diff1 < 0) {
+                                        seqRead = seqRead.substr(st.len1 + diff1, abs(diff1));
+                                    } else {
+                                        seqRead = seqRead.substr(st.len1, abs(diff1));
+                                    }
+                                }
+                                int mismatch1 = countMismatches(seqRead, seq1Str);
+                                int mismatch2 = countMismatches(seqRead, seq2Str);
+
+                                if (mismatch2 > mismatch1) {
+                                    st.len1 = st.len1 + diff;
+                                    st.len2 = st.len2 - diff;
+                                } else {
+                                    st.len1 = st.len1 - diff;
+                                    st.pos1 = st.pos1 + diff;
+                                }
+                            }
+                        } else {
+                            if (diff1 < diff2) {
+                                st.len2 = st.len2 - (posClosest1 - (st.pos1 + st.len1 - 1));
+                                st.len1 = posClosest1 - st.pos1 + 1;
+                                if (diff2 > 5) {
+                                    vector<int> geneIds;
+                                    uint32_t bk = st.pos2 + st.len2 - 1;
+                                    g.isInGene(st.tid2, bk, geneIds);
+                                    for (int i = 0; i < geneIds.size(); i++) {
+                                        vector<uint32_t> boundaries;
+                                        g.getExonBoundary(geneIds[i], 0, boundaries);
+                                        bool found = false;
+                                        for (int j = 0; j < boundaries.size(); j++) {
+                                            if (bk == boundaries[j]) {
+                                                found = true;
+                                                st.geneId2 = geneIds[i];
+                                                break;
+                                            }
+                                        }
+                                        if (found) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            } else if (diff1 > diff2) {
+                                st.len1 = st.len1 - (posClosest2 - (st.pos2 + st.len2 - 1));
+                                st.len2 = posClosest2 - st.pos2 + 1;
+                                if (diff1 > 5) {
+                                    vector<int> geneIds;
+                                    uint32_t bk = st.pos1 + st.len1 - 1;
+                                    g.isInGene(st.tid1, bk, geneIds);
+                                    for (int i = 0; i < geneIds.size(); i++) {
+                                        vector<uint32_t> boundaries;
+                                        g.getExonBoundary(geneIds[i], 0, boundaries);
+                                        bool found = false;
+                                        for (int j = 0; j < boundaries.size(); j++) {
+                                            if (bk == boundaries[j]) {
+                                                found = true;
+                                                st.geneId1 = geneIds[i];
+                                                break;
+                                            }
+                                        }
+                                        if (found) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         sprna.push_back(st);
-                        rnafg.addSpanning(gid1, gid2, sprna.size() - 1);
+                        rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                        added = true;
                     }
                     // cout<<"Add "<<g.getName2(gid1)<<" "<<g.getName2(gid2)<<" "<<sprna.size()-1<<" "<<" "<<sprna[sprna.size()-1].name<<endl;
                 }
@@ -3883,7 +4148,7 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, split_rna_t &srt, vector<map_
         }
     }
 
-    return 0;
+    return added;
 }
 
 struct TraverseCluster {
@@ -3904,12 +4169,12 @@ struct TraverseCluster {
 
 int Rna::traverseCluster(Gene &g, int cfn, int bacc) {
     TraverseCluster traverse(g, cfn, bacc, *this);
-    rnafg.fg.foreachUniqueEdge(traverse);
+    rnafg->fg.foreachUniqueEdge(traverse);
     return 0;
 }
 
 struct TraversePrint {
-    TraversePrint(Gene &g, FusionGraph &fg, Reference &ref, Result &objRst, int minIntra, int bacc, Rna &rna)
+    TraversePrint(Gene &g, FusionGraph *fg, Reference &ref, Result &objRst, int minIntra, int bacc, Rna &rna)
         : g(g), rnafg(fg), ref(ref), objRst(objRst), minIntra(minIntra), bacc(bacc), rna(rna) {}
 
     bool operator()(int x1, int x2, FusionEdge const &edge) {
@@ -3938,7 +4203,7 @@ struct TraversePrint {
     }
 
     Gene &g;
-    FusionGraph &rnafg;
+    FusionGraph *rnafg;
     Reference &ref;
     Result &objRst;
     int minIntra;
@@ -4056,7 +4321,7 @@ int Rna::printSome(Gene &g, vector<int> const &spIds, Reference &ref, result_t &
 
 int Rna::traversePrint(Gene &g, Reference &ref, Result &result, int minIntra, int bacc) {
     TraversePrint tp(g, rnafg, ref, result, minIntra, bacc, *this);
-    rnafg.fg.foreachUniqueEdge(tp);
+    rnafg->fg.foreachUniqueEdge(tp);
     return 0;
 }
 
@@ -4357,9 +4622,9 @@ int Rna::homoTest3(Gene &g, split_rna_t &st, myFind2 &mf2) {
     return 0;
 }
 
-void Rna::traverseRemove(Gene &g) { rnafg.fg.removeEdgesIf(hasNoSpanningReads); }
+void Rna::traverseRemove(Gene &g) { rnafg->fg.removeEdgesIf(hasNoSpanningReads); }
 
-FusionGraph *Rna::giveGraph() { return &rnafg; }
+FusionGraph *Rna::giveGraph() { return rnafg; }
 
 namespace {
 // read tophat
@@ -4539,7 +4804,7 @@ static int myTopHatFunc(const bam1_t *b) {
 
 int Rna::readTopHat(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc) {
 
-    for (const_vertex_iterator iter = rnafg.fg.begin(); iter != rnafg.fg.end(); ++iter) {
+    for (const_vertex_iterator iter = rnafg->fg.begin(); iter != rnafg->fg.end(); ++iter) {
         int x1 = iter->first;
         geneIdTop1 = x1;
         EdgeList const &elist = iter->second;
@@ -4584,7 +4849,7 @@ int Rna::readTopHat(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc) {
                 sprna.push_back(tmpSpTop[k]);
                 sprna[sprna.size() - 1].spId = sprna.size() - 1;
 
-                rnafg.addSpanning(x1, x2, sprna.size() - 1);
+                rnafg->addSpanning(x1, x2, sprna.size() - 1);
             }
         }
     }
@@ -4595,18 +4860,15 @@ int Rna::readTopHat(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc) {
 bool isLgClip(const bam1_t *b);
 
 int Rna::readSTAR(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc, Reference &ref, myFind2 &mf2) {
-
     // cout<<"read all STAR good split reads"<<endl;
 
     samFile *f = sam_open(rnaFile, "r");
-    if (f == nullptr)
-    {
+    if (f == nullptr) {
         cerr << "Failed to open " << rnaFile << " to read." << endl;
         exit(1);
     }
     sam_hdr_t *h = sam_hdr_read(f);
-    if (h == nullptr)
-    {
+    if (h == nullptr) {
         cerr << "Failed to get header of file: " << rnaFile << endl;
         exit(1);
     }
@@ -4622,64 +4884,36 @@ int Rna::readSTAR(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &hc,
             }
             break;
         } else {
-
-            int isSecond = (b->core.flag & BAM_FSECONDARY) ? 1 : 0;
-            if (isSecond == 1 && isLgClip(b)) {
-                numberProcessed++;
-                if (numberProcessed % 1000000 == 0) {
-                    cout << "====>" << numberProcessed << " secondary reads processed. " << (clock() - t) / CLOCKS_PER_SEC << " seconds" << endl;
-                    t = clock();
-                }
-
-                int tid = b->core.tid;
-                uint32_t pos = b->core.pos + 1;
-
-                int mtid = b->core.mtid;
-                uint32_t mpos = b->core.mpos + 1;
-
-                int strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-                int strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
-
-                int tid1 = th.getRefFromRNA(tid);
-                int tid2 = th.getRefFromRNA(mtid);
-
-                if (tid1 == -1 || tid2 == -1)
-                    continue;
-
-                vector<int> geneIds1;
-                vector<int> geneIds2;
-
-                g.isInGene(tid1, pos, geneIds1);
-                g.isInGene(tid2, mpos, geneIds2);
-
-                if (geneIds1.size() == 0 || geneIds2.size() == 0) {
-                    continue;
-                }
-
-                for (int i = 0; i < geneIds1.size(); i++) {
-                    for (int j = 0; j < geneIds2.size(); j++) {
-                        if (geneIds1[i] == geneIds2[j])
-                            continue;
-
-                        if (!g.isPairPossibleFusion(geneIds1[i], geneIds2[j], strand1, strand2)) // in gene guarentee not the ones with diff locus.
-                            continue;
-
-                        if (rnafg.isGeneIn(geneIds1[i]) == 0) {
-                            rnafg.addGene(geneIds1[i]);
-                        }
-                        if (rnafg.isGeneIn(geneIds2[j]) == 0) {
-                            rnafg.addGene(geneIds2[j]);
-                        }
-
-                        rnafg.addSTARweight(geneIds1[i], geneIds2[j]);
+            if ((b->core.flag & (BAM_FUNMAP | BAM_FMUNMAP)) ||
+            !(b->core.flag & BAM_FSECONDARY)) {
+                continue;
+            }
+            int tid = th.getRefFromRNA(b->core.tid), mtid = th.getRefFromRNA(b->core.mtid);
+            if (!(this->isChrPairPossibleFusion(tid, mtid, ref, g) && isLgClip(b))) {
+                continue;
+            }
+            numberProcessed++;
+            if (numberProcessed % 1000000 == 0) {
+                cout << "====>" << numberProcessed << " secondary reads processed. " << (clock() - t) / CLOCKS_PER_SEC << " seconds" << endl;
+                t = clock();
+            }
+            uint32_t pos = b->core.pos + 1, mpos = b->core.mpos + 1;
+            int strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0, strand2 = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
+            vector<int> geneIds1, geneIds2;
+            g.isInGene(tid, pos, geneIds1);
+            g.isInGene(mtid, mpos, geneIds2);
+            for (int i = 0; i < geneIds1.size(); i++) {
+                for (int j = 0; j < geneIds2.size(); j++) {
+                    if (!g.isGenePairPossibleFusion(geneIds1[i], geneIds2[j], strand1, strand2)) { // in gene guarentee not the ones with diff locus.
+                        continue;
                     }
+                    rnafg->addSTARweight(geneIds1[i], geneIds2[j]);
                 }
             }
         }
     }
 
-    if (b != nullptr)
-    {
+    if (b != nullptr) {
         bam_destroy1(b);
     }
     if (h != nullptr) {
@@ -4862,7 +5096,7 @@ int Rna::cigarInRegionTwo2(const bam1_t *b, TidHandler &th, Gene &g, HitsCounter
 
                 st.hits = 1; // will update
 
-                if (g.isPairPossibleFusion(st.geneId1, st.geneId2, st.strand1, 1 - st.strand2)) {
+                if (g.isGenePairPossibleFusion(st.geneId1, st.geneId2, st.strand1, 1 - st.strand2)) {
                     // check homo
 
                     if (!g.isGeneBWTExist(st.geneId1)) {
@@ -4889,7 +5123,7 @@ int Rna::cigarInRegionTwo2(const bam1_t *b, TidHandler &th, Gene &g, HitsCounter
                         if (!isl && !isa1) {
                             sprna.push_back(st);
                             sprna[sprna.size() - 1].spId = sprna.size() - 1;
-                            rnafg.addSpanning(sprna[sprna.size() - 1].geneId1, sprna[sprna.size() - 1].geneId2, sprna.size() - 1);
+                            rnafg->addSpanning(sprna[sprna.size() - 1].geneId1, sprna[sprna.size() - 1].geneId2, sprna.size() - 1);
                         }
                     }
                 }
@@ -5092,7 +5326,7 @@ int Rna::handleTmpTopHatSplits(HitsCounter & hc, Gene & g)
                                         sprna.push_back(tmpTopHatSplits[j]);
                                         sprna[sprna.size()-1].spId=sprna.size()-1;
                                         //cout<<"haha "<<sprna[sprna.size()-1].geneId1<<" "<<sprna[sprna.size()-1].geneId2<<" "<<sprna.size()-1<<endl;
-                                        rnafg.addSpanning(sprna[sprna.size()-1].geneId1,sprna[sprna.size()-1].geneId2,sprna.size()-1);
+                                        rnafg->addSpanning(sprna[sprna.size()-1].geneId1,sprna[sprna.size()-1].geneId2,sprna.size()-1);
 
                                 }
                                 index++;
@@ -5153,11 +5387,7 @@ int Rna::handleTmpTopHatSplits(HitsCounter &hc, Gene &g) {
 
                 if (num1 == 0) {
                     int hits = 0;
-                    char tmp[1024];
-                    for (int k = 0; k < sprna[j].seq.size(); k++) {
-                        tmp[k] = sprna[j].seq[k];
-                    }
-                    hits = hc.getHitsCount(tmp, sprna[j].seq.size());
+                    hits = hc.getHitsCount(sprna[j].seq.data(), sprna[j].seq.size());
                     sp1 = sprna[j];
                     num1 = 1;
                     hits1 = hits;
@@ -5173,11 +5403,7 @@ int Rna::handleTmpTopHatSplits(HitsCounter &hc, Gene &g) {
                             ids1.push_back(j);
                         } else {
                             int hits = 0;
-                            char tmp[1024];
-                            for (int k = 0; k < sprna[j].seq.size(); k++) {
-                                tmp[k] = sprna[j].seq[k];
-                            }
-                            hits = hc.getHitsCount(tmp, sprna[j].seq.size());
+                            hits = hc.getHitsCount(sprna[j].seq.data(), sprna[j].seq.size());
                             sp2 = sprna[j];
                             num2 = 1;
                             hits2 = hits;
@@ -5272,13 +5498,13 @@ int Rna::readTopHat2(const char *rnaFile, TidHandler &th, Gene &g, HitsCounter &
             int isMMap = (b->core.flag & BAM_FMUNMAP) ? 0 : 1;
 
             if (isMap && isMMap && b->core.tid == b->core.mtid) {
-                numberProcessed++;
-                if (numberProcessed % 1000000 == 0) {
-                    cout << "====>" << numberProcessed << " mapped split reads processed. " << (clock() - t) / CLOCKS_PER_SEC << " seconds" << endl;
-                    t = clock();
-                }
+            numberProcessed++;
+            if (numberProcessed % 1000000 == 0) {
+                cout << "====>" << numberProcessed << " mapped split reads processed. " << (clock() - t) / CLOCKS_PER_SEC << " seconds" << endl;
+                t = clock();
+            }
 
-                cigarInRegionTwo2(b, th, g, hc, mhh, ref, mf2);
+            cigarInRegionTwo2(b, th, g, hc, mhh, ref, mf2);
             }
         }
     }
@@ -5500,76 +5726,6 @@ int partial_processed = 0;
 
 region_t rgpartial;
 vector<split_rna_t> tmpspv; // strand1 seq and name; tid2, pos2; spId==1 neibor is working
-static int myGetPartial(const bam1_t *b) {
-
-    // cout<<"record of "<<string(bam_get_qname(b))<<endl;
-
-    int isMapped = (b->core.flag & BAM_FUNMAP) ? 0 : 1;
-    int isMateMapped = (b->core.flag & BAM_FMUNMAP) ? 0 : 1;
-
-    if (isMapped == 1 && isMateMapped == 1) {
-        // cout<<"both mapped"<<endl;
-
-        int mtid = b->core.mtid;
-        uint32_t mpos = b->core.mpos;
-
-        bool isMateAtSame = true;
-        if (mtid != rgpartial.tid || mpos < rgpartial.lpos || mpos > rgpartial.rpos)
-            isMateAtSame = false;
-
-        if (isMateAtSame) {
-            // cout<<"mate is at same"<<endl;
-            int strand = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-            int mStrand = (b->core.flag & BAM_FMREVERSE) ? 1 : 0;
-
-            if (strand + mStrand != 1)
-                return 0;
-            // cout<<"checked ok"<<endl;
-        }
-
-        if (isMIM(b) || isMBad(b) || isLgClip(b)) {
-
-            // cout<<"strange"<<endl;
-            partial_processed++;
-            split_rna_t st;
-            st.name = string(bam_get_qname(b));
-            st.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
-
-            st.tid2 = mtid;
-            st.pos2 = mpos;
-
-            if (isMateAtSame)
-                st.spId = 0; // doesnot mean id
-            else
-                st.spId = 1;
-
-            if (st.strand1 == 0) {
-                for (int aa = 0; aa < b->core.l_qseq; aa++) {
-                    int reada = bam_seqi(bam_get_seq(b), aa);
-                    char chara = getCharA(reada);
-                    st.seq.push_back(chara);
-                }
-            } else {
-                for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
-                    int reada = bam_seqi(bam_get_seq(b), aa);
-                    char chara = getCharComp(getCharA(reada));
-                    st.seq.push_back(chara);
-                }
-            }
-            // cout<<st.name<<" found as strange"<<endl;
-            if (isHardClip(b)) {
-                st.strandC = 1; // does not mean this;for hard clip
-                st.lenC = 0;
-            } else {
-                st.strandC = 0;
-                st.lenC = 0;
-            }
-            tmpspv.push_back(st);
-        }
-    }
-
-    return 0;
-}
 
 int to_change_tmpspv = 0;
 region_t nei_region;
@@ -5642,14 +5798,149 @@ int getTheOtherHalf(vector<int> &neis, TidHandler &th, Gene &g, MyBamWrap &mbw) 
     return 0;
 }
 
-int Rna::traversePartialRight(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc, myFind2 &mf2) {
+void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc, myFind2 &mf2) {
+    int countAdd = 0;
+    for (const_vertex_iterator iter = rnafg->fg.begin(); iter != rnafg->fg.end(); ++iter) {
+        gene_t *gt = g.getGene(iter->first);
+        rgpartial.tid = th.getRNAFromRef(gt->tid);
+        rgpartial.lpos = gt->leftLimit;
+        rgpartial.rpos = gt->rightLimit;
+        int gId1 = iter->first;
+        int gStrand1 = g.getStrand(gId1);
+        vector<int> neis;
+        this->rnafg->getNeighbors(gId1, neis);
+        Alignment al;
+        mbw.myFetchWrap(rgpartial, [this, &ref, &g, &th, &hc, &mf2, &neis, &al, &gId1, &gStrand1, &countAdd](const bam1_t *b) {
+            if (b->core.flag & (BAM_FUNMAP | BAM_FMUNMAP)) {
+                return;
+            }
+            if (b->core.flag & BAM_FSUPPLEMENTARY) {
+                return;
+            }
+            int tid1 = b->core.tid;
+            int tid2 = b->core.mtid;
+            int pos1 = b->core.pos + 1;
+            bool strand1 = (b->core.flag & BAM_FREVERSE) ? false : true;
+            bool strand2 = (b->core.flag & BAM_FMREVERSE) ? false : true;
+            bool isMateAtSame = (tid1 == tid2);
+            if (isMateAtSame && strand1 == strand2) {
+                return;
+            }
+            if (!(isMIM(b) || isMBad(b) || isLgClip(b))) {
+                return;
+            }
+            string seq = getSeqFromBam(b);
+            split_rna_t st;
+            if (!strand1) {
+                getRevCompSeq(seq);
+                st.reversed = true;
+            }
+            st.name = string(bam_get_qname(b));
+            st.strand1 = strand1 ? 0 : 1;
+            st.tid1 = tid1;
+            st.pos1 = pos1;
+            st.lenC = 0;
+            st.strandC = 0;
+            st.spId = isMateAtSame ? 0 : 1;
+            st.seq = vector<char>(seq.begin(), seq.end());
+            int count = hc.getHitsCount(st.seq.data(), st.seq.size());
+            if (count > 10) {
+                return;
+            }
+            int anchorStrd = 1 - st.strand1;
+            if (st.spId == 1) {
+                vector<map_emt_t2> mets2, metsM2;
+                int isSmall1;
+                if (al.runBWTSplitMap2(g, gId1, st.seq, anchorStrd, mets2, metsM2, mf2, isSmall1, 1) == 1) {
+                    if (mets2.size() > 5 || isSmall1 == 1) {
+                        return;
+                    }
+                    vector<map_emt_t2> mets4, metsM4;
+                    int isSmall2;
+                    if (al.runBWTSplitMap(g, gId1, st.seq, anchorStrd, mets4, metsM4, mf2, isSmall2, 2) == 1) {
+                        if (checkSame(st.seq.size(), mets4, metsM4, mets2, metsM2) == 1 || isSmall2 == 1) {
+                            return;
+                        }
+                    }
+                    for (int t = 0; t < neis.size(); t++) {
+                        int imgStrand;
+                        int gId2 = neis[t];
+                        if (this->rnafg->getEncompassNum(gId1, gId2) == 0) {
+                            continue;
+                        }
+                        int gStrand2 = g.getStrand(gId2);
+                        region_t rgthis;
+                        rgthis.tid = th.getRNAFromRef(g.getTid(gId2));
+                        rgthis.lpos = g.getLimitLeft(gId2);
+                        rgthis.rpos = g.getLimitRight(gId2);
 
-    MyHash mhh;
+                        if (st.tid2 == rgthis.tid && st.pos2 > rgthis.lpos && st.pos2 < rgthis.rpos) {
+                            // cout<<"we have a region match!"<<endl;
+                        } else {
+                            continue;
+                        }
 
+                        if (gStrand1 == gStrand2) {
+                            imgStrand = anchorStrd;
+                        } else {
+                            imgStrand = 1 - anchorStrd;
+                        }
+
+                        vector<map_emt_t2> mets, metsM;
+                        int isSmall1;
+                        if (al.runBWTSplitMap(g, gId2, st.seq, imgStrand, mets, metsM, mf2, isSmall1, 1) == 1) {
+                            if (mets.size() > 5 || isSmall1 == 1) {
+                                continue;
+                            }
+                            matchParials(ref, g, gId2, gId1, st.seq.data(), st.name, st.reversed, mets2, metsM2, mets, metsM, count, mf2);
+                        }
+                    }
+                }
+            } else {
+                vector<map_emt_t2> mets, metsM; // partial map
+                int isSmall1;
+                if (al.runBWTSplitMap(g, gId1, st.seq, anchorStrd, mets, metsM, mf2, isSmall1, 1) == 1) {
+                    if (mets.size() > 5 || isSmall1 == 1) {
+                        return;
+                    }
+                    vector<map_emt_t2> mets3, metsM3; // partial map
+                    int isSmall2;
+                    if (al.runBWTSplitMap2(g, gId1, st.seq, anchorStrd, mets3, metsM3, mf2, isSmall2, 2) == 1) {
+                        if (checkSame(st.seq.size(), mets, metsM, mets3, metsM3) == 1 || isSmall2 == 1) {
+                            return;
+                        }
+                    }
+                    for (int t = 0; t < neis.size(); t++) {
+                        int imgStrand;
+                        int gId2 = neis[t];
+                        int gStrand2 = g.getStrand(gId2);
+
+                        if (gStrand1 == gStrand2) {
+                            imgStrand = anchorStrd;
+                        } else {
+                            imgStrand = 1 - anchorStrd;
+                        }
+
+                        vector<map_emt_t2> mets2, metsM2; // partial map
+                        int isSmall1;
+                        if (al.runBWTSplitMap2(g, gId2, st.seq, imgStrand, mets2, metsM2, mf2, isSmall1, 1) == 1) {
+                            if (mets2.size() > 5 || isSmall1 == 1) {
+                                continue;
+                            }
+                            matchParials(ref, g, gId1, gId2, st.seq.data(), st.name, st.reversed, mets, metsM, mets2, metsM2, count, mf2);
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+int Rna::traversePartialRight(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc, myFind2 &mf2) {
     partial_processed = 0;
     float t = clock();
     Alignment al;
-    for (const_vertex_iterator iter = rnafg.fg.begin(); iter != rnafg.fg.end(); ++iter) {
+    for (const_vertex_iterator iter = rnafg->fg.begin(); iter != rnafg->fg.end(); ++iter) {
 
         if (partial_processed % 1000000 == 0 && partial_processed != 0) {
 
@@ -5668,24 +5959,73 @@ int Rna::traversePartialRight(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCount
 
         vector<int> neis;
         // cout<<"get neibors of "<<g.getName2(x1)<<endl;
-        rnafg.getNeighbors(x1, neis);
+        rnafg->getNeighbors(x1, neis);
 
         int strand1 = g.getStrand(x1);
 
         tmpspv.clear();
 
-        mbw.myFetchWrap(rgpartial, myGetPartial);
+        mbw.myFetchWrap(rgpartial, [](const bam1_t *b) {
+            if (b->core.flag & (BAM_FUNMAP | BAM_FMUNMAP)) {
+                return;
+            }
+
+            int mtid = b->core.mtid;
+            uint32_t mpos = b->core.mpos;
+
+            bool isMateAtSame =
+                mtid != rgpartial.tid ||
+                mpos < rgpartial.lpos ||
+                mpos > rgpartial.rpos ?
+                    false :
+                    true;
+
+            if (isMateAtSame) {
+                if (!((b->core.flag & BAM_FREVERSE) != 0 ^ (b->core.flag & BAM_FMREVERSE) != 0)) {
+                    return;
+                }
+            }
+
+            if (!(isMIM(b) || isMBad(b) || isLgClip(b))) {
+                return;
+            }
+            partial_processed++;
+            split_rna_t st;
+            st.name = string(bam_get_qname(b));
+            st.strand1 = (b->core.flag & BAM_FREVERSE) ? 1 : 0;
+            st.tid2 = mtid;
+            st.pos2 = mpos;
+            st.lenC = 0;
+            st.strandC = isHardClip(b) ? 1 : 0;
+            st.spId = isMateAtSame ? 0 : 1;
+            if (st.strand1 == 0) {
+                for (int aa = 0; aa < b->core.l_qseq; aa++) {
+                    int reada = bam_seqi(bam_get_seq(b), aa);
+                    st.seq.push_back(getCharA(reada));
+                }
+            } else {
+                for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
+                    int reada = bam_seqi(bam_get_seq(b), aa);
+                    st.seq.push_back(getCharComp(getCharA(reada)));
+                }
+            }
+            tmpspv.push_back(st);
+        });
 
         // getTheOtherHalf(neis,th,g,mbw);
 
         for (int i = 0; i < tmpspv.size(); i++) {
+            cout << tmpspv[i].name << ":";
+            for (int j = 0; j < tmpspv[i].seq.size(); j++) {
+                cout << tmpspv[i].seq[j];
+            }
+            cout << endl;
 
             // cout<<"i="<<i<<endl;
             // cout<<tmpspv[i].name<<endl;
 
             if (tmpspv[i].strandC == 1) {
-                vector<int> hdIds;
-                lookUpHashHd(tmpspv[i].name, mhh, hdIds);
+                vector<int> &hdIds = this->hashVecHard[tmpspv[i].name];
                 // cout<<"hdIds.size="<<hdIds.size()<<endl;
 
                 for (int j = 0; j < hdIds.size(); j++) {
@@ -5693,7 +6033,7 @@ int Rna::traversePartialRight(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCount
                     // if(hardrna[hdIds[j]].name.compare(tmpspv[i].name)==0)
                     //	cout<<"con1 good"<<endl;
                     // cout<<tmpspv[i].seq.size()<<" "<<hardrna[hdIds[j]].clipped<<endl;
-
+                    cout << tmpspv[i].seq.size() << " " << hardrna[hdIds[j]].clipped << endl;
                     if (hardrna[hdIds[j]].name.compare(tmpspv[i].name) == 0 && tmpspv[i].seq.size() == hardrna[hdIds[j]].clipped) {
                         // cout<<"insert"<<endl;
                         tmpspv[i].seq.insert(tmpspv[i].seq.begin(), hardrna[hdIds[j]].seq.begin(), hardrna[hdIds[j]].seq.end());
@@ -5703,12 +6043,7 @@ int Rna::traversePartialRight(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCount
 
             // cout<<"i="<<i<<endl;
             // cout<<tmpspv[i].name<<endl;
-            char seqRead[1024];
-            for (int aa = 0; aa < tmpspv[i].seq.size(); aa++) {
-                seqRead[aa] = tmpspv[i].seq[aa];
-            }
-
-            int count = hc.getHitsCount(seqRead, tmpspv[i].seq.size());
+            int count = hc.getHitsCount(tmpspv[i].seq.data(), tmpspv[i].seq.size());
             // cout<<"count="<<count<<endl;
             if (count > 10) {
                 // cout<<"large count"<<endl;
@@ -5747,7 +6082,7 @@ int Rna::traversePartialRight(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCount
 
                         /////////////////////////////////////////////////////////
 
-                        if (rnafg.getEncompassNum(x1, gId2) == 0)
+                        if (rnafg->getEncompassNum(x1, gId2) == 0)
                             continue;
 
                         int strand2 = g.getStrand(gId2);
@@ -5783,7 +6118,7 @@ int Rna::traversePartialRight(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCount
                                 }
                                 if (isSmall1 == 1)
                                     continue;
-                                matchParials(g, gId2, x1, tmpspv[i], mets2, metsM2, mets, metsM, count, mf2);
+                                matchParials(ref, g, gId2, x1, tmpspv[i].seq.data(), tmpspv[i].name, tmpspv[i].reversed, mets2, metsM2, mets, metsM, count, mf2);
                             }
                         }
                     }
@@ -5844,7 +6179,7 @@ int Rna::traversePartialRight(Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCount
                                 // cout<<"isSmall1==1"<<endl;
                                 continue;
                             }
-                            matchParials(g, x1, gId2, tmpspv[i], mets, metsM, mets2, metsM2, count, mf2);
+                            matchParials(ref, g, x1, gId2, tmpspv[i].seq.data(), tmpspv[i].name, tmpspv[i].reversed, mets, metsM, mets2, metsM2, count, mf2);
                         }
                     }
                 }
@@ -5902,7 +6237,7 @@ int getRightRead(vector<char> &seq, int strand, vector<char> &seqreturn) {
 }
 
 struct ReduceOne {
-    ReduceOne(Gene &g, myFind2 &mf2, FusionGraph &fg, vector<encompass_rna_t> &enrna, Rna &rna) : g(g), mf2(mf2), rnafg(fg), rna(rna), enrna(enrna) {}
+    ReduceOne(Gene &g, myFind2 &mf2, FusionGraph *fg, vector<encompass_rna_t> &enrna, Rna &rna) : g(g), mf2(mf2), rnafg(fg), rna(rna), enrna(enrna) {}
 
     bool operator()(int gid1, int gid2, FusionEdge &edge) {
 
@@ -6028,7 +6363,7 @@ struct ReduceOne {
 
         if (numBad > total * 0.5) {
             vector<int> empen;
-            rnafg.updateEncompass(gid1, gid2, empen);
+            rnafg->updateEncompass(gid1, gid2, empen);
         }
 
         return true;
@@ -6036,94 +6371,297 @@ struct ReduceOne {
 
     Gene &g;
     myFind2 &mf2;
-    FusionGraph &rnafg;
+    FusionGraph *rnafg;
     Rna &rna;
     vector<encompass_rna_t> &enrna;
 };
 
 int Rna::reduceInOneGene(Gene &g, myFind2 &mf2) {
     ReduceOne reduceOne(g, mf2, rnafg, enrna, *this);
-    rnafg.fg.foreachUniqueEdge(reduceOne);
-    // rnafg.printFg(g);
+    rnafg->fg.foreachUniqueEdge(reduceOne);
+    // rnafg->printFg(g);
     return 0;
 }
 
 int Rna::reduceGraphEmptyEn(Gene &g) {
-    rnafg.fg.removeEdgesIf(hasNoReads);
+    rnafg->fg.removeEdgesIf(hasNoReads);
 
-    rnafg.cleanVertex();
-    rnafg.printFg(g);
+    rnafg->cleanVertex();
+    rnafg->printFg(g);
 
     return 0;
 }
 
-void Rna::correctVirusGene(Gene &g) {
-    map<int, vector<int>> geneIdsCache;
-    for (auto it = this->sprna.begin(); it != this->sprna.end(); ++it) {
-        if (g.getGene(it->geneId1)->isVirus) {
-            vector<int> geneIds;
-            if (geneIdsCache.find(it->pos1) == geneIdsCache.end()) {
-                g.isInGene(it->tid1, it->pos1, geneIds);
-                geneIdsCache[it->pos1] = geneIds;
-            } else {
-                geneIds = geneIdsCache[it->pos1];
-            }
-            if (geneIds.size() <= 1) {
+int Rna::getClosestGeneId(Gene &g, int tid, int pos, int len) {
+    vector<int> geneIds;
+    g.isInGene(tid, pos, geneIds);
+    if (geneIds.size() == 1) {
+        return geneIds[0];
+    } else if (geneIds.size() == 0) {
+        return -1;
+    }
+    int endingPos = pos + len - 1;
+    int minDistance = INT_MAX;
+    int minGeneId = -1;
+    for (auto geneId = geneIds.begin(); geneId != geneIds.end(); ++geneId) {
+        vector<uint32_t> boundaries;
+        g.getExonBoundary(*geneId, 0, boundaries);
+        for (int i = 0; i < boundaries.size(); i++)
+        {
+            int boundary = boundaries[i];
+            if (pos > boundary)
+            {
                 continue;
             }
-            int endingPos = it->pos1 + it->len1 - 1;
-            int minDistance = INT_MAX;
-            int minGeneId = -1;
-            for (auto geneId = geneIds.begin(); geneId != geneIds.end(); ++geneId) {
-                vector<uint32_t> boundaries;
-                g.getExonBoundary(*geneId, it->bkLeft1, boundaries);
-                for (int i = 0; i < boundaries.size(); i++) {
-                    int boundary = boundaries[i];
-                    if (it->pos1 > boundary) {
+            int distance = abs(boundary - endingPos);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                minGeneId = *geneId;
+            }
+        }
+    }
+    return minGeneId;
+}
+
+void Rna::getAllJunctions(Gene &g, unordered_map<string, pair<int, bool>> &junctions) {
+    vector<int> spIds;
+    TraverseSpIds traverse(g, this->rnafg, *this, spIds);
+    this->rnafg->fg.foreachUniqueEdge(traverse);
+    for (int spId : spIds) {
+        split_rna_t *it = &this->sprna[spId];
+        if (!it->seq.empty()) {
+            string junction = string(it->seq.begin(), it->seq.end());
+            if (it->strand1 == 1) {
+                if (it->len2 + 20 > junction.size()) {
+                    continue;
+                }
+                junction = junction.substr(it->len2 - 10, 20);
+            } else {
+                if (it->len1 + 20 > junction.size()) {
+                    continue;
+                }
+                junction = junction.substr(it->len1 - 10, 20);
+            }
+            if (junctions.find(junction) == junctions.end()) {
+                junctions[junction] = make_pair(spId, false);
+                getRevCompSeq(junction);
+                junctions[junction] = make_pair(spId, true);
+            }
+        }
+    }
+}
+
+void Rna::filterUnmapped(const char *rnaFile, const unordered_map<string, pair<int, bool>> &junctions, vector<tuple<string, string, int>> &unmapped_seqs) {
+    samFile *f = sam_open(rnaFile, "r");
+    if (f == nullptr) {
+        cerr << "Failed to open " << rnaFile << " to read." << endl;
+        exit(EXIT_FAILURE);
+    }
+    sam_hdr_t *h = sam_hdr_read(f);
+    if (h == nullptr) {
+        cerr << "Failed to get header of file: " << rnaFile << endl;
+        exit(EXIT_FAILURE);
+    }
+    bam1_t *b = bam_init1();
+
+    while (true) {
+        if ((sam_read1(f, h, b)) < 0) {
+            break;
+        } else {
+            if (!(b->core.flag & BAM_FUNMAP)) {
+                continue;
+            }
+            string seq = getSeqFromBam(b);
+            for (auto entry : junctions) {
+                if (seq.contains(entry.first)) {
+                    if (entry.second.second) {
+                        getRevCompSeq(seq);
+                    }
+                    unmapped_seqs.push_back(make_tuple(seq, string(bam_get_qname(b)), entry.second.first));
+                    break;
+                }
+            }
+        }
+    }
+
+    if (b != nullptr) {
+        bam_destroy1(b);
+    }
+    if (h != nullptr) {
+        sam_hdr_destroy(h);
+    }
+    if (f != nullptr) {
+        sam_close(f);
+    }
+}
+
+int Rna::processUnmapped(Reference &ref, Gene &g, myFind2 &mf2, HitsCounter &hc, TidHandler &th, vector<tuple<string, string, int>> &unmapped_seqs) {
+    Alignment al;
+    int mappedSeqCount = 0;
+    for (auto entry : unmapped_seqs) {
+        const string &seq = get<0>(entry);
+        const string &seqName = get<1>(entry);
+        const int &spId = get<2>(entry);
+        const int count = hc.getHitsCount(seq.data(), seq.size());
+        if (count > 10) {
+            continue;
+        }
+        split_rna_t *it = &this->sprna[spId];
+        split_rna_t st = split_rna_t(*it);
+        st.name = seqName;
+        st.seq = vector<char>(seq.begin(), seq.end());
+        int gId1 = st.geneId1;
+        int anchorStrd = 1 - st.strand1;
+        int gStrand1 = g.getStrand(gId1);
+        vector<int> neis;
+        this->rnafg->getNeighbors(gId1, neis);
+        if (st.spId == 1) {
+            vector<map_emt_t2> mets2, metsM2;
+            int isSmall1;
+            if (al.runBWTSplitMap2(g, gId1, st.seq, anchorStrd, mets2, metsM2, mf2, isSmall1, 1) == 1) {
+                if (mets2.size() > 5 || isSmall1 == 1) {
+                    continue;
+                }
+                vector<map_emt_t2> mets4, metsM4;
+                int isSmall2;
+                if (al.runBWTSplitMap(g, gId1, st.seq, anchorStrd, mets4, metsM4, mf2, isSmall2, 2) == 1) {
+                    if (checkSame(st.seq.size(), mets4, metsM4, mets2, metsM2) == 1 || isSmall2 == 1) {
                         continue;
                     }
-                    int distance = abs(boundary - endingPos);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        minGeneId = *geneId;
+                }
+                for (int t = 0; t < neis.size(); t++) {
+                    int imgStrand;
+                    int gId2 = neis[t];
+                    if (this->rnafg->getEncompassNum(gId1, gId2) == 0) {
+                        continue;
+                    }
+                    int gStrand2 = g.getStrand(gId2);
+                    region_t rgthis;
+                    rgthis.tid = th.getRNAFromRef(g.getTid(gId2));
+                    rgthis.lpos = g.getLimitLeft(gId2);
+                    rgthis.rpos = g.getLimitRight(gId2);
+
+                    // if (st.tid2 == rgthis.tid && st.pos2 > rgthis.lpos && st.pos2 < rgthis.rpos) {
+                    //     // cout<<"we have a region match!"<<endl;
+                    // } else {
+                    //     continue;
+                    // }
+
+                    if (gStrand1 == gStrand2) {
+                        imgStrand = anchorStrd;
+                    } else {
+                        imgStrand = 1 - anchorStrd;
+                    }
+
+                    vector<map_emt_t2> mets, metsM;
+                    int isSmall1;
+                    if (al.runBWTSplitMap(g, gId2, st.seq, imgStrand, mets, metsM, mf2, isSmall1, 1) == 1) {
+                        if (mets.size() > 5 || isSmall1 == 1) {
+                            continue;
+                        }
+                        if (matchParials(ref, g, gId2, gId1, st.seq.data(), st.name, st.reversed, mets2, metsM2, mets, metsM, count, mf2)) {
+                            mappedSeqCount++;
+                        }
                     }
                 }
             }
-            if (minGeneId != -1) {
-                it->geneId1 = minGeneId;
+        } else {
+            vector<map_emt_t2> mets, metsM; // partial map
+            int isSmall1;
+            if (al.runBWTSplitMap(g, gId1, st.seq, anchorStrd, mets, metsM, mf2, isSmall1, 1) == 1) {
+                if (mets.size() > 5 || isSmall1 == 1) {
+                    continue;
+                }
+                vector<map_emt_t2> mets3, metsM3; // partial map
+                int isSmall2;
+                if (al.runBWTSplitMap2(g, gId1, st.seq, anchorStrd, mets3, metsM3, mf2, isSmall2, 2) == 1) {
+                    if (checkSame(st.seq.size(), mets, metsM, mets3, metsM3) == 1 || isSmall2 == 1) {
+                        continue;
+                    }
+                }
+                for (int t = 0; t < neis.size(); t++) {
+                    int imgStrand;
+                    int gId2 = neis[t];
+                    int gStrand2 = g.getStrand(gId2);
+
+                    if (gStrand1 == gStrand2) {
+                        imgStrand = anchorStrd;
+                    } else {
+                        imgStrand = 1 - anchorStrd;
+                    }
+
+                    vector<map_emt_t2> mets2, metsM2; // partial map
+                    int isSmall1;
+                    if (al.runBWTSplitMap2(g, gId2, st.seq, imgStrand, mets2, metsM2, mf2, isSmall1, 1) == 1) {
+                        if (mets2.size() > 5 || isSmall1 == 1) {
+                            continue;
+                        }
+                        if (matchParials(ref, g, gId1, gId2, st.seq.data(), st.name, st.reversed, mets, metsM, mets2, metsM2, count, mf2)) {
+                            mappedSeqCount++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return mappedSeqCount;
+}
+
+void Rna::correctFg(Gene &g) {
+    FusionGraph *newFG = new FusionGraph();
+    vector<int> enIds, spIds;
+    unordered_set<string> spNames;
+    TraverseEnIds traverseEn(g, this->rnafg, *this, enIds);
+    TraverseSpIds traverseSp(g, this->rnafg, *this, spIds);
+    this->rnafg->fg.foreachUniqueEdge(traverseEn);
+    this->rnafg->fg.foreachUniqueEdge(traverseSp);
+    for (int i = 0; i < spIds.size(); i++) {
+        spNames.insert(this->sprna[spIds[i]].name);
+    }
+    for (int i = 0; i < enIds.size(); i++) {
+        const encompass_rna_t *it = &enrna[enIds[i]];
+        if (spNames.find(it->name) != spNames.end()) {
+            continue;
+        }
+        newFG->addEncompass(it->geneId1, it->geneId2, enIds[i]);
+    }
+    for (int i = 0; i < spIds.size(); i++) {
+        split_rna_t *it = &this->sprna[spIds[i]];
+        if (g.getGene(it->geneId1)->isVirus) {
+            int gid = getClosestGeneId(g, it->tid1, it->pos1, it->len1);
+            if (gid != -1 && gid != it->geneId1) {
+                it->geneId1 = gid;
             }
         } else if (g.getGene(it->geneId2)->isVirus) {
-            vector<int> geneIds;
-            if (geneIdsCache.find(it->pos2) == geneIdsCache.end()) {
-                g.isInGene(it->tid2, it->pos2, geneIds);
-                geneIdsCache[it->pos2] = geneIds;
-            } else {
-                geneIds = geneIdsCache[it->pos2];
+            int gid = getClosestGeneId(g, it->tid2, it->pos2, it->len2);
+            if (gid != -1 && gid != it->geneId2) {
+                it->geneId2 = gid;
             }
-            if (geneIds.size() <= 1) {
-                continue;
-            }
-            int endingPos = it->pos2 + it->len2 - 1;
-            int minDistance = INT_MAX;
-            int minGeneId = -1;
-            for (auto geneId = geneIds.begin(); geneId != geneIds.end(); ++geneId) {
-                vector<uint32_t> boundaries;
-                g.getExonBoundary(*geneId, it->bkLeft2, boundaries);
-                for (int i = 0; i < boundaries.size(); i++) {
-                    int boundary = boundaries[i];
-                    if (it->pos2 > boundary) {
-                        continue;
-                    }
-                    int distance = abs(boundary - endingPos);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        minGeneId = *geneId;
-                    }
-                }
-            }
-            it->geneId2 = minGeneId;
         } else {
             continue;
         }
     }
+    unordered_set<split_rna_t, decltype([](const split_rna_t &obj) -> size_t {
+        size_t h1 = hash<string>{}(obj.name);
+        size_t h2 = hash<int>{}(obj.tid1);
+        size_t h3 = hash<int>{}(obj.pos1);
+        size_t h4 = hash<int>{}(obj.len1);
+        size_t h5 = hash<int>{}(obj.strand1);
+        size_t h6 = hash<int>{}(obj.tid2);
+        size_t h7 = hash<int>{}(obj.pos2);
+        size_t h8 = hash<int>{}(obj.len2);
+        size_t h9 = hash<int>{}(obj.strand2);
+        size_t h10 = hash<int>{}(obj.reversed);
+        return h1 ^ (h2 << 1) ^ h3 ^ (h4 & h5) ^ (h5 & h6) ^ h6 ^ (h7 >> 1) ^ h8 ^ (h9 ^ h10);
+    })> spSet;
+    for (int i = 0; i < spIds.size(); i++) {
+        spSet.insert(this->sprna[spIds[i]]);
+    }
+    for (auto it: spSet) {
+        newFG->addSpanning(it.geneId1, it.geneId2, it.spId);
+    }
+    delete this->rnafg;
+    this->rnafg = newFG;
 }

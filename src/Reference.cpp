@@ -223,6 +223,11 @@ void Reference::readVirusLoaderGff(const GffFile &gffFile, const char *pfs, cons
         this->refItems[this->refItems.size()] = RefItem(mappedName, trueName, nullptr, seqIdx.seqLength, true);
         this->seqCount++;
         this->seqs[this->seqCount - 1] = seq;
+        for (int i = 0; i < seqIdx.seqLength; i++) {
+            if (seq[i] != 'A' && seq[i] != 'T' && seq[i] != 'C' && seq[i] != 'G' && seq[i] != 'N') {
+                seq[i] = 'N';
+            }
+        }
         break;
     }
 }

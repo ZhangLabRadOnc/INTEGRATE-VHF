@@ -41,14 +41,19 @@ int HitsCounter::getChromBWTs(Reference &ref, const char *directory) {
             cout << "Building BWT and rBWT for " << ref.getSeqOriginalName(i) << "..." << endl;
             float t = clock();
 
-            const char *tmp = ref.getSeq(i);
-            getOne(tmp, length, bwtPath / (ref.getSeqOriginalName(i) + ".bwt"));
+            const char *tmp0 = ref.getSeq(i);
+            char *tmp1 = new char[length + 2];
+            copy(tmp0, tmp0 + length, tmp1);
+            tmp1[length] = '$';
+            tmp1[length + 1] = '\0';
+            getOne(tmp1, length, bwtPath / (ref.getSeqOriginalName(i) + ".bwt"));
+            delete[] tmp1;
 
             char *rtmp = new char[length + 2];
 
             uint32_t x = 0;
             for (int j = length - 1; j >= 0; j--) {
-                rtmp[x++] = getCharComp(tmp[j]);
+                rtmp[x++] = getCharComp(tmp0[j]);
             }
 
             rtmp[length] = '$';

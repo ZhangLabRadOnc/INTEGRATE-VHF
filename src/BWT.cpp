@@ -95,7 +95,7 @@ int BWT::getOccAndOB(const char *seq, int len) {
             d++;
             break;
         default:
-            cout << "there is a letter that is not in ACGTN at " << i << ", which is " << bwt[i] << endl;
+            cout << "there is a letter that is not in ACGTN at " << i << ", which is (" << (int)bwt[i] << ") " << bwt[i] << "." << endl;
             exit(1);
             break;
         }

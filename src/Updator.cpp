@@ -124,22 +124,22 @@ int processPosPair(vector<pos_pair_t> &posPairs, split_rna_t &st) {
 }
 
 int Updator::update(int gid5p, int gid3p, uint32_t &pos5p, uint32_t &pos3p, split_rna_t &st, Reference &ref, Gene &g) {
-    int strand5p = g.getStrand(gid5p);
-    int strand3p = g.getStrand(gid3p);
+    // int strand5p = g.getStrand(gid5p);
+    // int strand3p = g.getStrand(gid3p);
 
-    int tid5p = g.getTid(gid5p);
-    int tid3p = g.getTid(gid3p);
+    // int tid5p = g.getTid(gid5p);
+    // int tid3p = g.getTid(gid3p);
 
-    vector<pos_pair_t> posPairs;
+    // vector<pos_pair_t> posPairs;
 
-    getPosPairs(tid5p, tid3p, strand5p, strand3p, pos5p, pos3p, ref, 10, posPairs);
+    // getPosPairs(tid5p, tid3p, strand5p, strand3p, pos5p, pos3p, ref, 10, posPairs);
 
-    int res = processPosPair(posPairs, st);
+    // int res = processPosPair(posPairs, st);
 
-    if (res != -1) {
-        pos5p = posPairs[res].pos5p;
-        pos3p = posPairs[res].pos3p;
-    }
+    // if (res != -1) {
+    //     pos5p = posPairs[res].pos5p;
+    //     pos3p = posPairs[res].pos3p;
+    // }
 
     return 0;
 }

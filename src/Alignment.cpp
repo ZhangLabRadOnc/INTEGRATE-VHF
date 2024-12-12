@@ -1255,7 +1255,7 @@ int Alignment::runBWTSplitMap2(Gene &g, int geneId, const vector<char> &seq, int
     // cout<<endl;
 
     if (strand == 1) {
-        int k, l, mapped, mismatch, insertion, deletion;
+        int k = 0, l = 0, mapped = 0, mismatch = 0, insertion = 0, deletion = 0;
         BWT *bwt = g.getBWT(geneId);
         isMap = bwt->inExactSplitMap(k, l, seqRead, seqLen, mapped, 10, mmdd, mismatch, insertion, deletion, mf2);
 

@@ -188,7 +188,7 @@ void usageFusion() {
 
     cout << "         -bedpe   string  : File to store all fusions in SMC-RNA bedpe format                           default: fusions.bedpe" << endl;
     cout << "         -bacc     integer : max difference between spanning reads and annotation to decide canonical.  default: 1" << endl;
-    cout << "         -largeNum integer : if a gene shows greater or equal to this number, remove it from results.   default: 4" << endl;
+    cout << "         -largeNum integer : if a gene shows greater or equal to this number, remove it from results.   default: 6" << endl;
     cout << "         -sample   string  : sample name                                                                default: sample" << endl;
     cout << endl;
     cout << "This version of Integrate works in the following situations:" << endl;
@@ -660,7 +660,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     opt.min_seq_bwt = 100; //10000000;
     opt.isRunningNormal = 0;
     opt.bacc = 1;
-    opt.largeNum = 4;
+    opt.largeNum = 6;
     opt.minDel = 5000;
 
     if (argc <= 2) {

@@ -140,3 +140,12 @@ int countMismatches(const string& str1, const string& str2) {
 
     return mismatchCount;
 }
+
+char *getCStringFromVector(const vector<char> &vec) {
+    char *cstr = new char[vec.size() + 1];
+    for (size_t i = 0; i < vec.size(); i++) {
+        cstr[i] = vec[i];
+    }
+    cstr[vec.size()] = '\0';
+    return cstr;
+}

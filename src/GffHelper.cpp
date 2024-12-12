@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
 #include "Util.h"
 #include "GffHelper.h"
 
@@ -107,6 +108,7 @@ GffFile parseGff(const char *start, const char *end, const string &fileName) {
                 copy(pls, ple + 1, line);
                 line[lineLen] = '\0';
                 string lineStr = string(line);
+                lineStr = trimString(lineStr);
                 free(line);
                 if (*pls == '#') {
                     lineStr = lineStr.substr(2);
@@ -144,6 +146,9 @@ GffFile parseGff(const char *start, const char *end, const string &fileName) {
                             }
                             GffSequenceFeature seqFeature(fields[0], fields[1], fields[2], stoi(fields[3]), stoi(fields[4]), fields[5], fields[6], fields[7], attribute);
                             seqFeatures.push_back(seqFeature);
+                        } else {
+                            cerr << "Error: " << fileName << " is not a valid GFF file." << endl;
+                            exit(EXIT_FAILURE);
                         }
                     } else {
                         if (pfas == nullptr) {

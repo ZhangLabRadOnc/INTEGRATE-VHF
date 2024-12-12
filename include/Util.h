@@ -80,3 +80,5 @@ void getRevCompSeq(string &seq);
 void getRevCompSeq(vector<char> &seq);
 
 int countMismatches(const string &str1, const string &str2);
+
+char *getCStringFromVector(const vector<char> &vec);

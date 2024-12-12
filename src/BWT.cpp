@@ -5,6 +5,7 @@
  *      Author: jinzhang
  */
 
+#include <iostream>
 #include "BWT.h"
 
 BWT::BWT() {
@@ -302,7 +303,9 @@ typedef struct {
 } coordinate_t;
 
 int BWT::inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int minLen, int maxDiff, int &mismatch, int &insertion, int &deletion, myFind2 &mf2) {
-
+    if (length <= 0) {
+        return 0;
+    }
     // cout<<"inExactSplitMap"<<endl;
 
     // myFind finder;

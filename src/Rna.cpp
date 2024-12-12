@@ -2749,7 +2749,9 @@ int Rna::mapPartialSplitBWT(const char *rnaFile, TidHandler &th, Gene &g, HitsCo
                 if (freq <= 0) {
                     continue;
                 } else {
-                    int countAn = hc.getHitsCount(anrna[anIds[0]].seq.data(), anrna[anIds[0]].seq.size());
+                    const char *seq = getCStringFromVector(anrna[anIds[0]].seq);
+                    int countAn = hc.getHitsCount(seq, anrna[anIds[0]].seq.size());
+                    delete[] seq;
                     if (countAn > 5)
                         continue;
                 }
@@ -3426,8 +3428,12 @@ int Rna::computeWeights1(Gene &g) {
 int Rna::computeOneNum(HitsCounter &hc, vector<int> &enIds) {
 
     for (int i = 0; i < enIds.size(); i++) {
-        int count1 = hc.getHitsCount(enrna[enIds[i]].seq1.data(), enrna[enIds[i]].seq1.size());
-        int count2 = hc.getHitsCount(enrna[enIds[i]].seq2.data(), enrna[enIds[i]].seq2.size());
+        const char *seq1 = getCStringFromVector(enrna[enIds[i]].seq1);
+        const char *seq2 = getCStringFromVector(enrna[enIds[i]].seq2);
+        int count1 = hc.getHitsCount(seq1, enrna[enIds[i]].seq1.size());
+        int count2 = hc.getHitsCount(seq2, enrna[enIds[i]].seq2.size());
+        delete[] seq1;
+        delete[] seq2;
 
         if (count1 > 1)
             enrna[enIds[i]].numCopy = count1;
@@ -3993,12 +3999,21 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                             st.geneId2 = newGid2;
                         }
                         vector<uint32_t> boundaries1, boundaries2;
-                        g.getExonBoundary(st.geneId1, 0, boundaries1);
-                        g.getExonBoundary(st.geneId2, 0, boundaries2);
+                        g.getExonBoundary(st.geneId1, st.bkLeft1, boundaries1);
+                        g.getExonBoundary(st.geneId2, st.bkLeft2, boundaries2);
                         int posClosest1 = 0, posClosest2 = 0;
                         int diff1 = INT_MAX, diff2 = INT_MAX;
-                        int posOriginal1 = st.pos1 + st.len1 - 1;
-                        int posOriginal2 = st.pos2 + st.len2 - 1;
+                        int posOriginal1, posOriginal2;
+                        if (st.bkLeft1 == 0) {
+                            posOriginal1 = st.pos1 + st.len1 - 1;
+                        } else {
+                            posOriginal1 = st.pos1;
+                        }
+                        if (st.bkLeft2 == 0) {
+                            posOriginal2 = st.pos2 + st.len2 - 1;
+                        } else {
+                            posOriginal2 = st.pos2;
+                        }
                         for (int i = 0; i < boundaries1.size(); i++) {
                             if (abs((int)boundaries1[i] - (int)posOriginal1) < abs(diff1)) {
                                 diff1 = (int)boundaries1[i] - (int)posOriginal1;
@@ -4018,119 +4033,512 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                             added = true;
                             return added;
                         }
-                        const char *seqWhole1 = ref.getSeq(st.tid1);
-                        const char *seqWhole2 = ref.getSeq(st.tid2);
-                        if (abs(diff1) == abs(diff2)) {
+                        const char *seqWhole1 = ref.getSeq(st.tid1), *seqWhole2 = ref.getSeq(st.tid2);
+                        if (abs(diff1) == abs(diff2))
+                        {
+                            continue;
                             char *seq1 = new char[diff + 1];
                             int seq1PosStart, seq1PosEnd;
-                            if (diff1 > 0) {
-                                seq1PosStart = posClosest1 - diff1;
-                                seq1PosEnd = posClosest1 - 1;
-                            } else {
+                            if (diff1 > 0)
+                            {
+                                if (st.bkLeft1 == 1)
+                                {
+                                    seq1PosStart = posClosest1 - diff1;
+                                    seq1PosEnd = posClosest1 - 1;
+                                }
+                                else
+                                {
+                                    seq1PosStart = posClosest1 - diff1 + 1;
+                                    seq1PosEnd = posClosest1;
+                                }
+                            }
+                            else
+                            {
                                 seq1PosStart = posClosest1;
                                 seq1PosEnd = posClosest1 - diff1 - 1;
                             }
-                            copy(seqWhole1 + seq1PosStart, seqWhole1 + seq1PosEnd + 1, seq1);
-                            seq1[diff] = '\0';
+                            seq1PosStart -= 1;
+                            seq1PosEnd -= 1;
                             char *seq2 = new char[diff + 1];
                             int seq2PosStart, seq2PosEnd;
-                            if (diff2 > 0) {
-                                seq2PosStart = posClosest2 - diff2;
-                                seq2PosEnd = posClosest2 - 1;
-                            } else {
+                            if (diff2 > 0)
+                            {
+                                if (st.bkLeft1 == 0)
+                                {
+                                    seq2PosStart = posClosest2 - diff2;
+                                    seq2PosEnd = posClosest2 - 1;
+                                }
+                                else
+                                {
+                                    seq2PosStart = posClosest2 - diff2 + 1;
+                                    seq2PosEnd = posClosest2;
+                                }
+                            }
+                            else
+                            {
                                 seq2PosStart = posClosest2;
                                 seq2PosEnd = posClosest2 - diff2 - 1;
                             }
+                            seq2PosStart -= 1;
+                            seq2PosEnd -= 1;
+                            copy(seqWhole1 + seq1PosStart, seqWhole1 + seq1PosEnd + 1, seq1);
+                            seq1[diff] = '\0';
                             copy(seqWhole2 + seq2PosStart, seqWhole2 + seq2PosEnd + 1, seq2);
                             seq2[diff] = '\0';
                             string seq1Str(seq1);
                             string seq2Str(seq2);
                             delete[] seq1;
                             delete[] seq2;
-                            if (st.strand1 == 1) {
+                            if (st.strand1 == 1)
+                            {
                                 getRevCompSeq(seq1Str);
                             }
-                            if (st.strand2 == 1) {
+                            if (st.strand2 == 1)
+                            {
                                 getRevCompSeq(seq2Str);
                             }
-                            if (seq1Str == seq2Str) {
-                                st.len1 = posClosest1 - st.pos1 + 1;
-                                st.len2 = posClosest2 - st.pos2 + 1;
-                            } else {
+                            if (seq1Str == seq2Str)
+                            {
+                                if (st.reversed)
+                                {
+                                    if (st.strand1 != 0)
+                                    {
+                                        st.len1 = posClosest1 - st.pos1 + 1;
+                                    }
+                                    else
+                                    {
+                                        st.pos1 = posClosest1;
+                                        st.len1 = st.len1 - diff1;
+                                    }
+                                    if (st.strand2 == 0)
+                                    {
+                                        st.len2 = posClosest2 - st.pos2 + 1;
+                                    }
+                                    else
+                                    {
+                                        st.pos2 = posClosest2;
+                                        st.len2 = st.len2 - diff2;
+                                    }
+                                }
+                                else
+                                {
+                                    if (st.strand1 == 0)
+                                    {
+                                        st.len1 = posClosest1 - st.pos1 + 1;
+                                    }
+                                    else
+                                    {
+                                        st.pos1 = posClosest1;
+                                        st.len1 = st.len1 - diff1;
+                                    }
+                                    if (st.strand2 != 0)
+                                    {
+                                        st.len2 = posClosest2 - st.pos2 + 1;
+                                    }
+                                    else
+                                    {
+                                        st.pos2 = posClosest2;
+                                        st.len2 = st.len2 - diff2;
+                                    }
+                                }
+                            }
+                            else
+                            {
                                 string seqRead(st.seq.begin(), st.seq.end());
-                                if (st.reversed) {
-                                    if (diff2 < 0) {
+                                if (st.reversed)
+                                {
+                                    if (diff2 < 0)
+                                    {
                                         seqRead = seqRead.substr(st.len2 + diff2, abs(diff2));
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         seqRead = seqRead.substr(st.len2, abs(diff2));
                                     }
-                                } else {
-                                    if (diff1 < 0) {
+                                }
+                                else
+                                {
+                                    if (diff1 < 0)
+                                    {
                                         seqRead = seqRead.substr(st.len1 + diff1, abs(diff1));
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         seqRead = seqRead.substr(st.len1, abs(diff1));
                                     }
                                 }
                                 int mismatch1 = countMismatches(seqRead, seq1Str);
                                 int mismatch2 = countMismatches(seqRead, seq2Str);
 
-                                if (mismatch2 > mismatch1) {
-                                    st.len1 = st.len1 + diff;
-                                    st.len2 = st.len2 - diff;
-                                } else {
-                                    st.len1 = st.len1 - diff;
-                                    st.pos1 = st.pos1 + diff;
+                                if (mismatch2 > mismatch1)
+                                {
+                                    st.len1 = st.len1 + diff1;
+                                    st.len2 = st.len2 - diff1;
+                                    if (st.strand1 != 0)
+                                    {
+                                        st.pos1 = st.pos1 - diff1;
+                                    }
+                                    if (st.strand2 == 0)
+                                    {
+                                        st.pos2 = st.pos2 + diff1;
+                                    }
+                                }
+                                else
+                                {
+                                    st.len1 = st.len1 - diff2;
+                                    st.len2 = st.len2 + diff2;
+                                    if (st.strand1 == 0)
+                                    {
+                                        st.pos1 = st.pos1 + diff2;
+                                    }
+                                    if (st.strand2 != 0)
+                                    {
+                                        st.pos2 = st.pos2 - diff2;
+                                    }
+                                }
+
+                                // if (mismatch2 > mismatch1) {
+                                //     st.len1 = st.len1 + diff;
+                                //     st.len2 = st.len2 - diff;
+                                // } else {
+                                //     st.len1 = st.len1 - diff;
+                                //     st.len2 = st.len2 + diff;
+                                // }
+                            }
+                        }
+                        else
+                        {
+                            // if (st.name == "UNC13-SN749:194:D15C3ACXX:2:1305:1680:113302")
+                            // {
+                            //     cout << "here" << endl;
+                            // }
+                            // else
+                            // {
+                            //     continue;
+                            // }
+                            // if (abs(diff1) < abs(diff2)) {
+                            if (abs(diff1) > 100 && abs(diff2) > 100) {
+                                sprna.push_back(st);
+                                rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                                added = true;
+                                return added;
+                            }
+                            int diff0;
+                            if (abs(diff1) < abs(diff2))
+                            {
+                                diff0 = diff1;
+                            }
+                            else
+                            {
+                                diff0 = diff2;
+                            }
+                            diff = abs(diff0);
+                            int seq1PosStart, seq1PosEnd;
+                            int seq2PosStart, seq2PosEnd;
+                            // if (abs(diff2) < abs(diff1)) {
+                            seq1PosStart = st.pos1 + st.len1;
+                            seq1PosEnd = seq1PosStart + diff0 - 1;
+                            seq2PosStart = st.pos2;
+                            seq2PosEnd = st.pos2 + diff0 - 1;
+                            // } else {
+                            //     seq1PosStart = st.pos1 + st.len1;
+                            //     seq1PosEnd = seq1PosStart + diff0;
+                            //     seq2PosStart = st.pos1;
+                            //     seq2PosEnd = st.pos1 - diff0 - 1;
+                            // }
+                            // if (diff1 > 0) {
+                            //     if (st.bkLeft1 == 1) {
+                            //         seq1PosStart = posClosest1 - diff0;
+                            //         seq1PosEnd = posClosest1 - 1;
+                            //     } else {
+                            //         seq1PosStart = posClosest1 - diff0 + 1;
+                            //         seq1PosEnd = posClosest1;
+                            //     }
+                            // } else {
+                            //     seq1PosStart = posClosest1;
+                            //     seq1PosEnd = posClosest1 - diff0 - 1;
+                            // }
+                            // if (diff2 > 0) {
+                            //     if (st.bkLeft2 == 1) {
+                            //         seq2PosStart = posClosest2 - diff0;
+                            //         seq2PosEnd = posClosest2 - 1;
+                            //     } else {
+                            //         seq2PosStart = posClosest2 - diff0 + 1;
+                            //         seq2PosEnd = posClosest2;
+                            //     }
+                            // } else {
+                            //     seq2PosStart = posClosest2;
+                            //     seq2PosEnd = posClosest2 - diff0 - 1;
+                            // }
+                            seq1PosStart -= 1;
+                            seq1PosEnd -= 1;
+                            seq2PosStart -= 1;
+                            seq2PosEnd -= 1;
+                            if (seq1PosEnd < seq1PosStart || seq2PosEnd < seq2PosStart)
+                            {
+                                sprna.push_back(st);
+                                rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                                added = true;
+                                return added;
+                            }
+                            char *seq1 = new char[diff + 1];
+                            char *seq2 = new char[diff + 1];
+                            copy(seqWhole1 + seq1PosStart, seqWhole1 + seq1PosEnd + 1, seq1);
+                            copy(seqWhole2 + seq2PosStart, seqWhole2 + seq2PosEnd + 1, seq2);
+                            seq1[diff] = '\0';
+                            seq2[diff] = '\0';
+                            string seq1Str(seq1);
+                            string seq2Str(seq2);
+                            delete[] seq1;
+                            delete[] seq2;
+                            if (st.strand1 == 1)
+                            {
+                                getRevCompSeq(seq1Str);
+                            }
+                            if (st.strand2 == 1)
+                            {
+                                getRevCompSeq(seq2Str);
+                            }
+                            if (seq1Str == seq2Str)
+                            {
+                                if (!st.reversed)
+                                {
+                                    if (st.strand1 == 0)
+                                    {
+                                        st.len1 += diff0;
+                                    }
+                                    else
+                                    {
+                                        st.pos1 -= diff0;
+                                        st.len1 -= diff0;
+                                    }
+                                    if (st.strand2 == 0)
+                                    {
+                                        st.pos2 += diff0;
+                                        st.len2 -= diff0;
+                                    }
+                                    else
+                                    {
+                                        st.len2 -= diff0;
+                                    }
+                                }
+                                else
+                                {
+                                    if (st.strand1 != 0)
+                                    {
+                                        st.len1 += diff0;
+                                    }
+                                    else
+                                    {
+                                        st.pos1 -= diff0;
+                                        st.len1 += diff0;
+                                    }
+                                    if (st.strand2 != 0)
+                                    {
+                                        st.pos2 += diff0;
+                                        st.len2 -= diff0;
+                                    }
+                                    else
+                                    {
+                                        st.len2 -= diff0;
+                                    }
                                 }
                             }
-                        } else {
-                            if (diff1 < diff2) {
-                                st.len2 = st.len2 - (posClosest1 - (st.pos1 + st.len1 - 1));
-                                st.len1 = posClosest1 - st.pos1 + 1;
-                                if (diff2 > 5) {
-                                    vector<int> geneIds;
-                                    uint32_t bk = st.pos2 + st.len2 - 1;
-                                    g.isInGene(st.tid2, bk, geneIds);
-                                    for (int i = 0; i < geneIds.size(); i++) {
-                                        vector<uint32_t> boundaries;
-                                        g.getExonBoundary(geneIds[i], 0, boundaries);
-                                        bool found = false;
-                                        for (int j = 0; j < boundaries.size(); j++) {
-                                            if (bk == boundaries[j]) {
-                                                found = true;
-                                                st.geneId2 = geneIds[i];
-                                                break;
-                                            }
+                            else
+                            {
+                                string seqRead(st.seq.begin(), st.seq.end());
+				int n_seqReadLen = seqRead.length();
+                                if (st.reversed)
+                                {
+                                    if (diff2 < 0)
+                                    {
+                                        if (st.len2 + diff0 < 0)
+                                        {
+                                            continue;
                                         }
-                                        if (found) {
-                                            break;
+					if(st.len2 + diff0 < n_seqReadLen)
+					{
+					    seqRead = seqRead.substr(st.len2 + diff0, abs(diff0));
+					}
+					else
+					{
+					  cerr << "Warning: attempted seqRead.substr(st.len2 + diff0, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len2: " << st.len2 << ", diff0: " << diff0 << ", nm: " << nm << endl;
+					    continue;
+					}
+                                    }
+                                    else
+                                    {
+                                        if (abs(diff0) > st.len2)
+                                        {
+                                            continue;
+                                        }
+					if (st.len2 < n_seqReadLen)
+					    seqRead = seqRead.substr(st.len2, abs(diff0));
+					else
+					    cerr << "Warning: attempted seqRead.substr(st.len2, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len2: " << st.len2 << ", nm: " << nm << endl;
+                                    }
+                                }
+                                else
+                                {
+                                    if (diff1 < 0)
+                                    {
+                                        if (st.len1 + diff0 < 0)
+                                        {
+                                            continue;
+                                        }
+					if (st.len1 + diff0 < n_seqReadLen)
+					    seqRead = seqRead.substr(st.len1 + diff0, abs(diff0));
+					else
+					    cerr << "Warning: attempted seqRead.substr(st.len1 + diff0, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len1: " << st.len1 << ", diff0: " << diff0 << ", nm: " << nm << endl;
+                                    }
+                                    else
+                                    {
+                                        if (abs(diff0) > st.len1)
+                                        {
+                                            continue;
+                                        }
+					if (st.len1 < n_seqReadLen)
+					    seqRead = seqRead.substr(st.len1, abs(diff0));
+					else
+					    cerr << "Warning: attempted seqRead.substr(st.len1, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len1: " << st.len1 << ", nm: " << nm << endl;
+                                    }
+                                }
+                                if (seq1Str.length() > seqRead.length())
+                                {
+                                    seq1Str = seq1Str.substr(0, seqRead.length());
+                                }
+                                if (seq2Str.length() > seqRead.length())
+                                {
+                                    seq2Str = seq2Str.substr(0, seqRead.length());
+                                }
+                                int mismatch1 = countMismatches(seqRead, seq1Str);
+                                int mismatch2 = countMismatches(seqRead, seq2Str);
+                                if (mismatch1 < 0 || mismatch2 < 0)
+                                {
+                                    continue;
+                                }
+
+                                // if (mismatch1 > seq1Str.length() / 2 || mismatch2 > seq2Str.length() / 2) {
+                                //     if (ref.isSeqVirus(st.tid1)) {
+                                //         st.len1 = st.len1 + diff0;
+                                //         st.len2 = st.len2 - diff0;
+                                //         if (!st.reversed) {
+                                //             if (st.strand1 != 0) {
+                                //                 st.pos1 = st.pos1 - diff0;
+                                //             }
+                                //             if (st.strand2 == 0) {
+                                //                 st.pos2 = st.pos2 + diff0;
+                                //             }
+                                //         } else {
+                                //             if (st.strand1 == 0) {
+                                //                 st.pos1 = st.pos1 - diff0;
+                                //             }
+                                //             if (st.strand2 != 0) {
+                                //                 st.pos2 = st.pos2 + diff0;
+                                //             }
+                                //         }
+                                //     } else if (ref.isSeqVirus(st.tid2)) {
+                                //         st.len1 = st.len1 - diff0;
+                                //         st.len2 = st.len2 + diff0;
+                                //         if (!st.reversed) {
+                                //             if (st.strand1 != 0) {
+                                //                 st.pos1 = st.pos1 - diff0;
+                                //             }
+                                //             if (st.strand2 == 0) {
+                                //                 st.pos2 = st.pos2 + diff0;
+                                //             }
+                                //         } else {
+                                //             if (st.strand1 == 0) {
+                                //                 st.pos1 = st.pos1 - diff0;
+                                //             }
+                                //             if (st.strand2 != 0) {
+                                //                 st.pos2 = st.pos2 + diff0;
+                                //             }
+                                //         }
+                                //     }
+                                // } else {
+                                if (mismatch2 > mismatch1)
+                                {
+                                    st.len1 += diff1;
+                                    st.pos1 -= diff1;
+                                    if (st.strand1 != 0)
+                                    {
+                                        if (!st.reversed) {
+                                            st.len1 += diff1;
+                                        } else {
+                                            st.pos1 += diff1;
+                                            st.len1 -= diff1;
+                                        }
+                                    } else {
+                                        if (!st.reversed) {
+                                            st.len1 += diff1;
+                                        } else {
+                                            st.pos1 += diff1;
+                                            st.len1 -= diff1;
+                                        }
+                                    }
+                                    if (st.strand2 == 0)
+                                    {
+                                        if (!st.reversed) {
+                                            st.pos2 += diff1;
+                                            st.len2 -= diff1;
+                                        } else {
+                                            st.len2 -= diff1;
+                                        }
+                                    } else {
+                                        if (!st.reversed) {
+                                            st.len2 -= diff1;
+                                        } else {
+                                            st.pos2 += diff1;
+                                            st.len2 -= diff1;
                                         }
                                     }
                                 }
-                            } else if (diff1 > diff2) {
-                                st.len1 = st.len1 - (posClosest2 - (st.pos2 + st.len2 - 1));
-                                st.len2 = posClosest2 - st.pos2 + 1;
-                                if (diff1 > 5) {
-                                    vector<int> geneIds;
-                                    uint32_t bk = st.pos1 + st.len1 - 1;
-                                    g.isInGene(st.tid1, bk, geneIds);
-                                    for (int i = 0; i < geneIds.size(); i++) {
-                                        vector<uint32_t> boundaries;
-                                        g.getExonBoundary(geneIds[i], 0, boundaries);
-                                        bool found = false;
-                                        for (int j = 0; j < boundaries.size(); j++) {
-                                            if (bk == boundaries[j]) {
-                                                found = true;
-                                                st.geneId1 = geneIds[i];
-                                                break;
-                                            }
+                                else if (mismatch2 < mismatch1)
+                                {
+                                    st.len1 -= diff2;
+                                    st.len2 += diff2;
+                                    if (st.strand1 == 0)
+                                    {
+                                        st.pos1 = st.pos1 + diff2;
+                                    }
+                                    if (st.strand2 != 0)
+                                    {
+                                        st.pos2 = st.pos2 - diff2;
+                                    }
+                                }
+                                else
+                                {
+                                    if (!st.reversed)
+                                    {
+                                        st.len1 = st.len1 + diff0;
+                                        st.len2 = st.len2 - diff0;
+                                        if (st.strand1 != 0)
+                                        {
+                                            st.pos1 = st.pos1 - diff0;
                                         }
-                                        if (found) {
-                                            break;
+                                        if (st.strand2 == 0)
+                                        {
+                                            st.pos2 = st.pos2 + diff0;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        st.len1 = st.len1 + diff0;
+                                        st.len2 = st.len2 - diff0;
+                                        if (st.strand1 == 0)
+                                        {
+                                            st.pos1 = st.pos1 - diff0;
+                                        }
+                                        if (st.strand2 != 0)
+                                        {
+                                            st.pos2 = st.pos2 + diff0;
                                         }
                                     }
                                 }
                             }
                         }
+                        // cout << st.pos1 + st.len1  - 1 << " " << st.pos2 + st.len2 - 1 << endl;
                         sprna.push_back(st);
                         rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
                         added = true;
@@ -5387,7 +5795,9 @@ int Rna::handleTmpTopHatSplits(HitsCounter &hc, Gene &g) {
 
                 if (num1 == 0) {
                     int hits = 0;
-                    hits = hc.getHitsCount(sprna[j].seq.data(), sprna[j].seq.size());
+                    const char *seq = getCStringFromVector(sprna[j].seq);
+                    hits = hc.getHitsCount(seq, sprna[j].seq.size());
+                    delete[] seq;
                     sp1 = sprna[j];
                     num1 = 1;
                     hits1 = hits;
@@ -5403,7 +5813,9 @@ int Rna::handleTmpTopHatSplits(HitsCounter &hc, Gene &g) {
                             ids1.push_back(j);
                         } else {
                             int hits = 0;
-                            hits = hc.getHitsCount(sprna[j].seq.data(), sprna[j].seq.size());
+                            const char *seq = getCStringFromVector(sprna[j].seq);
+                            hits = hc.getHitsCount(seq, sprna[j].seq.size());
+                            delete[] seq;
                             sp2 = sprna[j];
                             num2 = 1;
                             hits2 = hits;
@@ -5799,7 +6211,6 @@ int getTheOtherHalf(vector<int> &neis, TidHandler &th, Gene &g, MyBamWrap &mbw) 
 }
 
 void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th, HitsCounter &hc, myFind2 &mf2) {
-    int countAdd = 0;
     for (const_vertex_iterator iter = rnafg->fg.begin(); iter != rnafg->fg.end(); ++iter) {
         gene_t *gt = g.getGene(iter->first);
         rgpartial.tid = th.getRNAFromRef(gt->tid);
@@ -5810,7 +6221,7 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
         vector<int> neis;
         this->rnafg->getNeighbors(gId1, neis);
         Alignment al;
-        mbw.myFetchWrap(rgpartial, [this, &ref, &g, &th, &hc, &mf2, &neis, &al, &gId1, &gStrand1, &countAdd](const bam1_t *b) {
+        mbw.myFetchWrap(rgpartial, [this, &ref, &g, &th, &hc, &mf2, &neis, &al, &gId1, &gStrand1](const bam1_t *b) {
             if (b->core.flag & (BAM_FUNMAP | BAM_FMUNMAP)) {
                 return;
             }
@@ -5843,7 +6254,9 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
             st.strandC = 0;
             st.spId = isMateAtSame ? 0 : 1;
             st.seq = vector<char>(seq.begin(), seq.end());
-            int count = hc.getHitsCount(st.seq.data(), st.seq.size());
+            const char *seqCStr = getCStringFromVector(st.seq);
+            int count = hc.getHitsCount(seqCStr, st.seq.size());
+            delete[] seqCStr;
             if (count > 10) {
                 return;
             }
@@ -5892,7 +6305,9 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
                             if (mets.size() > 5 || isSmall1 == 1) {
                                 continue;
                             }
-                            matchParials(ref, g, gId2, gId1, st.seq.data(), st.name, st.reversed, mets2, metsM2, mets, metsM, count, mf2);
+                            const char *seqCStr = getCStringFromVector(st.seq);
+                            matchParials(ref, g, gId2, gId1, seqCStr, st.name, st.reversed, mets2, metsM2, mets, metsM, count, mf2);
+                            delete[] seqCStr;
                         }
                     }
                 }
@@ -5927,7 +6342,9 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
                             if (mets2.size() > 5 || isSmall1 == 1) {
                                 continue;
                             }
-                            matchParials(ref, g, gId1, gId2, st.seq.data(), st.name, st.reversed, mets, metsM, mets2, metsM2, count, mf2);
+                            const char *seq = getCStringFromVector(st.seq);
+                            matchParials(ref, g, gId1, gId2, seq, st.name, st.reversed, mets, metsM, mets2, metsM2, count, mf2);
+                            delete[] seq;
                         }
                     }
                 }
@@ -6043,7 +6460,9 @@ int Rna::traversePartialRight(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandle
 
             // cout<<"i="<<i<<endl;
             // cout<<tmpspv[i].name<<endl;
-            int count = hc.getHitsCount(tmpspv[i].seq.data(), tmpspv[i].seq.size());
+            const char *seqCStr = getCStringFromVector(tmpspv[i].seq);
+            int count = hc.getHitsCount(seqCStr, tmpspv[i].seq.size());
+            delete[] seqCStr;
             // cout<<"count="<<count<<endl;
             if (count > 10) {
                 // cout<<"large count"<<endl;
@@ -6118,7 +6537,9 @@ int Rna::traversePartialRight(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandle
                                 }
                                 if (isSmall1 == 1)
                                     continue;
-                                matchParials(ref, g, gId2, x1, tmpspv[i].seq.data(), tmpspv[i].name, tmpspv[i].reversed, mets2, metsM2, mets, metsM, count, mf2);
+                                const char *seqCStr = getCStringFromVector(tmpspv[i].seq);
+                                matchParials(ref, g, gId2, x1, seqCStr, tmpspv[i].name, tmpspv[i].reversed, mets2, metsM2, mets, metsM, count, mf2);
+                                delete[] seqCStr;
                             }
                         }
                     }
@@ -6179,7 +6600,9 @@ int Rna::traversePartialRight(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandle
                                 // cout<<"isSmall1==1"<<endl;
                                 continue;
                             }
-                            matchParials(ref, g, x1, gId2, tmpspv[i].seq.data(), tmpspv[i].name, tmpspv[i].reversed, mets, metsM, mets2, metsM2, count, mf2);
+                            const char *seqCStr = getCStringFromVector(tmpspv[i].seq);
+                            matchParials(ref, g, x1, gId2, seqCStr, tmpspv[i].name, tmpspv[i].reversed, mets, metsM, mets2, metsM2, count, mf2);
+                            delete[] seqCStr;
                         }
                     }
                 }
@@ -6432,6 +6855,10 @@ void Rna::getAllJunctions(Gene &g, unordered_map<string, pair<int, bool>> &junct
         split_rna_t *it = &this->sprna[spId];
         if (!it->seq.empty()) {
             string junction = string(it->seq.begin(), it->seq.end());
+            if (it->len1 < 10 || it->len2 < 10 ||
+            junction.size() < it->len1 + 10 || junction.size() < it->len2 + 10) {
+                continue;
+            }
             if (it->strand1 == 1) {
                 if (it->len2 + 20 > junction.size()) {
                     continue;
@@ -6560,9 +6987,11 @@ int Rna::processUnmapped(Reference &ref, Gene &g, myFind2 &mf2, HitsCounter &hc,
                         if (mets.size() > 5 || isSmall1 == 1) {
                             continue;
                         }
-                        if (matchParials(ref, g, gId2, gId1, st.seq.data(), st.name, st.reversed, mets2, metsM2, mets, metsM, count, mf2)) {
+                        const char *seqCStr = getCStringFromVector(st.seq);
+                        if (matchParials(ref, g, gId2, gId1, seqCStr, st.name, st.reversed, mets2, metsM2, mets, metsM, count, mf2)) {
                             mappedSeqCount++;
                         }
+                        delete[] seqCStr;
                     }
                 }
             }
@@ -6597,9 +7026,11 @@ int Rna::processUnmapped(Reference &ref, Gene &g, myFind2 &mf2, HitsCounter &hc,
                         if (mets2.size() > 5 || isSmall1 == 1) {
                             continue;
                         }
-                        if (matchParials(ref, g, gId1, gId2, st.seq.data(), st.name, st.reversed, mets, metsM, mets2, metsM2, count, mf2)) {
+                        const char *seqCStr = getCStringFromVector(st.seq);
+                        if (matchParials(ref, g, gId1, gId2, seqCStr, st.name, st.reversed, mets, metsM, mets2, metsM2, count, mf2)) {
                             mappedSeqCount++;
                         }
+                        delete[] seqCStr;
                     }
                 }
             }

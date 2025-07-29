@@ -52,10 +52,10 @@ class Rna {
     FusionGraph *rnafg = nullptr;
     vector<encompass_rna_t> enrna; // encompassing
     vector<anchor_rna_t> anrna;    // anchor
-    vector<hardclip_t> hardrna;
+    
     vector<vector<int>> hashVecAnchor;
     // vector<vector<int>> hashVecEncompass;
-    unordered_map<string, vector<int>> hashVecHard;
+    
     // vector<vector<int> > hashVecTopHat;
     int lastSPSize;
 
@@ -67,6 +67,8 @@ class Rna {
     bool isChrPairPossibleFusion(int tid, int mtid, const Reference &ref, const Gene &g);
 
   public:
+    unordered_map<string, vector<int>> hashVecHard;
+    vector<hardclip_t> hardrna;
     typedef FusionGraph::GraphType GraphType;
     typedef GraphType::EdgeList EdgeList;
     typedef GraphType::const_iterator const_vertex_iterator;

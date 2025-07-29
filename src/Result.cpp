@@ -158,6 +158,9 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
     outFile << "Encompassing RNA: " << rt.enrnas.size() << endl;
     for (int i = 0; i < rt.enrnas.size(); i++) {
         encompass_rna_t et = rt.enrnas[i];
+        outFile << "SIze of enSeq1: " << et.seq1.size() << endl;
+        outFile << "SIze of enSeq2: " << et.seq2.size() << endl;
+        
         outFile << et.name << "\t";
         if (et.strand1 == 0)
             outFile << "+\t";
@@ -191,6 +194,11 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
     int start = 0;
     for (int i = 0; i < rt.types.size(); i++) {
         outFile << "Splicing " << i + 1 << " : ";
+
+        cout << "primeOKs[i] ? : " << rt.primeOKs[i] << endl;
+        cout << "5p is : " << rt.nm5p << endl;
+        cout << "3p is : " << rt.nm3p << endl;
+
         if (rt.primeOKs[i] == 1) {
             outFile << rt.nm5p << ">>" << rt.nm3p;
         } else {
@@ -204,20 +212,69 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
         outFile << rt.numOfsps[i] << endl;
 
         for (int j = start; j < start + rt.numOfsps[i]; j++) {
+
+            outFile << "reversed: "<< rt.sprnas[j].reversed << endl;
+            outFile << "Spt_rnas_t pos1: " << rt.sprnas[j].pos1 << "Len1: " << rt.sprnas[j].len1 << "bkLeft1: "<< rt.sprnas[j].bkLeft1 << "geneID1: " << rt.sprnas[j].geneId1 << endl;
+            outFile << "Spt_rnas_t pos2: " << rt.sprnas[j].pos2 << "Len2: " << rt.sprnas[j].len2 << "bkLeft2: "<< rt.sprnas[j].bkLeft2 << "geneID2: " << rt.sprnas[j].geneId2 << endl;
+            cout << "primeOKs[i] ? : " << rt.primeOKs[i] << endl;
+            cout << "5p is : " << rt.nm5p << endl;
+            cout << "3p is : " << rt.nm3p << endl;
+            cout << "TID1: " << rt.sprnas[j].tid1 << endl;
+            cout << "TID2: " << rt.sprnas[j].tid2 << endl;
+
             outFile << rt.sprnas[j].name << "\t";
             if (rt.sprnas[j].strand1 == 0)
                 outFile << "+\t";
             else
                 outFile << "-\t";
-            outFile << ref.getSeqOriginalName(rt.sprnas[j].tid1) << "\t" << rt.sprnas[j].pos1 << "\t" << rt.sprnas[j].len1 << "\t";
-            //  {
-            //      outFile<<"*"<<" "<<"*"<<" "<<"*"<<" "<<"*"<<" ";
-            //  }
+
+            //Left side: tid1 / strand1
+            outFile << ref.getSeqOriginalName(rt.sprnas[j].tid1) << "\t";
+
+            if(rt.sprnas[j].reversed == 0)
+            {
+                if(rt.sprnas[j].strand1 == 0){
+                outFile << (rt.sprnas[j].pos1 + rt.sprnas[j].len1 - 1) << "\t"  << rt.sprnas[j].len1 << "\t";
+                }
+                else{
+                    outFile << rt.sprnas[j].pos1  << "\t"  << rt.sprnas[j].len1 << "\t";
+                }
+            }
+            else{
+                if(rt.sprnas[j].strand1 == 0){
+                    outFile <<rt.sprnas[j].pos1  << "\t"  << rt.sprnas[j].len1 << "\t";
+                }
+                else{
+                    outFile << (rt.sprnas[j].pos1 + rt.sprnas[j].len1 - 1)  << "\t"  << rt.sprnas[j].len1 << "\t";
+                }
+            }
+
+            
+            // // Right side: tid2 / strand2
             if (rt.sprnas[j].strand2 == 0)
                 outFile << "+\t";
             else
                 outFile << "-\t";
-            outFile << ref.getSeqOriginalName(rt.sprnas[j].tid2) << "\t" << rt.sprnas[j].pos2 << "\t" << rt.sprnas[j].len2 << "\t";
+            outFile << ref.getSeqOriginalName(rt.sprnas[j].tid2) << "\t";
+
+            if(rt.sprnas[j].reversed == 0)
+            {
+                if(rt.sprnas[j].strand2 == 0){
+                    outFile << rt.sprnas[j].pos2 << "\t" << rt.sprnas[j].len2 << "\t";
+                }
+                else{
+                    outFile << (rt.sprnas[j].pos2 + rt.sprnas[j].len2 - 1) << "\t" << rt.sprnas[j].len2 << "\t";
+                }
+            }
+            else{
+                if(rt.sprnas[j].strand2 == 0){
+                    outFile << (rt.sprnas[j].pos2 + rt.sprnas[j].len2 - 1) << "\t" << rt.sprnas[j].len2 << "\t";
+                }
+                else{
+                    outFile << rt.sprnas[j].pos2 << "\t" << rt.sprnas[j].len2 << "\t";
+                }
+            }
+
             for (int x = 0; x < rt.sprnas[j].seq.size(); x++) {
                 outFile << rt.sprnas[j].seq[x];
             }
@@ -860,6 +917,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
         string name;
         int exonNum;
 
+        cerr << "Before 1st getBest Exon" << endl;
         g.getBestExon(st.geneId1, p1, st.bkLeft1, is5p, tid, strand, pos1, pos2, name, exonNum);
 
         int is5p_2;
@@ -870,6 +928,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
         string name_2;
         int exonNum_2;
 
+        cerr << "Before 2nd getBest Exon" << endl;
         g.getBestExon(st.geneId2, p2, st.bkLeft2, is5p_2, tid_2, strand_2, pos1_2, pos2_2, name_2, exonNum_2);
 
         if (is5p == 1 && is5p_2 == 0) {
@@ -990,7 +1049,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
         index++;
     }
-
+    cerr << "Before BK non canonical: " << endl;
     /////// for bk non canonical
     // index=0;
     for (int i = 0; i < results.size(); i++) {
@@ -1092,7 +1151,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
                 bkvec[index].gStrand2 = 0;
             } else {
                 bkvec[index].exonbk2 = 0;
-                bkvec[index].seqLeft1 = 1;
+                bkvec[index].seqLeft1 = 1; // abisha debugging
                 bkvec[index].gStrand2 = 1;
             }
             bkvec[index].splitrna = st;
@@ -1114,7 +1173,9 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
     // cout<<"call bk"<<endl;
     BreakPoint bkobj;
+    cerr << "Before getBreakPoints: " << endl;
     bkobj.getBreakPoints(bkvec, bkfile, bkfileBEDPE, bkfileVCF, refname, ref, sample_name);
+    cerr << "After getBreakPoints: " << endl;
     // cout<<"after bk"<<endl;
 
     return 0;

@@ -740,7 +740,7 @@ int Alignment::runBWTSplitMap(Gene &g, int geneId, bam1_t *b, int anchorStrand, 
         int k, l, mapped, mismatch, insertion, deletion;
         BWT *bwt = g.getBWT(geneId);
         isMap = bwt->inExactSplitMap(k, l, seqRead, seqLen, mapped, 10, mmdd, mismatch, insertion, deletion, mf2);
-
+        cout << "Debug bam 1: mapped: "<< mapped << endl; 
         // cout<<k<<" "<<l<<endl;
 
         if (seqLen - mapped < 10)
@@ -815,7 +815,7 @@ int Alignment::runBWTSplitMap(Gene &g, int geneId, bam1_t *b, int anchorStrand, 
         int k, l, mapped, mismatch, insertion, deletion;
         BWT *rbwt = g.getRBWT(geneId);
         isMap = rbwt->inExactSplitMap(k, l, seqRead, seqLen, mapped, 10, mmdd, mismatch, insertion, deletion, mf2);
-
+        cout << "Debug bam 2: mapped: "<< mapped << endl; 
         if (seqLen - mapped < 10)
             isLeftSmall = 1;
 
@@ -1081,7 +1081,7 @@ int Alignment::runBWTSplitMap(Gene &g, int geneId, const vector<char> &seq, int 
         int k, l, mapped, mismatch, insertion, deletion;
         BWT *bwt = g.getBWT(geneId);
         isMap = bwt->inExactSplitMap(k, l, seqRead, seqLen, mapped, 10, mmdd, mismatch, insertion, deletion, mf2);
-
+        cout << "Debug seq 1: mapped: "<< mapped << endl;
         // cout<<k<<" "<<l<<endl;
 
         if (seqLen - mapped < 10)
@@ -1157,7 +1157,7 @@ int Alignment::runBWTSplitMap(Gene &g, int geneId, const vector<char> &seq, int 
         int k, l, mapped, mismatch, insertion, deletion;
         BWT *rbwt = g.getRBWT(geneId);
         isMap = rbwt->inExactSplitMap(k, l, seqRead, seqLen, mapped, 10, mmdd, mismatch, insertion, deletion, mf2);
-
+        cout << "Debug seq 2: mapped: "<< mapped << endl;
         if (seqLen - mapped < 10)
             isLeftSmall = 1;
 
@@ -1258,7 +1258,7 @@ int Alignment::runBWTSplitMap2(Gene &g, int geneId, const vector<char> &seq, int
         int k = 0, l = 0, mapped = 0, mismatch = 0, insertion = 0, deletion = 0;
         BWT *bwt = g.getBWT(geneId);
         isMap = bwt->inExactSplitMap(k, l, seqRead, seqLen, mapped, 10, mmdd, mismatch, insertion, deletion, mf2);
-
+        cout << "Debug2 seq 1: mapped: "<< mapped << endl;
         if (seqLen - mapped < 10)
             isLeftSmall = 1;
 
@@ -1329,7 +1329,7 @@ int Alignment::runBWTSplitMap2(Gene &g, int geneId, const vector<char> &seq, int
         int k, l, mapped, mismatch, insertion, deletion;
         BWT *rbwt = g.getRBWT(geneId);
         isMap = rbwt->inExactSplitMap(k, l, seqRead, seqLen, mapped, 10, mmdd, mismatch, insertion, deletion, mf2);
-
+        cout << "Debug2 seq 2: mapped: "<< mapped << endl;
         if (seqLen - mapped < 10)
             isLeftSmall = 1;
 

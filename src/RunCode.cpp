@@ -984,13 +984,20 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     t = clock();
     cout << "Printing results..." << endl;
     result.getTiers(opt.rt);
+    cout << "Breakpointfor getTiers"<< endl;
     result.printSummary(opt.fileSum, g, opt.isRunningNormal, opt.largeNum);
+    cout << "Breakpointforprintsummary"<< endl;
     result.printAllResult(opt.fileRead, ref, opt.isRunningNormal);
+    cout << "Breakpointfor printAllResult"<< endl;
     result.printExons(opt.fileEx, g, ref, opt.isRunningNormal, opt.bkFile, opt.bkFileBEDPE, opt.bkFileVCF, argv[opStart], opt.sample_name);
+    cout << "Breakpointfor printExons"<< endl;
     // Dec 7, 2015
     result.getAllJunctionsStep4(g, ref);
+    cout << "Breakpoint1";
     result.getAllJunctionsStep5(g, ref);
+    cout << "Breakpoint2";
     result.getAllJunctionsStep6(opt.fileSmcRna, g, ref);
+    cout << "Breakpoint3";
     cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
 
     cout << "Done. Please refer to summary in " << opt.fileSum << "." << endl;

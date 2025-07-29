@@ -148,6 +148,15 @@ void Rna::processEnReads(TidHandler &th, Gene &g, unordered_map<string, pair<bam
             }
             continue;
         }
+
+        if(b1->core.l_qseq == 0 || b2->core.l_qseq == 0 || 
+            (b1->core.flag & BAM_FUNMAP) || (b2->core.flag & BAM_FUNMAP))
+        {
+            bam_destroy1(b1);
+            bam_destroy1(b2);
+            continue;
+        }
+
         int tid1 = th.getRefFromRNA(b1->core.tid), tid2 = th.getRefFromRNA(b2->core.tid);
         int pos1 = b1->core.pos + 1, pos2 = b2->core.pos + 1;
         int len1 = b1->core.l_qseq, len2 = b2->core.l_qseq;
@@ -3595,6 +3604,7 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2>
     for (int i = 0; i < mets.size(); i++) {
         int strand1 = mets[i].strand;
         int len1 = mets[i].b - mets[i].a + 1;
+        cout << "Length of1: " << mets[i].tid << " " << len1 << " " << mets[i].b << " " << mets[i].a << " " << endl;
 
         for (int j = 0; j < mets2.size(); j++) {
 
@@ -3608,6 +3618,7 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2>
                 continue;
 
             int len2 = mets2[j].b - mets2[j].a + 1;
+            cout << "Length of2: " << mets2[j].tid << " " << len2 << " " << mets2[j].b << " " << mets2[j].a << " " << endl;
 
             int small;
 
@@ -3804,18 +3815,19 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2>
 bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string &seq, const string &seqName, bool reversed, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, vector<map_emt_t2> &mets2, vector<map_emt_t2> &metsM2,
                       int count, myFind2 &mf2) {
 
-    // cout<<"in match for partial good"<<endl;
-
+    cout << "Mets size: " << mets.size()<< " "<< "Mets2 size: " << mets2.size()<< endl;
+    cout << "seqName: " << seqName << endl;
     bool added = false;
     for (int i = 0; i < mets.size(); i++) {
         int strand1 = mets[i].strand;
         int len1 = mets[i].b - mets[i].a + 1;
-
+        
         for (int j = 0; j < mets2.size(); j++) {
 
-            if (mets[i].miss + mets[i].insert + mets2[j].miss + mets2[j].insert > 2)
+            if (mets[i].miss + mets[i].insert + mets2[j].miss + mets2[j].insert > 2){
+                cout << "Miss and insert higher seqName: " << seqName << endl;
                 continue;
-
+            }
             // cout<<mets[i].miss+mets[i].insert+mets2[j].miss+mets2[j].insert<<endl;
 
             // cout<<"mets"<<i<<":"<<mets[i].pos<<" "<<mets[i].insert<<" "<<mets[i].deletion<<endl;
@@ -3824,18 +3836,23 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
             int strand2 = mets2[j].strand;
             if (isDirectionGood(g.getStrand(gid1), g.getStrand(gid2), strand1, strand2) == 0) {
                 // cout<<"direct not good"<<endl;
+                cout << "Skipping direction not good seqName: " << seqName << endl;
                 continue;
             }
 
             int len2 = mets2[j].b - mets2[j].a + 1;
-
+           
+            cout << mets[i].tid <<" mets[i]: a=" <<mets[i].a << ", b=" << mets[i].b << ", len1=" << len1 << endl;
+            cout << mets2[i].tid << " mets2[j]: a=" << mets2[j].a << ", b=" << mets2[j].b << ", len2=" << len2 << endl;
             int small;
-
+            cout << "Seq size: " << seq.size()<< endl;
             int small1 = seq.size() - len1;
             int small2 = seq.size() - len2;
 
             int error1 = mets[i].miss + mets[i].insert;
             int error2 = mets2[j].miss + mets2[j].insert;
+
+            cout << "Error1: " << error1 << "Error2: " << error2 << endl;
 
             if (small1 < small2) {
                 if (error1 == 0)
@@ -3862,6 +3879,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
             // cout<<"small"<<small<<endl;
             if (small < 10) {
                 // small is small!
+                cout << "Skipping small is small seq: " << seqName << endl;
                 continue;
             }
 
@@ -3886,7 +3904,9 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
 
             if (strand1 == 0) {
                 if (len1 + len2 >= seq.size()) {
+                    cout << "[Debug 1] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
                     st.len1 = seq.size() - len1;
+                    cout << "[After Assignment 1] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                     st.geneId1 = gid2;
                     st.geneId2 = gid1;
 
@@ -3915,7 +3935,9 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                     st.bkLeft1 = 1;
                 }
 
+                cout << "[Debug 2] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
                 st.len2 = len1;
+                cout << "[After Assignment 2] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                 st.pos2 = mets[i].pos;
                 st.strand2 = strand1;
                 st.tid2 = mets[i].tid;
@@ -3931,7 +3953,9 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
 
                     st.geneId1 = gid1;
                     st.geneId2 = gid2;
+                    cout << "[Debug 3] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
                     st.len1 = seq.size() - len2;
+                    cout << "[After Assignment 3] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                     st.bkLeft1 = 0;
                     isReport = 1;
                 } else // if(len1+len2>=b->core.l_qseq-5)
@@ -3944,19 +3968,23 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                 }
                 // st.pos1=mets[i].pos+(len1+len2-srt.seq.size());//not accurate
                 st.pos1 = mets[i].pos;
+                cout << "[After Pos Assignment 1] st.pos1 = " << st.pos1 << ", st.pos2 = " << (st.pos2 ? st.pos2 : 0 )<< endl;
                 st.strand1 = strand1;
                 st.tid1 = mets[i].tid;
 
                 if (strand2 == 0) {
                     st.bkLeft2 = 0;
                     st.pos2 = mets2[j].pos;
+                    cout << "[After Pos Assignment 2] st.pos1 = " << st.pos1 << ", st.pos2 = " << (st.pos2 ? st.pos2 : 0) << endl;
                 } else {
                     st.bkLeft2 = 1;
                     st.pos2 = mets2[j].pos;
+                    cout << "[After Pos Assignment 2] st.pos1 = " << st.pos1 << ", st.pos2 = " << (st.pos2 ? st.pos2 : 0) << endl;
                 }
 
+                cout << "[Debug 4] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
                 st.len2 = len2;
-
+                cout << "[After Assignment 4] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                 st.strand2 = strand2;
                 st.tid2 = mets2[j].tid;
 
@@ -3979,7 +4007,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                 st.reversed = reversed;
 
                 if (homoTest2(g, st, mf2) != 1) {
-                    // cout<<"passed homo2"<<endl;
+                    cout<<"passed homo2"<<endl;
                     LowComplexFinder lcc;
                     Artifact1 af1;
 
@@ -4006,6 +4034,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                         int posOriginal1, posOriginal2;
                         if (st.bkLeft1 == 0) {
                             posOriginal1 = st.pos1 + st.len1 - 1;
+                            cout << "[After posOriginal Assignment 1] posOriginal1  = " << posOriginal1 << endl;
                         } else {
                             posOriginal1 = st.pos1;
                         }
@@ -4013,17 +4042,24 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                             posOriginal2 = st.pos2 + st.len2 - 1;
                         } else {
                             posOriginal2 = st.pos2;
+                            cout << "[After posOriginal Assignment 2] posOriginal2 = " << posOriginal2 << endl;
                         }
                         for (int i = 0; i < boundaries1.size(); i++) {
+                            cout << "Boundaries1: " << boundaries1[i] << endl;
                             if (abs((int)boundaries1[i] - (int)posOriginal1) < abs(diff1)) {
                                 diff1 = (int)boundaries1[i] - (int)posOriginal1;
+                                st.difference1 = diff1;
                                 posClosest1 = boundaries1[i];
+                                cout << "[diff1 assignment 1] diff1= " << diff1 << "posClosest1 = " << posClosest1 << endl;
                             }
                         }
                         for (int i = 0; i < boundaries2.size(); i++) {
+                            cout << "Boundaries2: " << boundaries2[i] << endl;
                             if (abs((int)boundaries2[i] - (int)posOriginal2) < abs(diff2)) {
                                 diff2 = (int)boundaries2[i] - (int)posOriginal2;
+                                st.difference2 = diff2;
                                 posClosest2 = boundaries2[i];
+                                cout << "[diff2 assignment 1] diff2= " << diff2 << "posClosest2 = " << posClosest2 << endl;
                             }
                         }
                         int diff = min(abs(diff1), abs(diff2));
@@ -4036,166 +4072,181 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                         const char *seqWhole1 = ref.getSeq(st.tid1), *seqWhole2 = ref.getSeq(st.tid2);
                         if (abs(diff1) == abs(diff2))
                         {
-                            continue;
-                            char *seq1 = new char[diff + 1];
-                            int seq1PosStart, seq1PosEnd;
-                            if (diff1 > 0)
-                            {
-                                if (st.bkLeft1 == 1)
-                                {
-                                    seq1PosStart = posClosest1 - diff1;
-                                    seq1PosEnd = posClosest1 - 1;
-                                }
-                                else
-                                {
-                                    seq1PosStart = posClosest1 - diff1 + 1;
-                                    seq1PosEnd = posClosest1;
-                                }
-                            }
-                            else
-                            {
-                                seq1PosStart = posClosest1;
-                                seq1PosEnd = posClosest1 - diff1 - 1;
-                            }
-                            seq1PosStart -= 1;
-                            seq1PosEnd -= 1;
-                            char *seq2 = new char[diff + 1];
-                            int seq2PosStart, seq2PosEnd;
-                            if (diff2 > 0)
-                            {
-                                if (st.bkLeft1 == 0)
-                                {
-                                    seq2PosStart = posClosest2 - diff2;
-                                    seq2PosEnd = posClosest2 - 1;
-                                }
-                                else
-                                {
-                                    seq2PosStart = posClosest2 - diff2 + 1;
-                                    seq2PosEnd = posClosest2;
-                                }
-                            }
-                            else
-                            {
-                                seq2PosStart = posClosest2;
-                                seq2PosEnd = posClosest2 - diff2 - 1;
-                            }
-                            seq2PosStart -= 1;
-                            seq2PosEnd -= 1;
-                            copy(seqWhole1 + seq1PosStart, seqWhole1 + seq1PosEnd + 1, seq1);
-                            seq1[diff] = '\0';
-                            copy(seqWhole2 + seq2PosStart, seqWhole2 + seq2PosEnd + 1, seq2);
-                            seq2[diff] = '\0';
-                            string seq1Str(seq1);
-                            string seq2Str(seq2);
-                            delete[] seq1;
-                            delete[] seq2;
-                            if (st.strand1 == 1)
-                            {
-                                getRevCompSeq(seq1Str);
-                            }
-                            if (st.strand2 == 1)
-                            {
-                                getRevCompSeq(seq2Str);
-                            }
-                            if (seq1Str == seq2Str)
-                            {
-                                if (st.reversed)
-                                {
-                                    if (st.strand1 != 0)
-                                    {
-                                        st.len1 = posClosest1 - st.pos1 + 1;
-                                    }
-                                    else
-                                    {
-                                        st.pos1 = posClosest1;
-                                        st.len1 = st.len1 - diff1;
-                                    }
-                                    if (st.strand2 == 0)
-                                    {
-                                        st.len2 = posClosest2 - st.pos2 + 1;
-                                    }
-                                    else
-                                    {
-                                        st.pos2 = posClosest2;
-                                        st.len2 = st.len2 - diff2;
-                                    }
-                                }
-                                else
-                                {
-                                    if (st.strand1 == 0)
-                                    {
-                                        st.len1 = posClosest1 - st.pos1 + 1;
-                                    }
-                                    else
-                                    {
-                                        st.pos1 = posClosest1;
-                                        st.len1 = st.len1 - diff1;
-                                    }
-                                    if (st.strand2 != 0)
-                                    {
-                                        st.len2 = posClosest2 - st.pos2 + 1;
-                                    }
-                                    else
-                                    {
-                                        st.pos2 = posClosest2;
-                                        st.len2 = st.len2 - diff2;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                string seqRead(st.seq.begin(), st.seq.end());
-                                if (st.reversed)
-                                {
-                                    if (diff2 < 0)
-                                    {
-                                        seqRead = seqRead.substr(st.len2 + diff2, abs(diff2));
-                                    }
-                                    else
-                                    {
-                                        seqRead = seqRead.substr(st.len2, abs(diff2));
-                                    }
-                                }
-                                else
-                                {
-                                    if (diff1 < 0)
-                                    {
-                                        seqRead = seqRead.substr(st.len1 + diff1, abs(diff1));
-                                    }
-                                    else
-                                    {
-                                        seqRead = seqRead.substr(st.len1, abs(diff1));
-                                    }
-                                }
-                                int mismatch1 = countMismatches(seqRead, seq1Str);
-                                int mismatch2 = countMismatches(seqRead, seq2Str);
+                            sprna.push_back(st);
+                            rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                            added = true;
+                            return added;
 
-                                if (mismatch2 > mismatch1)
-                                {
-                                    st.len1 = st.len1 + diff1;
-                                    st.len2 = st.len2 - diff1;
-                                    if (st.strand1 != 0)
-                                    {
-                                        st.pos1 = st.pos1 - diff1;
-                                    }
-                                    if (st.strand2 == 0)
-                                    {
-                                        st.pos2 = st.pos2 + diff1;
-                                    }
-                                }
-                                else
-                                {
-                                    st.len1 = st.len1 - diff2;
-                                    st.len2 = st.len2 + diff2;
-                                    if (st.strand1 == 0)
-                                    {
-                                        st.pos1 = st.pos1 + diff2;
-                                    }
-                                    if (st.strand2 != 0)
-                                    {
-                                        st.pos2 = st.pos2 - diff2;
-                                    }
-                                }
+                            // continue;
+                            // char *seq1 = new char[diff + 1];
+                            // int seq1PosStart, seq1PosEnd;
+                            // if (diff1 > 0)
+                            // {
+                            //     if (st.bkLeft1 == 1)
+                            //     {
+                            //         seq1PosStart = posClosest1 - diff1;
+                            //         seq1PosEnd = posClosest1 - 1;
+                            //     }
+                            //     else
+                            //     {
+                            //         seq1PosStart = posClosest1 - diff1 + 1;
+                            //         seq1PosEnd = posClosest1;
+                            //     }
+                            // }
+                            // else
+                            // {
+                            //     seq1PosStart = posClosest1;
+                            //     seq1PosEnd = posClosest1 - diff1 - 1;
+                            // }
+                            // seq1PosStart -= 1;
+                            // seq1PosEnd -= 1;
+                            // char *seq2 = new char[diff + 1];
+                            // int seq2PosStart, seq2PosEnd;
+                            // if (diff2 > 0)
+                            // {
+                            //     if (st.bkLeft1 == 0)
+                            //     {
+                            //         seq2PosStart = posClosest2 - diff2;
+                            //         seq2PosEnd = posClosest2 - 1;
+                            //     }
+                            //     else
+                            //     {
+                            //         seq2PosStart = posClosest2 - diff2 + 1;
+                            //         seq2PosEnd = posClosest2;
+                            //     }
+                            // }
+                            // else
+                            // {
+                            //     seq2PosStart = posClosest2;
+                            //     seq2PosEnd = posClosest2 - diff2 - 1;
+                            // }
+                            // seq2PosStart -= 1;
+                            // seq2PosEnd -= 1;
+                            // copy(seqWhole1 + seq1PosStart, seqWhole1 + seq1PosEnd + 1, seq1);
+                            // seq1[diff] = '\0';
+                            // copy(seqWhole2 + seq2PosStart, seqWhole2 + seq2PosEnd + 1, seq2);
+                            // seq2[diff] = '\0';
+                            // string seq1Str(seq1);
+                            // string seq2Str(seq2);
+                            // delete[] seq1;
+                            // delete[] seq2;
+                            // if (st.strand1 == 1)
+                            // {
+                            //     getRevCompSeq(seq1Str);
+                            // }
+                            // if (st.strand2 == 1)
+                            // {
+                            //     getRevCompSeq(seq2Str);
+                            // }
+                            // if (seq1Str == seq2Str)
+                            // {
+                            //     if (st.reversed)
+                            //     {
+                            //         if (st.strand1 != 0)
+                            //         {
+                            //             st.len1 = posClosest1 - st.pos1 + 1;
+                            //             cout << "[After Assignment 5] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //         }
+                            //         else
+                            //         {
+                            //             st.pos1 = posClosest1;
+                            //             st.len1 = st.len1 - diff1;
+                            //             cout << "[After Assignment 6] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //         }
+                            //         if (st.strand2 == 0)
+                            //         {
+                            //             st.len2 = posClosest2 - st.pos2 + 1;
+                            //             cout << "[After Assignment 7] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //         }
+                            //         else
+                            //         {
+                            //             st.pos2 = posClosest2;
+                            //             st.len2 = st.len2 - diff2;
+                            //              cout << "[After Assignment 8] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //         }
+                            //     }
+                            //     else
+                            //     {
+                            //         if (st.strand1 == 0)
+                            //         {
+                            //             st.len1 = posClosest1 - st.pos1 + 1;
+                            //              cout << "[After Assignment 9] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //         }
+                            //         else
+                            //         {
+                            //             st.pos1 = posClosest1;
+                            //             st.len1 = st.len1 - diff1;
+                            //              cout << "[After Assignment 10] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //         }
+                            //         if (st.strand2 != 0)
+                            //         {
+                            //             st.len2 = posClosest2 - st.pos2 + 1;
+                            //              cout << "[After Assignment 11] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //         }
+                            //         else
+                            //         {
+                            //             st.pos2 = posClosest2;
+                            //             st.len2 = st.len2 - diff2;
+                            //              cout << "[After Assignment 12] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //         }
+                            //     }
+                            // }
+                            // else
+                            // {
+                            //     string seqRead(st.seq.begin(), st.seq.end());
+                            //     if (st.reversed)
+                            //     {
+                            //         if (diff2 < 0)
+                            //         {
+                            //             seqRead = seqRead.substr(st.len2 + diff2, abs(diff2));
+                            //         }
+                            //         else
+                            //         {
+                            //             seqRead = seqRead.substr(st.len2, abs(diff2));
+                            //         }
+                            //     }
+                            //     else
+                            //     {
+                            //         if (diff1 < 0)
+                            //         {
+                            //             seqRead = seqRead.substr(st.len1 + diff1, abs(diff1));
+                            //         }
+                            //         else
+                            //         {
+                            //             seqRead = seqRead.substr(st.len1, abs(diff1));
+                            //         }
+                            //     }
+                            //     int mismatch1 = countMismatches(seqRead, seq1Str);
+                            //     int mismatch2 = countMismatches(seqRead, seq2Str);
+
+                            //     if (mismatch2 > mismatch1)
+                            //     {
+                            //         st.len1 = st.len1 + diff1;
+                            //         st.len2 = st.len2 - diff1;
+                            //         if (st.strand1 != 0)
+                            //         {
+                            //             st.pos1 = st.pos1 - diff1;
+                            //         }
+                            //         if (st.strand2 == 0)
+                            //         {
+                            //             st.pos2 = st.pos2 + diff1;
+                            //         }
+                            //          cout << "[After Assignment 13] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //     }
+                            //     else
+                            //     {
+                            //         st.len1 = st.len1 - diff2;
+                            //         st.len2 = st.len2 + diff2;
+                            //         if (st.strand1 == 0)
+                            //         {
+                            //             st.pos1 = st.pos1 + diff2;
+                            //         }
+                            //         if (st.strand2 != 0)
+                            //         {
+                            //             st.pos2 = st.pos2 - diff2;
+                            //         }
+                            //          cout << "[After Assignment 14] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                            //     }
 
                                 // if (mismatch2 > mismatch1) {
                                 //     st.len1 = st.len1 + diff;
@@ -4204,7 +4255,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                 //     st.len1 = st.len1 - diff;
                                 //     st.len2 = st.len2 + diff;
                                 // }
-                            }
+                            //}
                         }
                         else
                         {
@@ -4291,6 +4342,9 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                             string seq2Str(seq2);
                             delete[] seq1;
                             delete[] seq2;
+
+                            cout << "(1)Seq1 Str: " << seq1Str << endl;
+                            cout << "(1)Seq2 Str: " << seq2Str << endl;
                             if (st.strand1 == 1)
                             {
                                 getRevCompSeq(seq1Str);
@@ -4299,108 +4353,195 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                             {
                                 getRevCompSeq(seq2Str);
                             }
+
+                            cout << "(2)Seq1 Str: " << seq1Str << endl;
+                            cout << "(2)Seq2 Str: " << seq2Str << endl;
+                            /*changing += -= diff0 tp diff1 to adjust st1 to exonic position*/
                             if (seq1Str == seq2Str)
                             {
+                                int adjustment = (diff1 <= 0  || abs(diff1) >= st.seq.size()) ? diff0 : diff1;
                                 if (!st.reversed)
                                 {
                                     if (st.strand1 == 0)
                                     {
-                                        st.len1 += diff0;
+                                        st.len1 += adjustment;
+                                         cout << "[After Assignment 15] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     else
                                     {
-                                        st.pos1 -= diff0;
-                                        st.len1 -= diff0;
+                                        st.pos1 -= adjustment;
+                                        st.len1 += adjustment;//was -= abisha
+                                         cout << "[After Assignment 16] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     if (st.strand2 == 0)
                                     {
-                                        st.pos2 += diff0;
-                                        st.len2 -= diff0;
+                                        st.pos2 += adjustment;
+                                        st.len2 -= adjustment;
+                                         cout << "[After Assignment 17] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     else
                                     {
-                                        st.len2 -= diff0;
+                                        st.len2 -= adjustment;
+                                         cout << "[After Assignment 18] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                 }
                                 else
                                 {
                                     if (st.strand1 != 0)
                                     {
-                                        st.len1 += diff0;
+                                        st.len1 += adjustment;
+                                         cout << "[After Assignment 19] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     else
                                     {
-                                        st.pos1 -= diff0;
-                                        st.len1 += diff0;
+                                        st.pos1 -= adjustment;
+                                        st.len1 += adjustment;
+                                         cout << "[After Assignment 20] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     if (st.strand2 != 0)
                                     {
-                                        st.pos2 += diff0;
-                                        st.len2 -= diff0;
+                                        st.pos2 += adjustment;
+                                        st.len2 -= adjustment;
+                                         cout << "[After Assignment 21] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     else
                                     {
-                                        st.len2 -= diff0;
+                                        st.len2 -= adjustment;
+                                         cout << "[After Assignment 22] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                 }
                             }
                             else
                             {
                                 string seqRead(st.seq.begin(), st.seq.end());
-				int n_seqReadLen = seqRead.length();
+				                int n_seqReadLen = seqRead.length();
+
+                                // lambda to safely extract substring into seqRead
+                                auto safe_substr = [&](int start, int length) -> bool {
+                                if (start < 0 || start >= n_seqReadLen) {
+                                    cerr << "Warning: Invalid start position for substr: " << start << ", seqLen: " << n_seqReadLen << ", nm: " << nm << endl;
+                                    return false;
+                                }
+                                if (start + length > n_seqReadLen) {
+                                    cerr << "Warning: start + length exceeds sequence size. start: " << start << ", length: " << length << ", seqLen: " << n_seqReadLen << ", nm: " << nm << endl;
+                                    return false;
+                                }
+                                seqRead = seqRead.substr(start, length);
+                                return true;
+                                };
+
                                 if (st.reversed)
                                 {
+                                //     if (diff2 < 0)
+                                //     {
+                                //         if (st.len2 + diff0 < 0)
+                                //         {
+                                //             continue;
+                                //         }
+					            //         if(st.len2 + diff0 < n_seqReadLen)
+					            //         {
+					            //             seqRead = seqRead.substr(st.len2 + diff0, abs(diff0));
+					            //         }
+					            //         else
+					            //         {
+					            //             cerr << "Warning: attempted seqRead.substr(st.len2 + diff0, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len2: " << st.len2 << ", diff0: " << diff0 << ", nm: " << nm << endl;
+					            //             continue;
+					            //         }
+                                //     }
+                                //     else
+                                //     {
+                                //         if (abs(diff0) > st.len2)
+                                //         {
+                                //             continue;
+                                //         }
+					            //         if (st.len2 < n_seqReadLen)
+					            //             seqRead = seqRead.substr(st.len2, abs(diff0));
+					            //         else
+					            //             cerr << "Warning: attempted seqRead.substr(st.len2, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len2: " << st.len2 << ", nm: " << nm << endl;
+                                //     }
+                                // }
+                                // else
+                                // {
+                                //     if (diff1 < 0)
+                                //     {
+                                //         if (st.len1 + diff0 < 0)
+                                //         {
+                                //             continue;
+                                //         }
+					            //         if (st.len1 + diff0 < n_seqReadLen)
+					            //             seqRead = seqRead.substr(st.len1 + diff0, abs(diff0));
+					            //         else
+					            //         cerr << "Warning: attempted seqRead.substr(st.len1 + diff0, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len1: " << st.len1 << ", diff0: " << diff0 << ", nm: " << nm << endl;
+                                //     }
+                                //     else
+                                //     {
+                                //         if (abs(diff0) > st.len1)
+                                //         {
+                                //             continue;
+                                //         }
+					            //         if (st.len1 < n_seqReadLen)
+					            //             seqRead = seqRead.substr(st.len1, abs(diff0));
+					            //         else
+					            //             cerr << "Warning: attempted seqRead.substr(st.len1, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len1: " << st.len1 << ", nm: " << nm << endl;
+                                //     }
                                     if (diff2 < 0)
                                     {
-                                        if (st.len2 + diff0 < 0)
-                                        {
-                                            continue;
+                                        int start = st.len2 + diff0;
+                                        int length = abs(diff0);
+
+                                        if (start < 0) continue;
+
+                                        if(!safe_substr(start,length))                               
+                                        { sprna.push_back(st);
+                                            rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                                            added = true;
+                                            return added;
                                         }
-					if(st.len2 + diff0 < n_seqReadLen)
-					{
-					    seqRead = seqRead.substr(st.len2 + diff0, abs(diff0));
-					}
-					else
-					{
-					  cerr << "Warning: attempted seqRead.substr(st.len2 + diff0, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len2: " << st.len2 << ", diff0: " << diff0 << ", nm: " << nm << endl;
-					    continue;
-					}
                                     }
                                     else
                                     {
-                                        if (abs(diff0) > st.len2)
-                                        {
-                                            continue;
+                                        int start = st.len2;
+                                        int length = abs(diff0);
+
+                                        if(length > start) continue;
+
+                                        if(!safe_substr(start,length))                               
+                                        { sprna.push_back(st);
+                                            rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                                            added = true;
+                                            return added;
                                         }
-					if (st.len2 < n_seqReadLen)
-					    seqRead = seqRead.substr(st.len2, abs(diff0));
-					else
-					    cerr << "Warning: attempted seqRead.substr(st.len2, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len2: " << st.len2 << ", nm: " << nm << endl;
                                     }
                                 }
                                 else
                                 {
                                     if (diff1 < 0)
                                     {
-                                        if (st.len1 + diff0 < 0)
-                                        {
-                                            continue;
+                                        int start = st.len1 + diff0;
+                                        int length = abs(diff0);
+
+                                        if(start < 0) continue;
+
+                                        if(!safe_substr(start,length))                               
+                                        { sprna.push_back(st);
+                                            rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                                            added = true;
+                                            return added;
                                         }
-					if (st.len1 + diff0 < n_seqReadLen)
-					    seqRead = seqRead.substr(st.len1 + diff0, abs(diff0));
-					else
-					    cerr << "Warning: attempted seqRead.substr(st.len1 + diff0, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len1: " << st.len1 << ", diff0: " << diff0 << ", nm: " << nm << endl;
                                     }
                                     else
                                     {
-                                        if (abs(diff0) > st.len1)
-                                        {
-                                            continue;
+                                        int start = st.len1;
+                                        int length = abs(diff0);
+                                        
+                                        if (length > start) continue;
+                                    
+					                    if(!safe_substr(start,length))                               
+                                        { sprna.push_back(st);
+                                            rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                                            added = true;
+                                            return added;
                                         }
-					if (st.len1 < n_seqReadLen)
-					    seqRead = seqRead.substr(st.len1, abs(diff0));
-					else
-					    cerr << "Warning: attempted seqRead.substr(st.len1, abs(diff0)) with n_seqReadLen: " << n_seqReadLen << ", st.len1: " << st.len1 << ", nm: " << nm << endl;
                                     }
                                 }
                                 if (seq1Str.length() > seqRead.length())
@@ -4413,6 +4554,20 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                 }
                                 int mismatch1 = countMismatches(seqRead, seq1Str);
                                 int mismatch2 = countMismatches(seqRead, seq2Str);
+
+                                cout << "Seq Read: " << seqRead << endl;
+                                cout << "(3)Seq1 Str: " << seq1Str << endl;
+                                cout << "(3)Seq2 Str: " << seq2Str << endl;
+
+                                cout << "Mismatch 1: " << mismatch1 << " " << "Mismatch2: " << mismatch2 << endl;
+
+                                cout << "St.seq: ";
+                                for(int i=0; i < seq.size(); i++){                  
+                                    cout << st.seq[i];
+                                }
+                                
+                                cout << "st.len1 = " << st.len1 << "st.len2= " << st.len2 << "diff0 = " << diff0 <<  endl;
+
                                 if (mismatch1 < 0 || mismatch2 < 0)
                                 {
                                     continue;
@@ -4459,22 +4614,66 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                 // } else {
                                 if (mismatch2 > mismatch1)
                                 {
-                                    st.len1 += diff1;
-                                    st.pos1 -= diff1;
-                                    if (st.strand1 != 0)
+                                    //abisha debugging
+                                    // st.len1 += diff1;
+                                    // st.pos1 -= diff1;
+                                    // if (st.strand1 != 0)
+                                    // {
+                                    //     if (!st.reversed) {
+                                    //         st.len1 += diff1;
+                                    //     } else {
+                                    //         st.pos1 += diff1;
+                                    //         st.len1 -= diff1;
+                                    //     }
+                                    // } else {
+                                    //     if (!st.reversed) {
+                                    //         st.len1 += diff1;
+                                    //     } else {
+                                    //         st.pos1 += diff1;
+                                    //         st.len1 -= diff1;
+                                    //     }
+                                    // }
+                                    // if (st.strand2 == 0)
+                                    // {
+                                    //     if (!st.reversed) {
+                                    //         st.pos2 += diff1;
+                                    //         st.len2 -= diff1;
+                                    //     } else {
+                                    //         st.len2 -= diff1;
+                                    //     }
+                                    // } else {
+                                    //     if (!st.reversed) {
+                                    //         st.len2 -= diff1;
+                                    //     } else {
+                                    //         st.pos2 += diff1;
+                                    //         st.len2 -= diff1;
+                                    //     }
+                                    // }
+                                    if(abs(diff1) >= 10)
                                     {
-                                        if (!st.reversed) {
+                                        sprna.push_back(st);
+                                        rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                                        added = true;
+                                        return added;
+                                    }
+                                    if(st.strand1 == 0)
+                                    {
+                                        if(!st.reversed){
                                             st.len1 += diff1;
-                                        } else {
-                                            st.pos1 += diff1;
-                                            st.len1 -= diff1;
                                         }
-                                    } else {
-                                        if (!st.reversed) {
+                                        else{
+                                            st.pos1 -= diff1;
                                             st.len1 += diff1;
-                                        } else {
-                                            st.pos1 += diff1;
-                                            st.len1 -= diff1;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if(!st.reversed){
+                                            st.pos1 -= diff1;
+                                            st.len1 += diff1;
+                                        }
+                                        else{
+                                            st.len1 += diff1;
                                         }
                                     }
                                     if (st.strand2 == 0)
@@ -4493,19 +4692,98 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                             st.len2 -= diff1;
                                         }
                                     }
+                                     cout << "[After Assignment 23] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 else if (mismatch2 < mismatch1)
                                 {
-                                    st.len1 -= diff2;
-                                    st.len2 += diff2;
-                                    if (st.strand1 == 0)
+                                    // st.len1 -= diff2;
+                                    // st.len2 += diff2;
+                                    // if (st.strand1 == 0)
+                                    // {
+                                    //     st.pos1 = st.pos1 + diff2;
+                                    // }
+                                    // if (st.strand2 != 0)
+                                    // {
+                                    //     st.pos2 = st.pos2 - diff2;
+                                    //     cout << "[After Pos Assignment 3] st.pos1 = " << st.pos1 << ", st.pos2 = " <<  st.pos2  << "diff2= "<< diff2 << endl;
+                                    // }
+                                    if(abs(diff2) >= 10)
                                     {
-                                        st.pos1 = st.pos1 + diff2;
+                                        sprna.push_back(st);
+                                        rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                                        added = true;
+                                        return added;
                                     }
-                                    if (st.strand2 != 0)
+                                    // if(st.strand2 == 0){
+                                    //     if(!st.reversed){
+                                    //         st.len2 += diff2;
+                                    //         st.pos2 -= diff2;
+                                    //     }else{
+                                    //         st.len2 += diff2;
+                                    //     }
+                                    // } else{
+                                    //     if(!st.reversed){
+                                    //         st.len2 += diff2;
+                                    //     }else{
+                                    //         st.pos2 -= diff2;
+                                    //         st.len2 += diff2;
+                                    //     }
+                                    // }
+                                    // if(st.strand1 == 0){
+                                    //     if(!st.reversed){
+                                    //         st.len1 -= diff2;
+                                    //     }else{
+                                    //         st.pos1 += diff2;
+                                    //         st.len1 -= diff2;
+                                    //     }
+                                    // }
+                                    // else{
+                                    //     if(!st.reversed){
+                                    //         st.len1 -= diff2;
+                                    //         st.pos1 += diff2;
+                                    //     }else{
+                                    //         st.len1 -= diff2;
+                                    //     }
+                                    // }
+                                    
+
+                                    if(st.strand1 == 0)
                                     {
-                                        st.pos2 = st.pos2 - diff2;
+                                        if(!st.reversed){
+                                            st.len1 += diff2;
+                                        }
+                                        else{
+                                            st.pos1 -= diff2;
+                                            st.len1 += diff2;
+                                        }
                                     }
+                                    else
+                                    {
+                                        if(!st.reversed){
+                                            st.pos1 -= diff2;
+                                            st.len1 += diff2;
+                                        }
+                                        else{
+                                            st.len1 += diff2;
+                                        }
+                                    }
+                                    if (st.strand2 == 0)
+                                    {
+                                        if (!st.reversed) {
+                                            st.pos2 += diff2;
+                                            st.len2 -= diff2;
+                                        } else {
+                                            st.len2 -= diff2;
+                                        }
+                                    } else {
+                                        if (!st.reversed) {
+                                            st.len2 -= diff2;
+                                        } else {
+                                            st.pos2 += diff2;
+                                            st.len2 -= diff2;
+                                        }
+                                    }
+                                     cout << "[After Assignment 24] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 else
                                 {
@@ -4535,10 +4813,13 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                             st.pos2 = st.pos2 + diff0;
                                         }
                                     }
+                                     cout << "[After Assignment 25] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                             }
                         }
                         // cout << st.pos1 + st.len1  - 1 << " " << st.pos2 + st.len2 - 1 << endl;
+                         cout << "FInal st.len1 = " << st.len1 << "Final st.len2 = " << st.len2 << endl;
+                         cout << " Final st.pos1 = " << st.pos1 << " Final st.pos2 = " << st.pos2 << endl;
                         sprna.push_back(st);
                         rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
                         added = true;
@@ -6095,7 +6376,7 @@ bool isLgClip(const bam1_t *b) {
     for (int i = 0; i < nc; i++) {
         op = cigar[i] & 0xf;
         if (op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP) {
-            int len = cigar[nc - 1] >> 4;
+            int len = cigar[i] >> 4;//was nc -1
             if (len > largeClip) {
                 // posM = i;
                 largeClip = len;
@@ -6120,7 +6401,7 @@ bool isHardClip(const bam1_t *b) {
     for (int i = 0; i < nc; i++) {
         op = cigar[i] & 0xf;
         if (op == BAM_CHARD_CLIP) {
-            int len = cigar[nc - 1] >> 4;
+            int len = cigar[i] >> 4;//changed nc-1 to i
             if (len > largeClip) {
                 // posM = i;
                 largeClip = len;
@@ -6313,6 +6594,11 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
                 }
             } else {
                 vector<map_emt_t2> mets, metsM; // partial map
+                cout << "Seq: " ;
+                for (int i=0; i<= st.seq.size(); i++)
+                {
+                    cout << st.seq[i];
+                }
                 int isSmall1;
                 if (al.runBWTSplitMap(g, gId1, st.seq, anchorStrd, mets, metsM, mf2, isSmall1, 1) == 1) {
                     if (mets.size() > 5 || isSmall1 == 1) {

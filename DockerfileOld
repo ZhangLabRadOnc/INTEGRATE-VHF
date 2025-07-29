@@ -1,0 +1,60 @@
+FROM ubuntu:plucky AS builder
+
+SHELL ["/bin/bash", "-c"]
+ENV TZ=UTC \
+DEBIAN_FRONTEND=noninteractive 
+
+# #RUN cp /etc/apt/sources.list /etc/apt/sources.list.bak
+# #RUN sed -i -re 's/([a-z]{2}\.)?archive.ubuntu.com|security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
+# #RUN apt-get update -y && apt-get dist-upgrade -y
+
+# #Source image is outdated, need to replace apt sources list
+# RUN echo "deb http://archive.debian.org/debian stretch main" > /etc/apt/sources.list
+# RUN apt-get update -y && apt-get dist-upgrade -y
+# #RUN rm -f /etc/resolv.conf \
+# #&& ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
+# WORKDIR $WD
+# ADD sources.list $WD
+
+# RUN sed -i "s/focal/$(lsb_release -c -s)/" sources.list
+# RUN rm /etc/apt/sources.list
+# RUN cp sources.list /etc/apt/sources.list
+
+# RUN mv /etc/apt/sources.list.d/*
+# RUN apt update
+
+RUN \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+        llvm clang lld libomp-dev cmake ninja-build pkgconf \
+        libhts-dev libdivsufsort-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV CC=clang CXX=clang++
+
+WORKDIR /app/integrate
+COPY . .
+RUN \
+    rm -rf /app/integrate/build && \
+    mkdir ./build && \
+    cmake -G Ninja -S ./ -B ./build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    ninja -C ./build install
+
+FROM ubuntu:plucky
+
+SHELL ["/bin/bash", "-c"]
+ENV TZ=UTC DEBIAN_FRONTEND=noninteractive
+
+RUN \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libomp5 libhts3 libdivsufsort3 \
+        samtools && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local /usr/local
+
+WORKDIR /data

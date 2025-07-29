@@ -177,6 +177,9 @@ struct split_rna_t {
     int geneId1 = 0;
     int geneId2 = 0;
 
+    int difference1 = 0;
+    int difference2 = 0;
+
     vector<char> seq;
 
     int clusterId = 0;

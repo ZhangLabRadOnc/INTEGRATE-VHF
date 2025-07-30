@@ -717,7 +717,7 @@ int Result::printSummary(const char *filename, Gene &g, int isRunningNormal, int
                 bkt.isRT = 1;
             else
                 bkt.isRT = 0;
-            bkvec.push_back(bkt);
+            //bkvec.push_back(bkt);
 
             outFile << rt.numOfEnRna << "\t" << rt.numOfSpRna << "\t";
             if (indi > 1) {
@@ -727,6 +727,7 @@ int Result::printSummary(const char *filename, Gene &g, int isRunningNormal, int
                 }
             }
             for (int x = 0; x < rt.types.size(); x++) {
+                bkt.primeOK = rt.primeOKs[x];
                 if (rt.primeOKs[x] == 1) {
                     outFile << rt.nm5p << ">>" << rt.nm3p;
                 } else {
@@ -737,7 +738,7 @@ int Result::printSummary(const char *filename, Gene &g, int isRunningNormal, int
                     outFile << "Canonical ";
                 outFile << rt.numOfsps[x] << ");";
             }
-
+            bkvec.push_back(bkt);
             outFile << endl;
         }
     }

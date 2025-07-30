@@ -272,8 +272,18 @@ int BreakPoint::getOneBKRNA(break_point_record_t &bkt, Reference &ref) {
 }
 
 int BreakPoint::printOneBK(break_point_record_t &bkt, Reference &ref, ofstream &outFile) {
-    outFile << bkt.nm5p << "\t";
-    outFile << bkt.nm3p << "\t";
+    if (bkt.primeOK == 1){
+        cout<< "primeOK = "<<bkt.primeOK<< endl;
+        outFile << bkt.nm5p << "\t";
+        outFile << bkt.nm3p << "\t";
+    }
+    else{
+        cout<< "primeOK = "<< bkt.primeOK<< endl;
+        outFile << bkt.nm3p << "\t";
+        outFile << bkt.nm5p << "\t";
+    }
+    // outFile << bkt.nm5p << "\t";
+    // outFile << bkt.nm3p << "\t";
     outFile << ref.getSeqOriginalName(bkt.tid1) << "\t";
     outFile << bkt.rnabk1 << "\t";
     if (bkt.isExon == 1) {

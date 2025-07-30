@@ -411,6 +411,8 @@ typedef struct {
     int tier;
     int isRT;
 
+    int primeOK;
+
 } break_point_record_t;
 
 // Dec 7, 2015 for peptides

@@ -6,6 +6,7 @@
  */
 
 #include "MyBamHeader.h"
+#include <unordered_map>
 
 int MAX_LIB_INSERT = 10000;
 
@@ -161,86 +162,282 @@ int getMeanStd(vector<int> numbers, int &mean, int &std) {
     return 0;
 }
 
-bool testInsertStd(const char *fileName, string testRG, int &insert, int &std) {
-    vector<int> inserts;
+//PREVIOUS Approach
+// bool testInsertStd(const char *fileName, string testRG, int &insert, int &std) {
+//     vector<int> inserts;
 
-    samFile *f = sam_open(fileName, "r");
-    bam_hdr_t *h = sam_hdr_read(f);
+//     samFile *f = sam_open(fileName, "r");
+//     bam_hdr_t *h = sam_hdr_read(f);
+//     bam1_t *b = bam_init1();
+
+//     int x = 0;
+//     while (true)
+//     {
+//         if ((sam_read1(f, h, b)) < 0)
+//         {
+//             break;
+//         }
+//         else
+//         {
+//             if (x >= 10000000)
+//             {
+//                 break;
+//             }
+//             x++;
+//             char readg[1024];
+//             readg[0] = '\0';
+//             strcat(readg, bam_aux2Z(bam_aux_get(b, "RG")));
+//             string tmp(readg);
+//             if (testRG.compare(tmp) == 0)
+//             {
+//                 if (b->core.tid == b->core.mtid && b->core.pos < b->core.mpos && b->core.mpos - b->core.pos < MAX_LIB_INSERT)
+//                 {
+//                     inserts.push_back(b->core.mpos - b->core.pos + b->core.l_qseq);
+//                 }
+//             }
+//         }
+//     }
+
+//     getMeanStd(inserts, insert, std);
+
+//     bam_destroy1(b);
+//     sam_hdr_destroy(h);
+//     sam_close(f);
+    
+//     return inserts.size() > 0;
+// }
+
+//Old TestInsertStdAll
+// bool testInsertStdAll(const char *fileName, int &insert, int &std) {
+//     vector<int> inserts;
+
+//     samFile *f = sam_open(fileName, "r");
+//     sam_hdr_t *h = sam_hdr_read(f);
+//     bam1_t *b = bam_init1();
+
+//     int x = 0;
+//     while (true)
+//     {
+//         if ((sam_read1(f, h, b)) < 0)
+//         {
+//             break;
+//         }
+//         else
+//         {
+//             if (x >= 10000000)
+//             {
+//                 break;
+//             }
+//             x++;
+
+//             if (b->core.tid == b->core.mtid && b->core.pos < b->core.mpos && b->core.mpos - b->core.pos < MAX_LIB_INSERT)
+//             {
+//                 inserts.push_back(b->core.mpos - b->core.pos + b->core.l_qseq);
+//             }
+//         }
+//     }
+
+//     getMeanStd(inserts, insert, std);
+
+//     bam_destroy1(b);
+//     sam_hdr_destroy(h);
+//     sam_close(f);
+
+//     return inserts.size() > 0;
+// }
+struct PairInfo {
+    int32_t isize;
+    bool fwd;
+    bool first;
+    bool seen = false;
+};
+
+bool testInsertStd(const char *fileName, const std::string &testRG, int &insertMean, int &insertStd) {
+
+    samFile *fp = sam_open(fileName, "r");
+    if (!fp) return false;
+
+    bam_hdr_t *h = sam_hdr_read(fp);
     bam1_t *b = bam_init1();
 
-    int x = 0;
-    while (true)
-    {
-        if ((sam_read1(f, h, b)) < 0)
-        {
-            break;
-        }
-        else
-        {
-            if (x >= 10000000)
-            {
-                break;
-            }
-            x++;
-            char readg[1024];
-            readg[0] = '\0';
-            strcat(readg, bam_aux2Z(bam_aux_get(b, "RG")));
-            string tmp(readg);
-            if (testRG.compare(tmp) == 0)
-            {
-                if (b->core.tid == b->core.mtid && b->core.pos < b->core.mpos && b->core.mpos - b->core.pos < MAX_LIB_INSERT)
-                {
-                    inserts.push_back(b->core.mpos - b->core.pos + b->core.l_qseq);
+    std::unordered_map<std::string, PairInfo> pairs;
+    std::vector<int> allInward;  // store all inward pairs first
+
+    while (sam_read1(fp, h, b) >= 0) {
+        uint16_t flag = b->core.flag;
+
+        if (!(flag & BAM_FPAIRED)) continue;
+        if (flag & (BAM_FUNMAP | BAM_FMUNMAP | BAM_FSECONDARY |
+                     BAM_FSUPPLEMENTARY | BAM_FQCFAIL | BAM_FDUP)) continue;
+        if (b->core.tid != b->core.mtid) continue;
+
+        uint8_t *rg = bam_aux_get(b, "RG");
+        if (!rg) continue;
+        const char *rgVal = bam_aux2Z(rg);
+        if (!rgVal) continue;
+        if (testRG != rgVal) continue;
+
+        int32_t isize = b->core.isize;
+        if (isize == 0) continue;
+        if (isize < 0) isize = -isize;
+        if (isize > MAX_LIB_INSERT) continue;
+
+        bool fwd = !(flag & BAM_FREVERSE);
+        bool first = flag & BAM_FREAD1;
+
+        std::string qname = bam_get_qname(b);
+        auto it = pairs.find(qname);
+
+        if (it == pairs.end()) {
+            pairs[qname] = {isize, fwd, first, false};
+        } else {
+            PairInfo &mate = it->second;
+
+            if (!mate.seen) {
+                // simplified inward check
+                bool inward = false;
+                if ((mate.first && mate.fwd && !fwd) || (mate.first && !mate.fwd && fwd) ||
+                    (!mate.first && !mate.fwd && fwd) || (!mate.first && mate.fwd && !fwd)) {
+                    inward = true;
                 }
+
+                if (inward) allInward.push_back(isize);
+                mate.seen = true;
             }
+
+            pairs.erase(it);
         }
     }
 
-    getMeanStd(inserts, insert, std);
-
     bam_destroy1(b);
-    sam_hdr_destroy(h);
-    sam_close(f);
-    
-    return inserts.size() > 0;
+    bam_hdr_destroy(h);
+    sam_close(fp);
+
+    if (allInward.empty()) return false;
+
+    // Build histogram of insert sizes
+    std::map<int, int> hist;  // sorted by insert size
+    for (int x : allInward) hist[x]++;
+
+    // Pick main bulk (~99% of total pairs)
+    int totalPairs = allInward.size();
+    int cum = 0;
+    int bulkLimit = static_cast<int>(totalPairs * 0.99);
+
+    double sum = 0.0;
+    double sumSq = 0.0;
+    int bulkCount = 0;
+
+    for (auto &[isize, count] : hist) {
+        if (cum + count > bulkLimit) count = bulkLimit - cum;  // only include remaining to reach 99%
+        for (int i = 0; i < count; i++) {
+            sum += isize;
+            sumSq += isize * isize;
+        }
+        bulkCount += count;
+        cum += count;
+        if (cum >= bulkLimit) break;
+    }
+
+    if (bulkCount == 0) return false;
+
+    double mean = sum / bulkCount;
+    double sd = std::sqrt(sumSq / bulkCount - mean * mean);
+
+    insertMean = static_cast<int>(mean);
+    insertStd = static_cast<int>(sd);
+    return true;
 }
 
-bool testInsertStdAll(const char *fileName, int &insert, int &std) {
-    vector<int> inserts;
+bool testInsertStdAll(const char *fileName, int &insertMean, int &insertStd) {
 
-    samFile *f = sam_open(fileName, "r");
-    sam_hdr_t *h = sam_hdr_read(f);
+    samFile *fp = sam_open(fileName, "r");
+    if (!fp) return false;
+
+    bam_hdr_t *h = sam_hdr_read(fp);
     bam1_t *b = bam_init1();
 
-    int x = 0;
-    while (true)
-    {
-        if ((sam_read1(f, h, b)) < 0)
-        {
-            break;
-        }
-        else
-        {
-            if (x >= 10000000)
-            {
-                break;
-            }
-            x++;
+    std::unordered_map<std::string, PairInfo> pairs;
+    std::vector<int> allInward;
 
-            if (b->core.tid == b->core.mtid && b->core.pos < b->core.mpos && b->core.mpos - b->core.pos < MAX_LIB_INSERT)
-            {
-                inserts.push_back(b->core.mpos - b->core.pos + b->core.l_qseq);
+    while (sam_read1(fp, h, b) >= 0) {
+        uint16_t flag = b->core.flag;
+
+        if (!(flag & BAM_FPAIRED)) continue;
+        if (flag & (BAM_FUNMAP | BAM_FMUNMAP | BAM_FSECONDARY |
+                     BAM_FSUPPLEMENTARY | BAM_FQCFAIL | BAM_FDUP)) continue;
+        if (b->core.tid != b->core.mtid) continue;
+
+        int32_t isize = b->core.isize;
+        if (isize == 0) continue;
+        if (isize < 0) isize = -isize;
+        if (isize > MAX_LIB_INSERT) continue;
+
+        bool fwd = !(flag & BAM_FREVERSE);
+        bool first = flag & BAM_FREAD1;
+
+        std::string qname = bam_get_qname(b);
+        auto it = pairs.find(qname);
+
+        if (it == pairs.end()) {
+            pairs[qname] = {isize, fwd, first, false};
+        } else {
+            PairInfo &mate = it->second;
+
+            if (!mate.seen) {
+                bool inward = false;
+                if ((mate.first && mate.fwd && !fwd) || (mate.first && !mate.fwd && fwd) ||
+                    (!mate.first && !mate.fwd && fwd) || (!mate.first && mate.fwd && !fwd)) {
+                    inward = true;
+                }
+
+                if (inward) allInward.push_back(isize);
+                mate.seen = true;
             }
+
+            pairs.erase(it);
         }
     }
 
-    getMeanStd(inserts, insert, std);
-
     bam_destroy1(b);
-    sam_hdr_destroy(h);
-    sam_close(f);
+    bam_hdr_destroy(h);
+    sam_close(fp);
 
-    return inserts.size() > 0;
+    if (allInward.empty()) return false;
+
+    // Build histogram of insert sizes
+    std::map<int, int> hist;
+    for (int x : allInward) hist[x]++;
+
+    // Pick main bulk (~99%)
+    int totalPairs = allInward.size();
+    int cum = 0;
+    int bulkLimit = static_cast<int>(totalPairs * 0.99);
+
+    double sum = 0.0;
+    double sumSq = 0.0;
+    int bulkCount = 0;
+
+    for (auto &[isize, count] : hist) {
+        if (cum + count > bulkLimit) count = bulkLimit - cum;
+        for (int i = 0; i < count; i++) {
+            sum += isize;
+            sumSq += isize * isize;
+        }
+        bulkCount += count;
+        cum += count;
+        if (cum >= bulkLimit) break;
+    }
+
+    if (bulkCount == 0) return false;
+
+    double mean = sum / bulkCount;
+    double sd = std::sqrt(sumSq / bulkCount - mean * mean);
+
+    insertMean = static_cast<int>(mean);
+    insertStd = static_cast<int>(sd);
+
+    return true;
 }
 
 int MyBamHeader::getInsertStdFromBAM(const char *filename) {
@@ -249,9 +446,10 @@ int MyBamHeader::getInsertStdFromBAM(const char *filename) {
         for (map<string, int>::iterator it = rg.begin(); it != rg.end(); ++it) {
             int insert, std;
             if (testInsertStd(filename, it->first, insert, std)) {
-                if (it->second - insert > std || it->second - insert < 0 - std) {
+                if (it->second == 0 ||it->second - insert > std || it->second - insert < 0 - std) {
                     cout << "Warning: for RG " << it->first << ", there is no PI in BAM or the value provided is " << it->second << " and tested is " << insert
                          << ". Changed to tested value." << endl;
+                    cout << "[DEBUG3] : it->second = "<< it->second<< "insert = "<< insert<<  ", std = " << std << endl;
                     it->second = insert;
                     this->std.insert(pair<string, int>(string(it->first), std));
                 } else {

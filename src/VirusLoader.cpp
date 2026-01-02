@@ -9,6 +9,7 @@
 #include <vector>
 #include "VirusLoader.h"
 #include "Util.h"
+#include "GffHelper.h"
 
 using namespace std;
 
@@ -128,19 +129,32 @@ VirusLoader::VirusLoader(const string &indexFilePath, const unordered_map<string
 
     if (!loadAll) {
         for (const auto &pair : virusTypes) {
-            string filePathStr = pair.second;
-            fs::path filePath = fs::path(filePathStr);
-            if (!fs::exists(filePath)) {
-                filePath = fs::path(indexFilePath).parent_path() / filePathStr;
-                if (!fs::exists(filePath)) {
-                    cerr << "Virus type file does not exist: " << filePathStr << endl;
-                    continue;
-                }
-            }
             if (pair.first == "HPVEM") {
+                string filePathStr = pair.second;
+                fs::path filePath = fs::path(filePathStr);
+                if (!fs::exists(filePath)) {
+                    filePath = fs::path(indexFilePath).parent_path() / filePathStr;
+                    if (!fs::exists(filePath)) {
+                        cerr << "Virus1 type file does not exist: " << filePathStr << endl;
+                        continue;
+                    }
+                }
                 this->loadHPVEM(filePath);
             } else {
-                cerr << "Unknown virus result type: " << pair.first << endl;
+                    cout << "Loading generic virus for: " << pair.first << endl;
+                    //string fastaPath;
+                    string gffPath;
+
+                    //User passes: fastaPath, GffPath
+                    size_t commaPos = pair.second.find(',');
+                    if (commaPos != string::npos) {
+                        // If user passed fasta,gff, take the part after the comma
+                        gffPath = pair.second.substr(commaPos + 1);
+                    } else {
+                        // If user passed only GFF, take the whole string
+                        gffPath = pair.second;
+                    }
+                    loadGenericVirus(pair.first, gffPath);
             }
         }
     }
@@ -208,6 +222,8 @@ void VirusLoader::loadHPVEM(const fs::path &filePath) {
                     if (pair.first.compare(hpv) == 0) {
                         found = true;
                         if (!pair.second.gffPath.empty()) {
+                                cout << "GFF Name: " <<  pair.second.gffName << endl;
+                                cout << "Original Name: " <<  pair.second.originalName << endl;
                             this->selAnnots.push_back(make_tuple(pair.second.gffPath, pair.second.gffName, pair.second.originalName));
                         }
                         if (!pair.second.fastaPath.empty()) {
@@ -251,4 +267,52 @@ void VirusLoader::loadHPVEM(const fs::path &filePath) {
         }
     }
     hpvFile.close();
+}
+
+void VirusLoader::loadGenericVirus(const string &virusName,
+                                   const string &gffPath) {
+
+    cout << "Loading generic virus: " << virusName << endl;
+
+    //Load GFF
+    ifstream gffFile(gffPath, ios::binary | ios::ate);
+    if (!gffFile.is_open()) {
+        cerr << "Error: Cannot open GFF file for " << virusName
+             << " -> " << gffPath << endl;
+        return;
+    }
+    streamsize gffSize = gffFile.tellg();
+    gffFile.seekg(0, ios::beg);
+    string gffBuffer(gffSize, '\0');
+    gffFile.read(&gffBuffer[0], gffSize);
+    gffFile.close();
+
+    GffFile gffParsed =
+        parseGff(gffBuffer.data(), gffBuffer.data() + gffBuffer.size(), gffPath);
+
+    cout << "Parsed " << gffParsed.seqFeatures.size()
+         << " features from GFF1." << endl;
+
+    string gffSeqId = gffParsed.seqFeatures.empty() ? virusName : gffParsed.seqFeatures.front().seqName;
+
+    cout << "GFF Name: " << gffSeqId << endl;
+    cout << "Original Name/virusName: " << virusName << endl;
+
+    string fastaName, fastaPathStr, annotName, annotPathStr;
+
+    this-> virusMap[virusName] = VirusNameFile(
+        virusName,
+        gffSeqId,
+        gffPath, 
+        fastaName, 
+        fastaPathStr, 
+        annotName, 
+        annotPathStr
+    );
+    //Add to selAnnots so main.cpp can call readVirusLoaderGFF()
+    this->selAnnots.push_back(make_tuple(
+        gffPath,       // GFF file path
+        gffSeqId,     // gffName (sequence name)
+        virusName      // originalName
+    ));
 }

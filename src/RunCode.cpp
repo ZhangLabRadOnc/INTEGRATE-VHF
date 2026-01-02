@@ -31,6 +31,7 @@ void usageBuild() {
     cout << "                                       are not included in the evaluation of repetitive reads.   " << endl;
     cout << "            -dir        string   :     directory to store the BWTs.                                             default: ./bwts" << endl;
     cout << "            -virusIndex string   :     file containing virus index.                                             default: ./bwts" << endl;
+    cout << "            -virusType  string   :     In cases when -viruIndex is not used." << endl;
     exit(0);
 }
 
@@ -100,6 +101,36 @@ int getOptForBuild(int argc, const char *argv[], options_t &opt, int &optStart) 
                 exit(1);
             }
         }
+
+        if (tmp.starts_with("-virusType")) {
+            if (i + 1 < argc) {
+                size_t idx = tmp.find(':');
+                if (idx == string::npos) {
+                    cout << "Please give a virus result type and a file path" << endl;
+                    exit(1);
+                }
+                string virus = tmp.substr(idx + 1);
+                string value = argv[i + 1];
+                if (value.empty()) {
+                    cout << "Please give a file path for virus type" << endl;
+                    exit(1);
+                }
+                if (opt.virusTypes.find(virus) != opt.virusTypes.end()) {
+                    cout << "Duplicate virus result type found: " << virus << endl;
+                    continue;
+                }
+                opt.virusTypes[virus] = value;
+
+                if (i + 2 < argc && i + 2 > optStart)
+                    optStart = i + 2;
+                else {
+                    usageBuild();
+                }
+            } else {
+                cout << "Please give a virus result type and a file path after -virusType" << endl;
+                exit(1);
+            }
+        }
     }
 
     return 0;
@@ -139,6 +170,13 @@ int RunCode::runBuildBWTs(int argc, const char *argv[]) {
         vl = new VirusLoader(opt.fileVirus);
         ref.readVirusLoaderFA(*vl);
         cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+    }
+    else{
+            cout << "Loading generic virus..." << endl;
+            vl = new VirusLoader("", opt.virusTypes);  
+            // empty indexFilePath because we are not using .ini
+            ref.readVirusLoaderFA(*vl);
+            cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
     }
 
     Gene g;
@@ -764,6 +802,13 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
         vl = new VirusLoader(opt.fileVirus, opt.virusTypes);
         ref.readVirusLoaderFA(*vl);
         cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
+    }
+    else{
+            cout << "Loading generic virus..." << endl;
+            vl = new VirusLoader("", opt.virusTypes);  
+            // empty indexFilePath because we are not using .ini
+            ref.readVirusLoaderFA(*vl);
+            cout << (clock() - t) / CLOCKS_PER_SEC << " seconds\n" << endl;
     }
 
     TidHandler th(&ref);

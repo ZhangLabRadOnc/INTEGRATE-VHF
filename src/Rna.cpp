@@ -6393,6 +6393,12 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
                 return;
             }
             string seq = getSeqFromBam(b);
+            cout << "Seq from BAM: " ;
+                for (int i=0; i< seq.size(); i++)
+                {
+                    cout << seq[i];
+                }
+            cout << "strand1: " << strand1 << "gId1: " << g.getName2(gId1) << endl;
             split_rna_t st;
             if (!strand1) {
                 getRevCompSeq(seq);
@@ -6414,6 +6420,7 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
             }
             int anchorStrd = 1 - st.strand1;
             if (st.spId == 1) {
+                cout << "st.spId is 1" << endl;
                 vector<map_emt_t2> mets2, metsM2;
                 int isSmall1;
                 if (al.runBWTSplitMap2(g, gId1, st.seq, anchorStrd, mets2, metsM2, mf2, isSmall1, 1) == 1) {
@@ -6466,18 +6473,28 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
             } else {
                 vector<map_emt_t2> mets, metsM; // partial map
                 cout << "Seq: " ;
-                for (int i=0; i<= st.seq.size(); i++)
+                for (int i=0; i< st.seq.size(); i++)
                 {
                     cout << st.seq[i];
                 }
+                 cout << "[1] gStrand1: " << gStrand1
+                        << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2 
+                            << "Anchor strand: " << anchorStrd<< endl;
                 int isSmall1;
                 if (al.runBWTSplitMap(g, gId1, st.seq, anchorStrd, mets, metsM, mf2, isSmall1, 1) == 1) {
+                    cout << "Debug1" << endl;
                     if (mets.size() > 5 || isSmall1 == 1) {
                         return;
                     }
                     vector<map_emt_t2> mets3, metsM3; // partial map
                     int isSmall2;
+
+                     cout << "[2] gStrand1: " << gStrand1 
+                        << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2 
+                            << "Anchor strand: " << anchorStrd << endl;
+
                     if (al.runBWTSplitMap2(g, gId1, st.seq, anchorStrd, mets3, metsM3, mf2, isSmall2, 2) == 1) {
+                        cout << "Debug2" << endl;
                         if (checkSame(st.seq.size(), mets, metsM, mets3, metsM3) == 1 || isSmall2 == 1) {
                             return;
                         }
@@ -6486,19 +6503,29 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
                         int imgStrand;
                         int gId2 = neis[t];
                         int gStrand2 = g.getStrand(gId2);
-
+                        cout << "strand2: " << strand2 << "gId2: " << g.getName2(gId2) << endl;
+                    
                         if (gStrand1 == gStrand2) {
                             imgStrand = anchorStrd;
                         } else {
                             imgStrand = 1 - anchorStrd;
                         }
+                        cout << "[3] gStrand1: " << gStrand1 << ", gStrand2: " << gStrand2
+                        << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2 
+                            << "Anchor strand: " << anchorStrd
+                             << ", imgStrand: " << imgStrand << endl;
 
                         vector<map_emt_t2> mets2, metsM2; // partial map
                         int isSmall1;
                         if (al.runBWTSplitMap2(g, gId2, st.seq, imgStrand, mets2, metsM2, mf2, isSmall1, 1) == 1) {
+                            cout << "Debug3" << endl;
                             if (mets2.size() > 5 || isSmall1 == 1) {
                                 continue;
                             }
+                            cout << "[4] ggStrand1: " << gStrand1 << ", gStrand2: " << gStrand2 
+                            << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2
+                            << "Anchor strand: " << anchorStrd
+                             << ", imgStrand: " << imgStrand << endl;
                             const char *seq = getCStringFromVector(st.seq);
                             matchParials(ref, g, gId1, gId2, seq, st.name, st.reversed, mets, metsM, mets2, metsM2, count, mf2);
                             delete[] seq;

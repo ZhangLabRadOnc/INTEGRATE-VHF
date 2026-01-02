@@ -1236,7 +1236,7 @@ int Alignment::runBWTSplitMap2(Gene &g, int geneId, const vector<char> &seq, int
                                int mmdd) {
 
     // cout<<"runBWT2"<<endl;
-
+        
     int strand = 1 - imgStrand;
     int seqLen = seq.size();
 
@@ -1253,6 +1253,11 @@ int Alignment::runBWTSplitMap2(Gene &g, int geneId, const vector<char> &seq, int
         // cout<<chara;
     }
     // cout<<endl;
+        cout << "SeqRead: " ;
+        for (int i=0; i< seqLen; i++)
+        {
+        cout << seqRead[i];
+        }
 
     if (strand == 1) {
         int k = 0, l = 0, mapped = 0, mismatch = 0, insertion = 0, deletion = 0;

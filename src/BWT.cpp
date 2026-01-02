@@ -33,6 +33,7 @@ BWT::BWT() {
     // mf2.setStateLen(1000000);
     // mf2.create();
 }
+bool debug=0;
 
 int BWT::create(const char *seq, int len, SuffixArray2 *array) {
     // cout<<"in create"<<endl;
@@ -76,6 +77,18 @@ int BWT::getOccAndOB(const char *seq, int len) {
     int index = 0;
     // cout<<"here"<<endl;
     for (int i = 0; i < len; i++) {
+        
+        if (i % distance == 0) {
+            OB[index * 6 + 0] = d;
+            OB[index * 6 + 1] = a;
+            OB[index * 6 + 2] = c;
+            OB[index * 6 + 3] = g;
+            OB[index * 6 + 4] = n;
+            OB[index * 6 + 5] = t;
+
+            index++;
+        }
+        
         switch (bwt[i]) {
         case 'A':
             a++;
@@ -101,16 +114,6 @@ int BWT::getOccAndOB(const char *seq, int len) {
             break;
         }
 
-        if (i % distance == 0) {
-            OB[index * 6 + 0] = d;
-            OB[index * 6 + 1] = a;
-            OB[index * 6 + 2] = c;
-            OB[index * 6 + 3] = g;
-            OB[index * 6 + 4] = n;
-            OB[index * 6 + 5] = t;
-
-            index++;
-        }
     }
     // cout<<"index="<<index<<endl;
 
@@ -163,7 +166,8 @@ int BWT::getOB(int i, char c) {
     if (i < 0) {
         start = 0;
     } else {
-        start = preId * distance + 1;
+        //start = preId * distance + 1;
+        start = preId * distance;
     }
     for (int k = start; k <= i; k++) {
         // cout<<k<<endl;
@@ -175,13 +179,37 @@ int BWT::getOB(int i, char c) {
     return previous + add;
 }
 
+// int BWT::getOB(int i, char c) {
+//     if (i < 0) return 0;
+
+//     int preId = i / distance;
+//     int previous = OB[preId * 6 + obpos[c]];
+
+//     int start = preId * distance;   // start of the block
+//     int end = i;                    // up to index i
+
+//     // if i is exactly at the start of the block, previous already counts everything before it
+//     // if (preId * distance == i) {
+//     //     return previous;
+//     // }
+//     // if (i % distance == 0) {
+//     //     start = i;  
+//     // }
+
+//     int add = 0;
+//     for (int k = start; k <= end; k++) {
+//         if (bwt[k] == c) add++;
+//     }
+
+//     return previous + add;
+// }
+
 int BWT::nextKL(int &k, int &l, char c) {
     // cout<<"in next"<<endl;
     // cout<<k<<" "<<l<<endl;
     // cout<<c<<endl;
     //	k=Occ[c]+getOB(k-1,c)+1;
     //	l=Occ[c]+getOB(l,c);
-
     int ob1 = getOB(k - 1, c);
     int ob2 = getOB(l, c);
 
@@ -294,7 +322,7 @@ typedef struct {
     int mismatch;
     int insertion;
     int deletion;
-
+    //int readConsumed;
 } scoreNode;
 
 typedef struct {
@@ -513,14 +541,22 @@ int BWT::inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int mi
             // cout<<"Diff change to "<<diff;
             //}
 
-            if (lscore > mscore) {
+            if (lscore > mscore || (lscore == mscore && diff < sn.mindiff)) {
                 mscore = lscore;
                 sn.mindiff = diff;
+                simuNodes[self].mindiff = diff;
+                //cout << "Min diff: " << sn.mindiff << endl;
                 minsertion = linsertion;
                 mdeletion = ldeletion;
             }
 
-            if (lscore > scoreNodes[maxScNode].score) {
+            // if (lscore > scoreNodes[maxScNode].score) {
+            //     maxScNode = scoreNodes.size() - 1;
+            //     maxSimuNode = self;
+            //     mapped = x;
+            // }
+            if (lscore > scoreNodes[maxScNode].score ||
+                (lscore == scoreNodes[maxScNode].score && x > mapped)) {
                 maxScNode = scoreNodes.size() - 1;
                 maxSimuNode = self;
                 mapped = x;
@@ -535,9 +571,8 @@ int BWT::inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int mi
                 k = sn.k;
                 l = sn.l;
                 nextKL(k, l, ll);
-                if (k <= l) {
-
-                    // cout<<"Add "<<ll<<endl;
+                if (k <= l) {     
+                    // cout<<"Add "<<ll<<endl;    
                     simuNode sn2;
                     sn2.k = k;
                     sn2.l = l;
@@ -551,12 +586,12 @@ int BWT::inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int mi
         } else if (sn.mindiff == maxDiff) {
             // cout<<"no error expand"<<endl;
             if (len - sn.tier - minsertion + mdeletion - 1 >= 0 && len - sn.tier - minsertion + mdeletion - 1 < len) {
-
+                
                 // cout<<len<<" "<<sn.tier<<" "<<minsertion<<" "<<mdeletion<<endl;
                 char ll = seq[len - sn.tier - minsertion + mdeletion - 1];
                 // cout<<"try expand "<<ll<<endl;
                 k = sn.k;
-                l = sn.l;
+                l = sn.l;              
                 nextKL(k, l, ll);
                 if (k <= l) {
                     // cout<<"Add "<<ll<<endl;
@@ -580,11 +615,24 @@ int BWT::inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int mi
     mismatch = scoreNodes[maxScNode].mismatch;
     insertion = scoreNodes[maxScNode].insertion;
     deletion = scoreNodes[maxScNode].deletion;
+    int nodeId = maxSimuNode;
+    string reconstructed = "";
+    while (nodeId != -1) {
+        reconstructed.push_back(simuNodes[nodeId].text);
+        nodeId = simuNodes[nodeId].parentId;
+    }
+    //reverse(reconstructed.begin(), reconstructed.end());
+    if(debug ==1){
+        cout << "Reconstructed read bases: " << reconstructed << endl;
+        cout << "Mismatch: " << mismatch << " " << "insertion: " << insertion << " " << "Deletion: " << deletion<< endl;
+        cout << "k : " << k << " " << "l: " << l << endl;
+    }
 
     // cout<<"mapped="<<mapped<<endl;
     // cout<<k<<" "<<l<<endl;
     // cout<<scoreNodes[maxScNode].score<<" "<<mismatch<<" "<<insertion<<" "<<deletion<<endl;
-
+    //cout << "read Consumed: " << scoreNodes[maxScNode].readConsumed << endl;
+    //cout << "Mapped count : " << mappedCount << endl;
     if (mapped >= minLen)
         return 1;
     else

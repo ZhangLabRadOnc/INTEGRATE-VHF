@@ -592,54 +592,56 @@ uint32_t Gene::getEndPos(int tranId, int exonId) { return transcripts[tranId].ex
 int Gene::getTid(int geneId) { return genes[geneId].tid; }
 
 int Gene::buildOneSuffix(int geneId, int isForward, Reference &ref) {
-    // cout<<"in one"<<endl;
 
-    int length = genes[geneId].rightLimit - genes[geneId].leftLimit + 1;
+    int left  = genes[geneId].leftLimit;
+    int right = genes[geneId].rightLimit;
+    int tid   = genes[geneId].tid;
 
-    char *tmp = new char[length + 2];
+    const char* seqRef = ref.getSeq(tid);
+    int refLen = ref.getSeqLength(tid);
 
-    const char *seqRef = ref.getSeq(genes[geneId].tid);
+    int length = right - left + 1;
 
+    char* tmp = new char[length + 2];
     if (isForward == 1) {
-        copy(seqRef + genes[geneId].leftLimit - 1, seqRef + genes[geneId].rightLimit, tmp);
-    } else {
-        int x = 0;
-        for (int j = length - 1; j >= 0; j--) {
-            tmp[x++] = getCharComp(seqRef[genes[geneId].leftLimit + j - 1]);
+        for (int i = 0; i < length; i++) {
+            int pos = left + i;
+
+            // wrap around circular genome
+            if (pos > refLen)
+                pos = ((pos - 1) % refLen) + 1;
+
+            tmp[i] = seqRef[pos - 1];
         }
     }
+
+    else {
+        for (int i = 0; i < length; i++) {
+            int pos = right - i;
+
+            if (pos <= 0)
+                pos = ((pos - 1 + refLen * 1000) % refLen) + 1;
+
+            tmp[i] = getCharComp(seqRef[pos - 1]);
+        }
+    }
+
     tmp[length] = '$';
-    tmp[length + 1] = '\0';
+    tmp[length+1] = '\0';
 
-    // cout<<tmp[0]<<tmp[1]<<tmp[2]<<tmp[3]<<tmp[4]<<"<-->"<<tmp[length-4]<<tmp[length-3]<<tmp[length-2]<<tmp[length-1]<<tmp[length]<<endl;
-
-    /*     SuffixTree sft;
-         cout<<"create"<<endl;
-         sft.create(tmp,length+1);
-         cout<<"copy"<<endl;
-         sft.copyThings();
-         cout<<"travel"<<endl;
-         sft.traverseNodePos();
-         sft.printThings();
-  */
     SuffixArray2 sfa;
-    // cout<<"getArray"<<endl;
     sfa.builtArray(tmp, length + 1);
 
-    if (isForward == 1) {
-        //	cout<<"build"<<endl;
+    if (isForward){
         bwts[geneId].create(tmp, length + 1, &sfa);
-        //	cout<<"get"<<endl;
         bwts[geneId].getOccAndOB(tmp, length + 1);
-    } else {
-        //	cout<<"build"<<endl;
+    }
+    else{
         rbwts[geneId].create(tmp, length + 1, &sfa);
-        //	cout<<"get"<<endl;
         rbwts[geneId].getOccAndOB(tmp, length + 1);
     }
 
     delete[] tmp;
-
     return 0;
 }
 

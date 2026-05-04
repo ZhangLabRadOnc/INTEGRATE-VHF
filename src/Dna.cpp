@@ -800,8 +800,15 @@ bool my_sort_partial_split(split_dna_t i, split_dna_t j) {
 
 int tmpCopier(vector<region_to_map_t> &vtp, int i, int j) {
     for (int k = i; k <= j; k++) {
-        int id = tmpSp[k].rgIds[0];
-        vtp.push_back(tmpRegion[id]);
+        for (int rid = 0; rid < tmpSp[k].rgIds.size(); rid++) {
+            int id = tmpSp[k].rgIds[rid];
+            if (id < 0 || id >= tmpRegion.size()) {
+                std::cerr << "WARNING: Invalid rgId " << id 
+                          << " in tmpSp[" << k << "]" << std::endl;
+                continue;  // skip invalid indices
+            }
+            vtp.push_back(tmpRegion[id]);
+        }
     }
     return 0;
 }
@@ -1601,12 +1608,19 @@ static int my_get_split_reads(const bam1_t *b) {
                     return 0;
                 int mpos = b->core.mpos + b->core.l_qseq;
                 if (b->core.mpos > imgPos && mpos - imgPos < insert + 3 * std && mpos - imgPos > insert - 3 * std) {
-                    split_dna_t st;
+                    split_dna_t st={};
                     st.name = string(bam_get_qname(b));
                     st.len2 = b->core.l_qseq - left;
                     st.pos2 = b->core.pos + 1;
                     st.strand2 = strand;
+                    st.tid2 = b->core.tid;
+
+                    // Clipped portion (left) → this is the "split" side
                     st.len1 = left;
+                    st.pos1 = 0;
+                    st.strand1 = 0;
+                    st.tid1 = -1;
+
                     st.isLeftFirst = 0;
                     for (int aa = 0; aa < b->core.l_qseq; aa++) {
                         int reada = bam_seqi(bam_get_seq(b), aa);
@@ -1623,11 +1637,18 @@ static int my_get_split_reads(const bam1_t *b) {
                 int impMPos = b->core.pos - left + b->core.l_qseq;
                 int mpos = b->core.mpos + 1;
                 if (mpos < b->core.pos - left && impMPos - mpos < insert + 3 * std && impMPos - mpos > insert - 3 * std) {
-                    split_dna_t st;
+                    split_dna_t st ={};
                     st.name = string(bam_get_qname(b));
                     st.len1 = b->core.l_qseq - right;
                     st.pos1 = b->core.pos - left + 1;
                     st.strand1 = strand;
+                    st.tid1 = b->core.tid;
+
+
+                    st.pos2 = 0;
+                    st.strand2 = 0;
+                    st.tid2 = -1;
+                    
                     st.len2 = right;
                     st.isLeftFirst = 1;
                     for (int aa = b->core.l_qseq - 1; aa >= 0; aa--) {
@@ -1663,8 +1684,8 @@ int Dna::findEnRegion1(region_t &rg, int enId) {
         // cout<<endna[enId].insert<<" "<<endna[enId].std<<endl;
         rg.rpos = endna[enId].pos1 + endna[enId].len1 - 1;
         rg.lpos = rg.rpos - endna[enId].insert - 3 * endna[enId].std;
-        if (rg.lpos < 0)
-            rg.lpos = 0;
+        if (rg.lpos <= 0)
+            rg.lpos = 1;
         // cout<<"2 l="<<rg.lpos<<endl;
     }
     return 0;
@@ -1688,8 +1709,8 @@ int Dna::findEnRegion2(region_t &rg, int enId) {
         // cout<<"4 r="<<rg.rpos<<endl;
         // cout<<endna[enId].insert<<" "<<endna[enId].std<<endl;
         rg.lpos = rg.rpos - endna[enId].insert - 3 * endna[enId].std;
-        if (rg.lpos < 0)
-            rg.lpos = 0;
+        if (rg.lpos <= 0)
+            rg.lpos = 1;
         // cout<<"l l="<<rg.lpos<<endl;
     }
     return 0;
@@ -1792,8 +1813,8 @@ int Dna::regionAssign(region_t &rg, int enId) {
         int len = tmpSp[i].len1 + tmpSp[i].len2;
         if (isLeftAdd) {
             tmpR.lpos -= len;
-            if (tmpR.lpos < 0)
-                tmpR.lpos = 0;
+            if (tmpR.lpos <= 0)
+                tmpR.lpos = 1;
         } else {
             tmpR.rpos += len;
         }
@@ -2168,8 +2189,8 @@ int findEnRegion1Local(region_t &rg, int enId) {
         // cout<<endna[enId].insert<<" "<<endna[enId].std<<endl;
         rg.rpos = entmp2[enId].pos1 + entmp2[enId].len1 - 1;
         rg.lpos = rg.rpos - entmp2[enId].insert - 3 * entmp2[enId].std;
-        if (rg.lpos < 0)
-            rg.lpos = 0;
+        if (rg.lpos <= 0)
+            rg.lpos = 1;
         // cout<<"2 l="<<rg.lpos<<endl;
     }
     return 0;
@@ -2191,8 +2212,8 @@ int findEnRegion2Local(region_t &rg, int enId) {
         // cout<<"4 r="<<rg.rpos<<endl;
         // cout<<endna[enId].insert<<" "<<endna[enId].std<<endl;
         rg.lpos = rg.rpos - entmp2[enId].insert - 3 * entmp2[enId].std;
-        if (rg.lpos < 0)
-            rg.lpos = 0;
+        if (rg.lpos <= 0)
+            rg.lpos = 1;
         // cout<<"l l="<<rg.lpos<<endl;
     }
     return 0;
@@ -2238,8 +2259,8 @@ int regionAssignLocal(region_t &rg, int enId, int refTid) {
         int len = tmpSp[i].len1 + tmpSp[i].len2;
         if (isLeftAdd) {
             tmpR.lpos -= len;
-            if (tmpR.lpos < 0)
-                tmpR.lpos = 0;
+            if (tmpR.lpos <= 0)
+                tmpR.lpos = 1;
         } else {
             tmpR.rpos += len;
         }

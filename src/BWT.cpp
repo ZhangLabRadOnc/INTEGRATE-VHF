@@ -33,7 +33,6 @@ BWT::BWT() {
     // mf2.setStateLen(1000000);
     // mf2.create();
 }
-bool debug=0;
 
 int BWT::create(const char *seq, int len, SuffixArray2 *array) {
     // cout<<"in create"<<endl;
@@ -78,17 +77,6 @@ int BWT::getOccAndOB(const char *seq, int len) {
     // cout<<"here"<<endl;
     for (int i = 0; i < len; i++) {
         
-        if (i % distance == 0) {
-            OB[index * 6 + 0] = d;
-            OB[index * 6 + 1] = a;
-            OB[index * 6 + 2] = c;
-            OB[index * 6 + 3] = g;
-            OB[index * 6 + 4] = n;
-            OB[index * 6 + 5] = t;
-
-            index++;
-        }
-        
         switch (bwt[i]) {
         case 'A':
             a++;
@@ -112,6 +100,16 @@ int BWT::getOccAndOB(const char *seq, int len) {
             cout << "there is a letter that is not in ACGTN at " << i << ", which is (" << (int)bwt[i] << ") " << bwt[i] << "." << endl;
             exit(1);
             break;
+        }
+        if (i % distance == 0) {
+            OB[index * 6 + 0] = d;
+            OB[index * 6 + 1] = a;
+            OB[index * 6 + 2] = c;
+            OB[index * 6 + 3] = g;
+            OB[index * 6 + 4] = n;
+            OB[index * 6 + 5] = t;
+
+            index++;
         }
 
     }
@@ -166,8 +164,8 @@ int BWT::getOB(int i, char c) {
     if (i < 0) {
         start = 0;
     } else {
-        //start = preId * distance + 1;
-        start = preId * distance;
+        start = preId * distance + 1;
+        //start = preId * distance;
     }
     for (int k = start; k <= i; k++) {
         // cout<<k<<endl;
@@ -178,31 +176,6 @@ int BWT::getOB(int i, char c) {
     //	cout<<"@@@"<<previous<<" "<<add<<endl;
     return previous + add;
 }
-
-// int BWT::getOB(int i, char c) {
-//     if (i < 0) return 0;
-
-//     int preId = i / distance;
-//     int previous = OB[preId * 6 + obpos[c]];
-
-//     int start = preId * distance;   // start of the block
-//     int end = i;                    // up to index i
-
-//     // if i is exactly at the start of the block, previous already counts everything before it
-//     // if (preId * distance == i) {
-//     //     return previous;
-//     // }
-//     // if (i % distance == 0) {
-//     //     start = i;  
-//     // }
-
-//     int add = 0;
-//     for (int k = start; k <= end; k++) {
-//         if (bwt[k] == c) add++;
-//     }
-
-//     return previous + add;
-// }
 
 int BWT::nextKL(int &k, int &l, char c) {
     // cout<<"in next"<<endl;
@@ -322,7 +295,6 @@ typedef struct {
     int mismatch;
     int insertion;
     int deletion;
-    //int readConsumed;
 } scoreNode;
 
 typedef struct {
@@ -541,11 +513,9 @@ int BWT::inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int mi
             // cout<<"Diff change to "<<diff;
             //}
 
-            if (lscore > mscore || (lscore == mscore && diff < sn.mindiff)) {
+            if (lscore > mscore) {
                 mscore = lscore;
                 sn.mindiff = diff;
-                simuNodes[self].mindiff = diff;
-                //cout << "Min diff: " << sn.mindiff << endl;
                 minsertion = linsertion;
                 mdeletion = ldeletion;
             }
@@ -555,8 +525,7 @@ int BWT::inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int mi
             //     maxSimuNode = self;
             //     mapped = x;
             // }
-            if (lscore > scoreNodes[maxScNode].score ||
-                (lscore == scoreNodes[maxScNode].score && x > mapped)) {
+            if (lscore > scoreNodes[maxScNode].score) {
                 maxScNode = scoreNodes.size() - 1;
                 maxSimuNode = self;
                 mapped = x;
@@ -622,11 +591,6 @@ int BWT::inExactSplitMap(int &k, int &l, char *seq, int len, int &mapped, int mi
         nodeId = simuNodes[nodeId].parentId;
     }
     //reverse(reconstructed.begin(), reconstructed.end());
-    if(debug ==1){
-        cout << "Reconstructed read bases: " << reconstructed << endl;
-        cout << "Mismatch: " << mismatch << " " << "insertion: " << insertion << " " << "Deletion: " << deletion<< endl;
-        cout << "k : " << k << " " << "l: " << l << endl;
-    }
 
     // cout<<"mapped="<<mapped<<endl;
     // cout<<k<<" "<<l<<endl;

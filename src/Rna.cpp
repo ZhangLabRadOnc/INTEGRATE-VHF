@@ -2473,8 +2473,277 @@ int Rna::hasGoodEncompass(Gene &g, split_rna_t &st, vector<int> enIds) {
     }
     return isgood;
 }
+// int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &enIds, int cutoff, int gid1, int gid2, int bacc) {
+//     // cout<<"clusterAndRemove"<<g.getName2(gid1)<<" "<<g.getName2(gid2)<<endl;
 
-int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &enIds, int cutoff, int gid1, int gid2, int bacc) {
+//     // cout<<"size="<<spIds.size()<<endl;
+
+//     if (spIds.size() <= 0)
+//         return 1;
+
+//     vector<split_rna_t> tmp;
+//     for (int j = 0; j < spIds.size(); j++) {
+//         int i = spIds[j];
+//         tmp.push_back(sprna[i]);
+//     }
+
+//     sort(tmp.begin(), tmp.end(), mySortSplit);
+
+//     vector<int> ids;
+//     // int id = 0;
+
+//     int cn = 0;
+
+//     int number = 0;
+
+//     uint32_t pp1 = 0, pp2 = 0, ppm1 = -1, ppm2 = -1;
+
+//     // cout<<"size="<<tmp.size()<<endl;
+//     for (int j = 0; j <= tmp.size(); j++) {
+//         // cout<<"j="<<j<<endl;
+//         number++;
+
+//         if (j > 0 && j < tmp.size()) {
+//             pp1 = tmp[j].pos1;
+//             if (tmp[j].bkLeft1 == 0)
+//                 pp1 += tmp[j].len1 - 1;
+
+//             pp2 = tmp[j].pos2;
+//             if (tmp[j].bkLeft2 == 0)
+//                 pp2 += tmp[j].len2 - 1;
+
+//             ppm1 = tmp[j - 1].pos1;
+//             if (tmp[j - 1].bkLeft1 == 0)
+//                 ppm1 += tmp[j - 1].len1 - 1;
+
+//             ppm2 = tmp[j - 1].pos2;
+//             if (tmp[j - 1].bkLeft2 == 0)
+//                 ppm2 += tmp[j - 1].len2 - 1;
+//         }
+//         // cout<<"here"<<endl;
+//         if ((j > 0 && j < tmp.size() &&
+//              !((pp1 == ppm1 && pp2 == ppm2) || (pp2 == ppm1 && pp1 == ppm2))) ||
+//             j == tmp.size()) {
+//             int num = number - 1;
+
+//             // cout<<"in here"<<endl;
+//             int localCutOff = cutoff;
+//             int hasMaxSmall = 0;
+
+//             int isBoth = 0;
+//             if (isCanonical(g, tmp[j - 1], bacc) == 1) {
+//                 // cout<<"cano"<<endl;
+//                 isBoth = 1;
+//                 hasMaxSmall = 1;
+//                 localCutOff = 1;
+//             }
+//             // cout<<"num="<<num<<endl;
+//             // cout<<"localCutOff="<<localCutOff<<endl;
+//             if (num >= localCutOff) {
+//                 // cout<<"in here2"<<endl;
+//                 // check names and reads
+//                 vector<string> names;
+//                 // cout<<"number"<<num<<endl;
+//                 for (int x = 1; x <= num; x++) {
+//                     names.push_back(tmp[j - x].name);
+//                 }
+//                 // cout<<"in here3"<<endl;
+//                 sort(names.begin(), names.end(), mySortStrName);
+//                 if (countNames(names) >= localCutOff) {
+//                     // cout<<"in here4"<<endl;
+//                     vector<split_rna_t> tmp2;
+
+//                     // cout<<"in here5"<<endl;
+
+//                     for (int x = 1; x <= num; x++) {
+
+//                         int minSmall = tmp[j - x].seq.size() * 0.2;
+//                         if (num >= 5)
+//                             minSmall = tmp[j - x].seq.size() * 0.3;
+//                         if (num >= 15)
+//                             minSmall = tmp[j - x].seq.size() * 0.4;
+//                         if (minSmall < 15)
+//                             minSmall = 15;
+
+//                         if (tmp[j - x].small >= minSmall)
+//                             hasMaxSmall = 1;
+//                     }
+//                     // cout<<"in here6"<<endl;
+//                     for (int x = 1; x <= num; x++) {
+//                         tmp2.push_back(tmp[j - x]);
+//                     }
+
+//                     double phr = 0.0;
+//                     int highRepeat = 0;
+//                     for (int x = 1; x <= num; x++) {
+//                         if (tmp[j - x].hits > 5)
+//                             highRepeat++;
+//                     }
+//                     phr = (double)highRepeat / (double)num;
+
+//                     if (num >= 5 && isBoth == 0) {
+//                         int maxL = 0;
+//                         int maxR = 0;
+
+//                         for (int x = 1; x <= num; x++) {
+//                             if (tmp[j - x].len1 * 2 > tmp[j - x].seq.size())
+//                                 maxL = 1;
+//                             if (tmp[j - x].len2 * 2 > tmp[j - x].seq.size())
+//                                 maxR = 1;
+//                         }
+//                         if (maxL + maxR == 2)
+//                             isBoth = 1;
+//                         else
+//                             isBoth = 0;
+
+//                     } else
+//                         isBoth = 1;
+
+//                     int sameRead = 0;
+//                     for (int x = 1; x <= num; x++) {
+//                         for (int y = 1; y <= num; y++) {
+//                             if (tmp[j - x].geneId1 == tmp[j - y].geneId2 && tmp[j - x].geneId2 == tmp[j - y].geneId1) {
+//                                 if (tmp[j - x].name.compare(tmp[j - y].name) == 0 && tmp[j - x].tid1 == tmp[j - y].tid1 && tmp[j - x].tid2 == tmp[j - y].tid2 &&
+//                                     tmp[j - x].pos1 == tmp[j - y].pos1 && tmp[j - x].pos2 == tmp[j - y].pos2) {
+//                                     sameRead = 1;
+//                                     break;
+//                                 }
+//                             }
+//                         }
+//                     }
+
+//                     int isInOne = checkInSomeOneGene(g, tmp[j - 1]);
+
+//                     // cout<<"in here7"<<endl;
+//                     if (hasMaxSmall == 1 && phr <= 0.4 && countPos(tmp2) >= localCutOff && sameRead == 0 && !isInOne) {
+//                         double trueFreq = 0.0;
+//                         // cout<<"in here8"<<endl;
+//                         // cout<<"num="<<num<<endl;
+//                         for (int x = 1; x <= num; x++) {
+//                             // cout<<"trueFreq+=1.0/"<<(tmp[j-x].hits)<<endl;
+//                             trueFreq += 1.0 / (double)(tmp[j - x].hits);
+//                             // cout<<"trueFreq="<<trueFreq<<endl;
+//                         }
+
+//                         if (trueFreq >= localCutOff) {
+//                             // cout<<"if"<<endl;
+//                             cn++;
+//                             for (int x = 1; x <= num; x++) {
+//                                 // cout<<"for"<<endl;
+//                                 ids.push_back(tmp[j - x].spId);
+//                                 sprna[tmp[j - x].spId].clusterId = cn;
+//                             }
+//                             // cout<<"in here9"<<endl;
+//                         }
+//                     }
+//                 }
+//             }
+
+//             // cn++;
+//             number = 1;
+//         }
+//     }
+
+//     rnafg->updateSpanning(gid1, gid2, ids);
+//     rnafg->updateSpanning(gid2, gid1, ids);
+
+//     // cout<<"size="<<ids.size()<<endl;
+
+//     return 0;
+// }
+
+
+// int countLocalVirusReads(int breakpoint, int readLength, const vector<split_rna_t>& reads) {
+//     int startWindow = breakpoint - readLength;
+//     int count = 0;
+
+//     for (const auto& r : reads) {
+//         if (r.pos1 >= startWindow && r.pos1 <= breakpoint) {
+//             count++;
+//         }
+//     }
+//     return count;
+// }
+
+// int countViralReadsInRegion(MyBamWrap &bamWrap, int virusTid, int virusPos, int readLength) {
+//     int fetchWindow = 1000;
+//     region_t region { virusTid, virusPos - fetchWindow, virusPos + fetchWindow };
+    
+//     int supportStart = virusPos - readLength;
+//     int supportEnd = virusPos;
+
+//     int count = 0;
+
+//     bamWrap.myFetchWrap(region, [&](const bam1_t *b) {
+        
+//         int readStart = b->core.pos;
+        
+//         if (readStart >= supportStart && readStart <= supportEnd) {
+//             count++;
+//         }
+//     });
+
+//     return count;
+// }
+
+int countViralReadsInRegion(MyBamWrap &bamWrap, int virusbamTid, int virusTid, int virusPos, int readLength, Reference &ref) {
+    
+    int refLen = ref.getSeqLength(virusTid);
+
+    cout << "Virus position: " << virusPos << "ref len: " << refLen << endl;
+    if (virusPos > refLen) {
+        virusPos = ((virusPos - 1) % refLen) + 1;
+    }
+    cout << "Adjusted virus position: " << virusPos << endl;
+
+    int fetchWindow = 1000;
+    region_t region { virusbamTid, virusPos - fetchWindow, virusPos + fetchWindow };
+    int count = 0;
+
+    //  cout << "BAM reference for tid " << virusbamTid << " = "
+    //  << sam_hdr_tid2name(bamWrap.getHeader(), virusbamTid) << endl;
+
+    bamWrap.myFetchWrap(region, [&](const bam1_t *b) {
+        
+        int readStart = b->core.pos;
+        int readEnd = bam_endpos(b);
+        
+        if (readStart <= virusPos && readEnd >= virusPos) {
+            count++;
+        }
+    });
+
+    return count;
+}
+
+
+// int countLocalVirusReads(int virusPos, int virusTid, int readLength, const vector<split_rna_t>& reads) {
+//     int start = virusPos - readLength;
+//     int end   = virusPos;
+
+//     int count = 0;
+
+//     for (const auto &r : reads) {
+
+//         // only consider reads mapping to virus
+//         if (r.tid1 != virusTid && r.tid2 != virusTid)
+//             continue;
+
+//         // check virus side position
+//         int pos = (r.tid1 == virusTid) ? r.pos1 : r.pos2;
+//         int readStart = pos;
+//         int readEnd   = pos + readLength;
+
+//         if (readStart <= virusPos && readEnd >= virusPos) {
+//             count++;
+//         }
+//     }
+
+//     return count;
+// }
+
+
+int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &enIds, int cutoff,  double normalizedSupportCutoff, int gid1, int gid2, int bacc, MyBamWrap &mbw, Reference &ref ) {
     // cout<<"clusterAndRemove"<<g.getName2(gid1)<<" "<<g.getName2(gid2)<<endl;
 
     // cout<<"size="<<spIds.size()<<endl;
@@ -2527,20 +2796,78 @@ int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &
             j == tmp.size()) {
             int num = number - 1;
 
+            bool isVirus_tid1 = g.getGene(tmp[j-1].geneId1)->isVirus;
+            bool isVirus_tid2 = g.getGene(tmp[j-1].geneId2)->isVirus;
+
+            if (!(isVirus_tid1 ^ isVirus_tid2)) {
+                number = 1;
+                continue;
+            }
+
+            // cout << "tid1: " << tmp[j-1].tid1 
+            //     << " gene1: " << g.getGene(tmp[j-1].geneId1)->chrName
+            //     << " isVirus1: " << isVirus_tid1 << endl;
+
+            // cout << "tid2: " << tmp[j-1].tid2 
+            //     << " gene2: " << g.getGene(tmp[j-1].geneId2)->chrName
+            //     << " isVirus2: " << isVirus_tid2 << endl;
+
+            int virusPos;
+            int virusTid;
+            string chrName;
+
+            uint32_t last_pp1 = tmp[j-1].pos1;
+            if (tmp[j-1].bkLeft1 == 0)
+                last_pp1 += tmp[j-1].len1 - 1;
+
+            uint32_t last_pp2 = tmp[j-1].pos2;
+            if (tmp[j-1].bkLeft2 == 0)
+                last_pp2 += tmp[j-1].len2 - 1;
+
+            if (isVirus_tid1) {
+                virusPos = last_pp1;
+                chrName = g.getGene(tmp[j-1].geneId1)->chrName;
+                virusTid = g.getGene(tmp[j-1].geneId1)->tid;
+            } else if (isVirus_tid2) {
+                virusPos = last_pp2;
+                chrName = g.getGene(tmp[j-1].geneId2)->chrName;
+                virusTid = g.getGene(tmp[j-1].geneId2)->tid;
+            }
+
+            //int bamTid = bam_name2id(mbw.header, chrName.c_str());
+            int virusbamTid = sam_hdr_name2tid(mbw.getHeader(), chrName.c_str());
+            int readLength = tmp[j-1].seq.size();
+            cout << "Processing cluster at virus position: " << virusPos << " on tid: " << virusTid << " with read length: " << readLength << " Bam Tid: " << virusbamTid << endl;
+            
+            int localReads = countViralReadsInRegion(mbw, virusbamTid, virusTid, virusPos, readLength, ref);
+
+            double normalizedSupport = 0.0;
+            if (localReads > 0)
+                normalizedSupport = (double)num / (double)localReads;
+            
             // cout<<"in here"<<endl;
             int localCutOff = cutoff;
             int hasMaxSmall = 0;
 
             int isBoth = 0;
+            
+            bool passSupport = false;
+
             if (isCanonical(g, tmp[j - 1], bacc) == 1) {
                 // cout<<"cano"<<endl;
                 isBoth = 1;
                 hasMaxSmall = 1;
                 localCutOff = 1;
+                passSupport = true;   // bypass normalization
             }
+            else {
+                passSupport = (normalizedSupport >= normalizedSupportCutoff);
+            }
+            cout << "Seq name: " << tmp[j - 1].name << ", Virus Position: " << virusPos << ", Local Reads: " << localReads << ", Support: " << num << ", Normalized Support: " << normalizedSupport << ", Pass Support: " << passSupport << endl;
+            cout << "num=" << num << ", localReads=" << localReads << ", normalizedSupport=" << normalizedSupport << ", passSupport=" << passSupport << endl;
             // cout<<"num="<<num<<endl;
             // cout<<"localCutOff="<<localCutOff<<endl;
-            if (num >= localCutOff) {
+            if (passSupport && num >= localCutOff) {
                 // cout<<"in here2"<<endl;
                 // check names and reads
                 vector<string> names;
@@ -2652,7 +2979,6 @@ int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &
 
     return 0;
 }
-
 // BWT
 
 typedef struct {
@@ -4241,7 +4567,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                     else
                                     {
                                         st.pos1 -= adjustment;
-                                        st.len1 += adjustment;//was -= abisha
+                                        st.len1 += adjustment;//was -= hasAbi
                                          cout << "[After Assignment 16] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     if (st.strand2 == 0)
@@ -4485,7 +4811,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                 // } else {
                                 if (mismatch2 > mismatch1)
                                 {
-                                    //abisha debugging
+                                    // debugging
                                     // st.len1 += diff1;
                                     // st.pos1 -= diff1;
                                     // if (st.strand1 != 0)
@@ -4520,7 +4846,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                     //         st.len2 -= diff1;
                                     //     }
                                     // }
-                                    if(abs(diff1) >= 10)
+                                    if(abs(diff1) >= 4)
                                     {
                                         sprna.push_back(st);
                                         rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
@@ -4578,7 +4904,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                     //     st.pos2 = st.pos2 - diff2;
                                     //     cout << "[After Pos Assignment 3] st.pos1 = " << st.pos1 << ", st.pos2 = " <<  st.pos2  << "diff2= "<< diff2 << endl;
                                     // }
-                                    if(abs(diff2) >= 10)
+                                    if(abs(diff2) >= 4)
                                     {
                                         sprna.push_back(st);
                                         rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
@@ -4658,6 +4984,13 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                 }
                                 else
                                 {
+                                    if(abs(diff0) >= 4)
+                                    {
+                                        sprna.push_back(st);
+                                        rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
+                                        added = true;
+                                        return added;
+                                    }
                                     if (!st.reversed)
                                     {
                                         st.len1 = st.len1 + diff0;
@@ -4712,23 +5045,26 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
 }
 
 struct TraverseCluster {
-    TraverseCluster(Gene &g, int cfn, int bacc, Rna &rna) : g(g), cfn(cfn), bacc(bacc), rna(rna) {}
+    TraverseCluster(Gene &g, int cfn, double normcfn, int bacc, MyBamWrap &mbw,Reference &ref, Rna &rna) : g(g), cfn(cfn), normcfn(normcfn), bacc(bacc), mbw(mbw), ref(ref), rna(rna) {}
 
     bool operator()(int x1, int x2, FusionEdge &edge) {
         if (!edge.spannings.empty())
-            rna.clusterAndRemove(g, edge.spannings, edge.encompass, cfn, x1, x2, bacc);
+            rna.clusterAndRemove(g, edge.spannings, edge.encompass, cfn, normcfn, x1, x2, bacc,mbw, ref);
 
         return true;
     }
 
     Gene &g;
     int cfn;
+    double normcfn;
     int bacc;
     Rna &rna;
+    MyBamWrap &mbw;
+    Reference &ref;
 };
 
-int Rna::traverseCluster(Gene &g, int cfn, int bacc) {
-    TraverseCluster traverse(g, cfn, bacc, *this);
+int Rna::traverseCluster(Gene &g, int cfn, double normcfn, int bacc, MyBamWrap &mbw, Reference &ref) {
+    TraverseCluster traverse(g, cfn, normcfn, bacc, mbw, ref, *this);
     rnafg->fg.foreachUniqueEdge(traverse);
     return 0;
 }

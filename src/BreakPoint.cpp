@@ -6,6 +6,7 @@
  */
 
 #include "BreakPoint.h"
+#include <climits>
 
 BreakPoint::BreakPoint() {
     // TODO Auto-generated constructor stub
@@ -85,10 +86,10 @@ int BreakPoint::getBreakPoints(vector<break_point_record_t> &bkvec, const char *
     outFile2 << "##FORMAT=<ID=GT,Number=1,TYPE=String,Description=\"Genotype\">\n";
     outFile2 << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + string(sample_name) + "\n";
 
-    cerr << "bkvec size: " << bkvec.size() << endl;
+    cout << "bkvec size: " << bkvec.size() << endl;
 
     for (int i = 0; i < bkvec.size(); i++) {
-        cerr << "bkvec[" << i << "]: tid1=" << bkvec[i].tid1 << ", tid2=" << bkvec[i].tid2 << ", rna_only=" << bkvec[i].rna_only << endl;
+        cout << "bkvec[" << i << "]: tid1=" << bkvec[i].tid1 << ", tid2=" << bkvec[i].tid2 << ", rna_only=" << bkvec[i].rna_only << endl;
         getOneBKRNA(bkvec[i], ref);
         if (bkvec[i].rna_only == 0) {
             // cout<<"dna"<<endl;
@@ -97,11 +98,11 @@ int BreakPoint::getBreakPoints(vector<break_point_record_t> &bkvec, const char *
         printOneBK(bkvec[i], ref, outFile);
         // printOneBEDPE(bkvec[i],ref,outFile1);
 
-        cerr << "Before addOneVCF: "<< endl;
+        cout << "Before addOneVCF: "<< endl;
 
         AddOneVCF(bkvec[i], ref);
 
-        cerr << "After addOneVCF: "<< endl;
+        cout << "After addOneVCF: "<< endl;
     }
     sort(vcfvec.begin(), vcfvec.end(), my_vcf_func);
     for (int i = 0; i < vcfvec.size(); i++) {
@@ -131,7 +132,7 @@ int BreakPoint::getOneBKRNA(break_point_record_t &bkt, Reference &ref) {
     int rnaRdLen1;
     int rnaRdLen2;
 
-    cerr << "bkt.splitrna.len1: " << bkt.splitrna.len1 << "bkt.splitrna.len2: " << bkt.splitrna.len2 << endl;
+    cout << "bkt.splitrna.len1: " << bkt.splitrna.len1 << "bkt.splitrna.len2: " << bkt.splitrna.len2 << endl;
     
     int swp = bkt.swp;
 
@@ -164,7 +165,7 @@ int BreakPoint::getOneBKRNA(break_point_record_t &bkt, Reference &ref) {
     // int seqTid1 = bkt.tid1;
     // int seqTid2 = bkt.tid2;
 
-    cerr << " rnaRdLen1: " << rnaRdLen1 << "rnaRdLen2: " << rnaRdLen2<< endl;
+    cout << " rnaRdLen1: " << rnaRdLen1 << "rnaRdLen2: " << rnaRdLen2<< endl;
  
     int seqLeft1 = bkt.seqLeft1;
     int seqLeft2 = bkt.seqLeft2;
@@ -678,7 +679,7 @@ int BreakPoint::getOneBKDNA(break_point_record_t &bkt, Reference &ref) {
     al.global(rseq, dnaRdLen1, 1, dnaRdTid1, dnaRdPos1 - 10, dnaRdPos1 + dnaRdLen1 + 10, ref, aa7, bb7, miss7, gap7, score7);
     al.global(rseq, dnaRdLen2, 1, dnaRdTid2, dnaRdPos2 - 10, dnaRdPos2 + dnaRdLen2 + 10, ref, aa8, bb8, miss8, gap8, score8);
 
-    int maxscore = 0;
+    int maxscore = INT_MIN;
     uint32_t maxbk1 = 0;
     uint32_t maxbk2 = 0;
     int swp = 0;
@@ -775,6 +776,19 @@ int BreakPoint::getOneBKDNA(break_point_record_t &bkt, Reference &ref) {
 
     bkt.dnabk1 = bk1;
     bkt.dnabk2 = bk2;
+
+    cerr << "scores: "
+     << score << " "
+     << score2 << " "
+     << score3 << " "
+     << score4 << " "
+     << score5 << " "
+     << score6 << " "
+     << score7 << " "
+     << score8 << endl;
+
+     cerr << "Tid1: " << ref.getSeqOriginalName(bkt.tid1) << endl;
+     cerr << "Tid2: " << ref.getSeqOriginalName(bkt.tid2) << endl;
 
     return 0;
 }

@@ -104,16 +104,49 @@ int printOneSplitDna(split_dna_t &st, Reference &ref, ofstream &outFile) {
     else
         outFile << "-\t";
     outFile << ref.getSeqOriginalName(st.tid1) << "\t";
-    outFile << st.pos1 << "\t";
-    outFile << st.len1 << "\t";
+    cout<< "st.isLeftFirst= "<< st.isLeftFirst<< endl;
+
+    if(st.isLeftFirst == 0)
+    {
+        if(st.strand1 == 0){
+        outFile << (st.pos1 + st.len1 - 1) << "\t"  << st.len1 << "\t";
+        }
+        else{
+            outFile << st.pos1  << "\t"  << st.len1 << "\t";
+        }
+    }
+    else{
+        if(st.strand1 == 0){
+            outFile <<st.pos1  << "\t"  << st.len1 << "\t";
+        }
+        else{
+            outFile << (st.pos1 + st.len1 - 1)  << "\t"  << st.len1 << "\t";
+        }
+    }
 
     if (st.strand2 == 0)
         outFile << "+\t";
     else
         outFile << "-\t";
     outFile << ref.getSeqOriginalName(st.tid2) << "\t";
-    outFile << st.pos2 << "\t";
-    outFile << st.len2 << "\t";
+
+    if(st.isLeftFirst == 0)
+    {
+        if(st.strand2 == 0){
+            outFile << st.pos2 << "\t" << st.len2 << "\t";
+        }
+        else{
+            outFile << (st.pos2 + st.len2 - 1) << "\t" << st.len2 << "\t";
+        }
+    }
+    else{
+        if(st.strand2 == 0){
+            outFile << (st.pos2 + st.len2 - 1) << "\t" << st.len2 << "\t";
+        }
+        else{
+            outFile << st.pos2 << "\t" << st.len2 << "\t";
+        }
+    }
 
     for (int j = 0; j < st.seq.size(); j++) {
         outFile << st.seq[j];
@@ -888,6 +921,8 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
     for (int i = 0; i < results.size(); i++) {
         result_t *prt = this->getOneResult(i);
+        cout << " cano. tier=" << prt->tier 
+<< " realPrint=" << prt->realPrint << endl;
         if (prt->tier > 3)
             break;
         if (prt->realPrint == 0)
@@ -918,7 +953,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
         string name;
         int exonNum;
 
-        cerr << "Before 1st getBest Exon" << endl;
+        cout << "Before 1st getBest Exon" << endl;
         g.getBestExon(st.geneId1, p1, st.bkLeft1, is5p, tid, strand, pos1, pos2, name, exonNum);
 
         int is5p_2;
@@ -929,7 +964,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
         string name_2;
         int exonNum_2;
 
-        cerr << "Before 2nd getBest Exon" << endl;
+        cout << "Before 2nd getBest Exon" << endl;
         g.getBestExon(st.geneId2, p2, st.bkLeft2, is5p_2, tid_2, strand_2, pos1_2, pos2_2, name_2, exonNum_2);
 
         if (is5p == 1 && is5p_2 == 0) {
@@ -955,7 +990,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
             outFile << endl;
 
             ////for bk
-            // cout<<"in exon 1"<<endl;
+            cout<<"in exon 1"<<endl;
             bkvec[index].tid1 = tid;
             bkvec[index].tid2 = tid_2;
             bkvec[index].isExon = 1;
@@ -1050,11 +1085,13 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
         index++;
     }
-    cerr << "Before BK non canonical: " << endl;
+    cout << "Before BK non canonical: " << endl;
     /////// for bk non canonical
     // index=0;
     for (int i = 0; i < results.size(); i++) {
         result_t *prt = this->getOneResult(i);
+            cout << " non-cano. tier=" << prt->tier 
+        << " realPrint=" << prt->realPrint << endl;
         if (prt->tier <= 3)
             continue;
         if (prt->realPrint == 0)
@@ -1090,15 +1127,15 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
             ////for bk
 
-            // cout<<"in non cano 1"<<endl;
+            cout<<"in non cano 1"<<endl;
             bkvec[index].tid1 = tid;
             bkvec[index].tid2 = tid_2;
             bkvec[index].isExon = 0;
             bkvec[index].swp = 0;
 
-            // cout<<"tid,tid2,isExon"<<tid<<","<<tid_2<<","<<0<<endl;
+            cout<<"tid,tid2,isExon"<<tid<<","<<tid_2<<","<<0<<endl;
 
-            // cout<<"strand="<<strand<<endl;
+            cout<<"strand="<<strand<<endl;
 
             if (strand == 0) {
                 // cout<<"if1"<<endl;
@@ -1131,7 +1168,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
             ////for bk
 
-            // cout<<"in exon non-cano 2"<<endl;
+            cout<<"in exon non-cano 2"<<endl;
             bkvec[index].tid1 = tid_2;
             bkvec[index].tid2 = tid;
             bkvec[index].isExon = 0;
@@ -1152,7 +1189,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
                 bkvec[index].gStrand2 = 0;
             } else {
                 bkvec[index].exonbk2 = 0;
-                bkvec[index].seqLeft1 = 1; // abisha debugging
+                bkvec[index].seqLeft2 = 1; //hasAbi debugging
                 bkvec[index].gStrand2 = 1;
             }
             bkvec[index].splitrna = st;
@@ -1174,9 +1211,9 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
     // cout<<"call bk"<<endl;
     BreakPoint bkobj;
-    cerr << "Before getBreakPoints: " << endl;
+    cout << "Before getBreakPoints: " << endl;
     bkobj.getBreakPoints(bkvec, bkfile, bkfileBEDPE, bkfileVCF, refname, ref, sample_name);
-    cerr << "After getBreakPoints: " << endl;
+    cout << "After getBreakPoints: " << endl;
     // cout<<"after bk"<<endl;
 
     return 0;

@@ -350,6 +350,7 @@ typedef struct {
     const char *directoryBWT;
 
     int cfn;
+    double normcfn;
     double rt;
     int minIntra;
     double minW;

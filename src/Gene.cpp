@@ -991,7 +991,7 @@ int Gene::getBestExon2(int gid, int pos, int isbkLeft, vector<junction_t> &juncs
     tid = genes[gid].tid;
     strand = genes[gid].strand;
 
-    //abisha debugging
+    //debugging
     if (strand != 0 && strand != 1) {
         cerr << "[Debug] Unexpected strand value for gene " << gid << ": " << strand << endl;
     } else {
@@ -1072,8 +1072,8 @@ int Gene::getStrandnPrimenTid(int gid, int isbkLeft, int &is5p, int &tid, int &s
     tid = genes[gid].tid;
     strand = genes[gid].strand;
 
-    //abisha debugging
-    cerr << "[Debug] getStrandnPrimenTid - gene " << gid << ", isbkLeft: " << isbkLeft 
+    //debugging
+    cout << "[Debug] getStrandnPrimenTid - gene " << gid << ", isbkLeft: " << isbkLeft 
      << ", computed is5p: " << is5p 
      << ", strand: " << (strand == 0 ? "+" : "-") 
      << ", tid: " << tid << endl;

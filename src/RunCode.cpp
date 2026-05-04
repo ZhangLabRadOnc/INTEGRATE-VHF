@@ -23,7 +23,7 @@ void usageBuild() {
     cout << endl;
     cout << "Run subcommand mkbwt:" << endl;
     cout << endl;
-    cout << "    integratevhf mkbwt (options) reference.fasta" << endl;
+    cout << "    integratevhf mkbwt (options) -virusIndex reference.fasta" << endl;
     cout << endl;
     cout << "    options:" << endl;
     cout << endl;
@@ -31,7 +31,8 @@ void usageBuild() {
     cout << "                                       are not included in the evaluation of repetitive reads.   " << endl;
     cout << "            -dir        string   :     directory to store the BWTs.                                             default: ./bwts" << endl;
     cout << "            -virusIndex string   :     file containing virus index.                                             default: ./bwts" << endl;
-    cout << "            -virusType  string   :     In cases when -viruIndex is not used." << endl;
+    cout << "            -virusType  string   :     In cases when -virusIndex is not used." << endl;
+    cout << "            -virusType:{type of virus} path_to_gff" << endl;
     exit(0);
 }
 
@@ -203,10 +204,13 @@ void usageFusion() {
     cout << endl;
     cout << "Make sure mkbwt has been run." << endl;
     cout << endl;
-    cout << "integratevhf fusion (options) reference.fasta annotation.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)\n";
+    cout << "integratevhf fusion (options) -virusType:{Provide_Virus_type} path_to_gff  reference.fasta annotation.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)\n";
+    cout << "If using virusIndex file, run: integratevhf fusion (options) -virusIndex path_to_virusIndexfile.txt -virusType:{X} path_to_gff  reference.fasta annotation.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)" << endl;
     cout << endl;
     cout << "options: -cfn      integer : Cutoff of spanning RNA-Seq reads for fusions with non-canonical" << endl;
     cout << "                             exonic boundaries.                                                         default: 3" << endl;
+    cout << "         -normcfn  float   : Normalized cutoff of spanning RNA-Seq reads for fusions with non-canonical" << endl;
+    cout << "                             exonic boundaries.                                                         default: 0.0"<< endl;
     cout << "         -rt       float   : Normal dna / tumor dna ratio. If the ratio is less than" << endl;
     cout << "                             this value, then dna reads from the normal dna data set " << endl;
     cout << "                             supporting a fusion candidates are ignored.                                default: 0.0" << endl;
@@ -228,15 +232,17 @@ void usageFusion() {
     cout << "         -bacc     integer : max difference between spanning reads and annotation to decide canonical.  default: 1" << endl;
     cout << "         -largeNum integer : if a gene shows greater or equal to this number, remove it from results.   default: 6" << endl;
     cout << "         -sample   string  : sample name                                                                default: sample" << endl;
+    cout << "         -virusIndex   string : virus index file name                                                  " << endl;
+    cout << "         -virusType   string  : virus type name(mandatory)                                             " << endl;
     cout << endl;
-    cout << "This version of Integrate works in the following situations:" << endl;
+    cout << "This version of IntegrateVHF works in the following situations:" << endl;
     cout << "(1)having rna tumor, dna tumor, dna normal" << endl;
     cout << "(2)having rna tumor, dna tumor" << endl;
     cout << "(3)having rna tumor" << endl;
     // cout<<"dna bam files should be followed by its library insert size and standard deviation. If RG lines are provided, then insert size is ignored, but a value still has to be
     // provided."<<endl;
     cout << endl;
-    cout << "Integrate will only use sequences in reference.fasta. " << endl;
+    cout << "IntegrateVHF will only use sequences in reference.fasta. " << endl;
     cout << "Chr names with and without \"chr\" are regarded as the same, e.g. chr1 = 1." << endl;
     cout << "The rna and dna bams can be from alignments mapped to different reference files with different order of the sequences and their names with or without \"chr\". "
             "However, The versions should be the same, e.g. hg19. (Also, the same as in annotation.)"
@@ -309,6 +315,28 @@ int getOptForFusion(int argc, const char *argv[], options_t &opt, int &opStart) 
                 }
             } else {
                 cout << "Please give an integer after -cfn" << endl;
+                exit(1);
+            }
+        }
+
+        if (tmp.compare("-normcfn") == 0) {
+            if (i + 1 < argc) {
+                double val = atof(argv[i + 1]);
+
+                if (val > 0) {
+                    opt.normcfn = val;
+                } else {
+                    cout << "Please give a positive double to -normcfn" << endl;
+                    exit(1);
+                }
+
+                if (i + 2 < argc && i + 2 > opStart)
+                    opStart = i + 2;
+                else {
+                    usageFusion();
+                }
+            } else {
+                cout << "Please give a positive double after -normcfn" << endl;
                 exit(1);
             }
         }
@@ -692,6 +720,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     int opStart = 2;
 
     opt.cfn = 3;
+    opt.normcfn = 0.0;
     opt.rt = 0.0;
     opt.minIntra = 400000;
     opt.minW = 2.0;
@@ -986,7 +1015,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
 
     // t=clock();
     // cout<<"cluster "<<endl;
-    rna.traverseCluster(g, opt.cfn, opt.bacc);
+    rna.traverseCluster(g, opt.cfn, opt.normcfn, opt.bacc, mbw, ref);
     // cout<<(clock()-t)/CLOCKS_PER_SEC<<" seconds\n"<<endl;
 
     // t=clock();

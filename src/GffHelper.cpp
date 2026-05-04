@@ -164,6 +164,8 @@ GffFile parseGff(const char *start, const char *end, const string &fileName) {
         pfae = end;
         vector<FaSequenceIndex> faSectionIdx = parseFasta(pfas, pfae);
         faIndices.insert(faIndices.end(), faSectionIdx.begin(), faSectionIdx.end());
+    }else{
+        cerr<< "Error: " << fileName << " GFF file does not contain FASTA section." << endl;
     }
 
     return GffFile(gffVersion, seqRegions, seqFeatures, faOffset, faIndices);

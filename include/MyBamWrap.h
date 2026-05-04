@@ -27,6 +27,7 @@ class MyBamWrap {
         void mySamOpen(const char *fileName);
         void myLoadIndex(const char *fileName);
         void myFetchWrap(region_t &region, const function<void(const bam1_t *)> &func) const;
+        sam_hdr_t* getHeader() const { return h; }
         // int myPassRegion(region_t &region, const string chrName, int lpos, int rpos);
         // void testFetch(const char *fileName, string chrName, uint32_t lpos, uint32_t rpos);
 };

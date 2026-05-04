@@ -113,12 +113,12 @@ class Rna {
     // int traverseSplit(Gene & g, MyBamWrap & mbw, MyBamHeader & mbh, TidHandler & th);
     // int matchSplit(Gene & g, int gid1, int gid2);
     int printSplits();
-    int clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &enIds, int cutoff, int gid1, int gid, int bacc);
+    int clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &enIds, int cutoff,  double normalizedSupportCutoff, int gid1, int gid, int bacc, MyBamWrap &mbw, Reference &ref);
     int printSome(Gene &g, vector<int> const &spIds, Reference &ref, result_t &rt, int minIntra, int bacc);
 
     int runGetGeneBWT(Gene &g, Reference &ref);
 
-    int traverseCluster(Gene &g, int cfn, int bacc);
+    int traverseCluster(Gene &g, int cfn, double normcfn, int bacc, MyBamWrap &mbw, Reference &ref);
     int traversePrint(Gene &g, Reference &ref, Result &result, int minIntra, int bacc);
 
     void traverseRemove(Gene &g);

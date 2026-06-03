@@ -6,8 +6,8 @@ Documentation for the INTEGRATE-VHF tool. INTEGRATE-VHF is a virus-host gene fus
 
 To simplify installation and ensure reproducibility, INTEGRATE-VHF can be run using a Docker container:
 
-      docker pull hasabi3/integrate-dev
-      docker run -it hasabi3/integrate-dev
+      docker pull mjinkm/integratevhf:0.3.0
+      docker run -it mjinkm/integratevhf:0.3.0
 
 **1. System Requirements**
 - Linux-based operating system (recommended)

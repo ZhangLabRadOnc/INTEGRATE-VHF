@@ -21,16 +21,16 @@ int HASHSIZE = 10000000;
 ostream &operator<<(ostream &out, const ALGraph<int, FusionEdge> &g);
 
 int usage() {
-    cout << "          Discover fusions by combining RNA-Seq and WGS data sets*" << endl;
+    cout << "          Discover virus-human fusions by combining RNA-Seq and WGS data sets*" << endl;
     cout << endl;
-    cout << "Usage:    Integrate <subcommand> [options] list of data sets" << endl;
+    cout << "Usage:    integratevhf <subcommand> [options] list of data sets" << endl;
     cout << endl;
-    cout << "integrate subcommands include:" << endl;
+    cout << "integratevhf subcommands include:" << endl;
     cout << endl;
     cout << "          fusion:   call fusions." << endl;
     cout << "          mkbwt:    build BWTs for reference genome. This has to be run one time before running subcommand fusion." << endl;
     cout << endl;
-    cout << "*Note:    integrate can run with RNA only data sets." << endl;
+    cout << "*Note:    integratevhf can run with RNA-only data sets." << endl;
     exit(0);
 }
 

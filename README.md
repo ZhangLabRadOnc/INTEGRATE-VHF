@@ -48,7 +48,7 @@ INTEGRATE-VHF requires the following system libraries and tools to be installed 
 ## Installation
 Download INTEGRATE-VHF
 ```
-git clone https://github.com/ZhangLabRadOnc/HPV-EM.git
+git clone https://github.com/ZhangLabRadOnc/IntegrateVHF.git
 ```
 
 Compile INTEGRATE-VHF

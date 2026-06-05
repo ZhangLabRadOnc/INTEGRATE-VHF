@@ -48,12 +48,12 @@ INTEGRATE-VHF requires the following system libraries and tools to be installed 
 ## Installation
 Download INTEGRATE-VHF
 ```
-git clone https://github.com/ZhangLabRadOnc/IntegrateVHF.git
+git clone https://github.com/ZhangLabRadOnc/INTEGRATE-VHF.git
 ```
 
 Compile INTEGRATE-VHF
 ```
-(1) cd IntegrateVHF
+(1) cd INTEGRATE-VHF
 (2) mkdir build
 (3) cmake -G Ninja -S ./ -B ./build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/usr/local
 (4) ninja -C ./build install

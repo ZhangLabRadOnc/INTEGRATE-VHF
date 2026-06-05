@@ -23,12 +23,12 @@ void usageBuild() {
     cout << endl;
     cout << "Run subcommand mkbwt:" << endl;
     cout << endl;
-    cout << "You can run it using two different ways: "
+    cout << "You can run it using two different ways: " << endl;
     cout << endl;
-    cout << "1. Using a VirusIndex file"
+    cout << "1. Using a VirusIndex file" << endl;
     cout << "    integratevhf mkbwt (options) -virusIndex virus_index.txt reference.fasta" << endl;
     cout << endl;
-    cout << "2. Using individual virus GFF3 file"
+    cout << "2. Using individual virus GFF3 file" << endl;
     cout << "    integratevhf mkbwt (options) -virusType:{virus name} virus_annot.gff reference.fasta" << endl;
     cout << endl;
     cout << "    options:" << endl;
@@ -208,12 +208,12 @@ void usageFusion() {
     cout << endl;
     cout << "Make sure mkbwt has been run." << endl;
     cout << endl;
-    cout << "You can run it using two different ways: "
+    cout << "You can run it using two different ways: " << endl;
     cout << endl;
-    cout << "1. Using a VirusIndex file"
+    cout << "1. Using a VirusIndex file" << endl;
     cout << "integratevhf fusion (options) -virusIndex virus_index.txt -virusType:HPVEM hpvEM_results.tsv reference.fasta human_annot.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)\n";
     cout << endl;
-    cout << "2. Using individual virus GFF3 file"
+    cout << "2. Using individual virus GFF3 file" << endl;
     cout << "integratevhf fusion (options) -virusType:{X} virus_annot.gff reference.fasta human_annot.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)\n";
     cout << endl;
     cout << "options: -cfn      integer : Cutoff of spanning RNA-Seq reads for fusions with non-canonical" << endl;

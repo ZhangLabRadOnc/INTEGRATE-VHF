@@ -23,16 +23,20 @@ void usageBuild() {
     cout << endl;
     cout << "Run subcommand mkbwt:" << endl;
     cout << endl;
-    cout << "    integratevhf mkbwt (options) -virusIndex reference.fasta" << endl;
+    cout << "You can run it using two different ways: "
+    cout << endl;
+    cout << "1. Using a VirusIndex file"
+    cout << "    integratevhf mkbwt (options) -virusIndex virus_index.txt reference.fasta" << endl;
+    cout << endl;
+    cout << "2. Using individual virus GFF3 file"
+    cout << "    integratevhf mkbwt (options) -virusType:{virus name} virus_annot.gff reference.fasta" << endl;
     cout << endl;
     cout << "    options:" << endl;
     cout << endl;
     cout << "            -mb         integer  :     sequences in the reference fasta that are shorter than this value        default: 100" << endl;
     cout << "                                       are not included in the evaluation of repetitive reads.   " << endl;
     cout << "            -dir        string   :     directory to store the BWTs.                                             default: ./bwts" << endl;
-    cout << "            -virusIndex string   :     file containing virus index.                                             default: ./bwts" << endl;
-    cout << "            -virusType  string   :     In cases when -virusIndex is not used." << endl;
-    cout << "            -virusType:{type of virus} path_to_gff" << endl;
+    cout << endl;
     exit(0);
 }
 
@@ -204,8 +208,13 @@ void usageFusion() {
     cout << endl;
     cout << "Make sure mkbwt has been run." << endl;
     cout << endl;
-    cout << "integratevhf fusion (options) -virusType:{Provide_Virus_type} path_to_gff  reference.fasta annotation.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)\n";
-    cout << "If using virusIndex file, run: integratevhf fusion (options) -virusIndex path_to_virusIndexfile.txt -virusType:{X} path_to_gff  reference.fasta annotation.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)" << endl;
+    cout << "You can run it using two different ways: "
+    cout << endl;
+    cout << "1. Using a VirusIndex file"
+    cout << "integratevhf fusion (options) -virusIndex virus_index.txt -virusType:HPVEM hpvEM_results.tsv reference.fasta human_annot.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)\n";
+    cout << endl;
+    cout << "2. Using individual virus GFF3 file"
+    cout << "integratevhf fusion (options) -virusType:{X} virus_annot.gff reference.fasta human_annot.txt directory_to_bwt accepted_hits.bam unmapped.bam (dna.tumor.bam dna.normal.bam)\n";
     cout << endl;
     cout << "options: -cfn      integer : Cutoff of spanning RNA-Seq reads for fusions with non-canonical" << endl;
     cout << "                             exonic boundaries.                                                         default: 3" << endl;
@@ -253,11 +262,11 @@ void usageFusion() {
             "one bam, just use merged.bam twice in the command line."
          << endl;
     cout << endl;
-    cout << "For dna bams: If solt-clips are provided, then Integrate is trying to search rearrangement breakpoints, otherwise, only paired reads may be included in the analysis."
+    cout << "For dna bams: If solt-clips are provided, then IntegrateVHF is trying to search rearrangement breakpoints, otherwise, only paired reads may be included in the analysis."
          << endl;
     cout << endl;
     cout << "If having rna normal only or having both rna and dna normal data sets. These data sets can be run to find non somatic events." << endl;
-    cout << "e.g. Integrate fusion -normal (options) reference.fasta annotation.txt directory_to_bwt accepted_hits.normal.bam unmapped.normal.bam (dna.normal.bam)" << endl;
+    cout << "e.g. IntegrateVHF fusion -normal (options) reference.fasta annotation.txt directory_to_bwt accepted_hits.normal.bam unmapped.normal.bam (dna.normal.bam)" << endl;
     exit(0);
 }
 

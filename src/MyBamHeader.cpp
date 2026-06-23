@@ -449,7 +449,7 @@ int MyBamHeader::getInsertStdFromBAM(const char *filename) {
                 if (it->second == 0 ||it->second - insert > std || it->second - insert < 0 - std) {
                     cout << "Warning: for RG " << it->first << ", there is no PI in BAM or the value provided is " << it->second << " and tested is " << insert
                          << ". Changed to tested value." << endl;
-                    cout << "[DEBUG3] : it->second = "<< it->second<< "insert = "<< insert<<  ", std = " << std << endl;
+                    // cout << "[DEBUG3] : it->second = "<< it->second<< "insert = "<< insert<<  ", std = " << std << endl;
                     it->second = insert;
                     this->std.insert(pair<string, int>(string(it->first), std));
                 } else {

@@ -2863,8 +2863,8 @@ int Rna::clusterAndRemove(Gene &g, vector<int> const &spIds, vector<int> const &
             else {
                 passSupport = (normalizedSupport >= normalizedSupportCutoff);
             }
-            cout << "Seq name: " << tmp[j - 1].name << ", Virus Position: " << virusPos << ", Local Reads: " << localReads << ", Support: " << num << ", Normalized Support: " << normalizedSupport << ", Pass Support: " << passSupport << endl;
-            cout << "num=" << num << ", localReads=" << localReads << ", normalizedSupport=" << normalizedSupport << ", passSupport=" << passSupport << endl;
+            // cout << "Seq name: " << tmp[j - 1].name << ", Virus Position: " << virusPos << ", Local Reads: " << localReads << ", Support: " << num << ", Normalized Support: " << normalizedSupport << ", Pass Support: " << passSupport << endl;
+            // cout << "num=" << num << ", localReads=" << localReads << ", normalizedSupport=" << normalizedSupport << ", passSupport=" << passSupport << endl;
             // cout<<"num="<<num<<endl;
             // cout<<"localCutOff="<<localCutOff<<endl;
             if (passSupport && num >= localCutOff) {
@@ -4141,8 +4141,8 @@ int Rna::matchParials(Gene &g, int gid1, int gid2, bam1_t *b, vector<map_emt_t2>
 bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string &seq, const string &seqName, bool reversed, vector<map_emt_t2> &mets, vector<map_emt_t2> &metsM, vector<map_emt_t2> &mets2, vector<map_emt_t2> &metsM2,
                       int count, myFind2 &mf2) {
 
-    cout << "Mets size: " << mets.size()<< " "<< "Mets2 size: " << mets2.size()<< endl;
-    cout << "seqName: " << seqName << endl;
+    // cout << "Mets size: " << mets.size()<< " "<< "Mets2 size: " << mets2.size()<< endl;
+    // cout << "seqName: " << seqName << endl;
     bool added = false;
     for (int i = 0; i < mets.size(); i++) {
         int strand1 = mets[i].strand;
@@ -4151,7 +4151,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
         for (int j = 0; j < mets2.size(); j++) {
 
             if (mets[i].miss + mets[i].insert + mets2[j].miss + mets2[j].insert > 2){
-                cout << "Miss and insert higher seqName: " << seqName << endl;
+                //cout << "Miss and insert higher seqName: " << seqName << endl;
                 continue;
             }
             // cout<<mets[i].miss+mets[i].insert+mets2[j].miss+mets2[j].insert<<endl;
@@ -4162,23 +4162,23 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
             int strand2 = mets2[j].strand;
             if (isDirectionGood(g.getStrand(gid1), g.getStrand(gid2), strand1, strand2) == 0) {
                 // cout<<"direct not good"<<endl;
-                cout << "Skipping direction not good seqName: " << seqName << endl;
+                //cout << "Skipping direction not good seqName: " << seqName << endl;
                 continue;
             }
 
             int len2 = mets2[j].b - mets2[j].a + 1;
            
-            cout << mets[i].tid <<" mets[i]: a=" <<mets[i].a << ", b=" << mets[i].b << ", len1=" << len1 << endl;
-            cout << mets2[i].tid << " mets2[j]: a=" << mets2[j].a << ", b=" << mets2[j].b << ", len2=" << len2 << endl;
+            // cout << mets[i].tid <<" mets[i]: a=" <<mets[i].a << ", b=" << mets[i].b << ", len1=" << len1 << endl;
+            // cout << mets2[i].tid << " mets2[j]: a=" << mets2[j].a << ", b=" << mets2[j].b << ", len2=" << len2 << endl;
             int small;
-            cout << "Seq size: " << seq.size()<< endl;
+            //cout << "Seq size: " << seq.size()<< endl;
             int small1 = seq.size() - len1;
             int small2 = seq.size() - len2;
 
             int error1 = mets[i].miss + mets[i].insert;
             int error2 = mets2[j].miss + mets2[j].insert;
 
-            cout << "Error1: " << error1 << "Error2: " << error2 << endl;
+            //cout << "Error1: " << error1 << "Error2: " << error2 << endl;
 
             if (small1 < small2) {
                 if (error1 == 0)
@@ -4205,7 +4205,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
             // cout<<"small"<<small<<endl;
             if (small < 10) {
                 // small is small!
-                cout << "Skipping small is small seq: " << seqName << endl;
+                //cout << "Skipping small is small seq: " << seqName << endl;
                 continue;
             }
 
@@ -4230,9 +4230,9 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
 
             if (strand1 == 0) {
                 if (len1 + len2 >= seq.size()) {
-                    cout << "[Debug 1] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
+                    //cout << "[Debug 1] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
                     st.len1 = seq.size() - len1;
-                    cout << "[After Assignment 1] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                    //cout << "[After Assignment 1] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                     st.geneId1 = gid2;
                     st.geneId2 = gid1;
 
@@ -4261,9 +4261,9 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                     st.bkLeft1 = 1;
                 }
 
-                cout << "[Debug 2] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
+                //cout << "[Debug 2] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
                 st.len2 = len1;
-                cout << "[After Assignment 2] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                ////cout << "[After Assignment 2] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                 st.pos2 = mets[i].pos;
                 st.strand2 = strand1;
                 st.tid2 = mets[i].tid;
@@ -4279,9 +4279,9 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
 
                     st.geneId1 = gid1;
                     st.geneId2 = gid2;
-                    cout << "[Debug 3] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
+                    //cout << "[Debug 3] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
                     st.len1 = seq.size() - len2;
-                    cout << "[After Assignment 3] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                    //cout << "[After Assignment 3] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                     st.bkLeft1 = 0;
                     isReport = 1;
                 } else // if(len1+len2>=b->core.l_qseq-5)
@@ -4294,23 +4294,23 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                 }
                 // st.pos1=mets[i].pos+(len1+len2-srt.seq.size());//not accurate
                 st.pos1 = mets[i].pos;
-                cout << "[After Pos Assignment 1] st.pos1 = " << st.pos1 << ", st.pos2 = " << (st.pos2 ? st.pos2 : 0 )<< endl;
+                //cout << "[After Pos Assignment 1] st.pos1 = " << st.pos1 << ", st.pos2 = " << (st.pos2 ? st.pos2 : 0 )<< endl;
                 st.strand1 = strand1;
                 st.tid1 = mets[i].tid;
 
                 if (strand2 == 0) {
                     st.bkLeft2 = 0;
                     st.pos2 = mets2[j].pos;
-                    cout << "[After Pos Assignment 2] st.pos1 = " << st.pos1 << ", st.pos2 = " << (st.pos2 ? st.pos2 : 0) << endl;
+                    //cout << "[After Pos Assignment 2] st.pos1 = " << st.pos1 << ", st.pos2 = " << (st.pos2 ? st.pos2 : 0) << endl;
                 } else {
                     st.bkLeft2 = 1;
                     st.pos2 = mets2[j].pos;
-                    cout << "[After Pos Assignment 2] st.pos1 = " << st.pos1 << ", st.pos2 = " << (st.pos2 ? st.pos2 : 0) << endl;
+                    //cout << "[After Pos Assignment 2] st.pos1 = " << st.pos1 << ", st.pos2 = " << (st.pos2 ? st.pos2 : 0) << endl;
                 }
 
-                cout << "[Debug 4] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
+                //cout << "[Debug 4] strand1: " << strand1 << ", len1: " << len1 << ", len2: " << len2 << ", seq.size(): " << seq.size() << endl;
                 st.len2 = len2;
-                cout << "[After Assignment 4] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                //cout << "[After Assignment 4] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                 st.strand2 = strand2;
                 st.tid2 = mets2[j].tid;
 
@@ -4333,7 +4333,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                 st.reversed = reversed;
 
                 if (homoTest2(g, st, mf2) != 1) {
-                    cout<<"passed homo2"<<endl;
+                    //cout<<"passed homo2"<<endl;
                     LowComplexFinder lcc;
                     Artifact1 af1;
 
@@ -4360,7 +4360,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                         int posOriginal1, posOriginal2;
                         if (st.bkLeft1 == 0) {
                             posOriginal1 = st.pos1 + st.len1 - 1;
-                            cout << "[After posOriginal Assignment 1] posOriginal1  = " << posOriginal1 << endl;
+                            //cout << "[After posOriginal Assignment 1] posOriginal1  = " << posOriginal1 << endl;
                         } else {
                             posOriginal1 = st.pos1;
                         }
@@ -4368,24 +4368,24 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                             posOriginal2 = st.pos2 + st.len2 - 1;
                         } else {
                             posOriginal2 = st.pos2;
-                            cout << "[After posOriginal Assignment 2] posOriginal2 = " << posOriginal2 << endl;
+                           // cout << "[After posOriginal Assignment 2] posOriginal2 = " << posOriginal2 << endl;
                         }
                         for (int i = 0; i < boundaries1.size(); i++) {
-                            cout << "Boundaries1: " << boundaries1[i] << endl;
+                            //cout << "Boundaries1: " << boundaries1[i] << endl;
                             if (abs((int)boundaries1[i] - (int)posOriginal1) < abs(diff1)) {
                                 diff1 = (int)boundaries1[i] - (int)posOriginal1;
                                 st.difference1 = diff1;
                                 posClosest1 = boundaries1[i];
-                                cout << "[diff1 assignment 1] diff1= " << diff1 << "posClosest1 = " << posClosest1 << endl;
+                                //cout << "[diff1 assignment 1] diff1= " << diff1 << "posClosest1 = " << posClosest1 << endl;
                             }
                         }
                         for (int i = 0; i < boundaries2.size(); i++) {
-                            cout << "Boundaries2: " << boundaries2[i] << endl;
+                            //cout << "Boundaries2: " << boundaries2[i] << endl;
                             if (abs((int)boundaries2[i] - (int)posOriginal2) < abs(diff2)) {
                                 diff2 = (int)boundaries2[i] - (int)posOriginal2;
                                 st.difference2 = diff2;
                                 posClosest2 = boundaries2[i];
-                                cout << "[diff2 assignment 1] diff2= " << diff2 << "posClosest2 = " << posClosest2 << endl;
+                                //cout << "[diff2 assignment 1] diff2= " << diff2 << "posClosest2 = " << posClosest2 << endl;
                             }
                         }
                         int diff = min(abs(diff1), abs(diff2));
@@ -4404,24 +4404,24 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                 if (st.strand1 == 0)
                                 {
                                     st.len1 += adjustment;
-                                    cout << "[After eq Assignment 15] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    //cout << "[After eq Assignment 15] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 else
                                 {
                                     st.pos1 -= adjustment;
                                     st.len1 += adjustment;
-                                    cout << "[After eq Assignment 16] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    //cout << "[After eq Assignment 16] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 if (st.strand2 == 0)
                                 {
                                     st.pos2 += adjustment;
                                     st.len2 -= adjustment;
-                                    cout << "[After eq Assignment 17] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    //cout << "[After eq Assignment 17] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 else
                                 {
                                     st.len2 -= adjustment;
-                                    cout << "[After eq Assignment 18] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    //cout << "[After eq Assignment 18] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                             }
                             else
@@ -4429,24 +4429,24 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                 if (st.strand1 != 0)
                                 {
                                     st.len1 += adjustment;
-                                    cout << "[After eq Assignment 19] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    //cout << "[After eq Assignment 19] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 else
                                 {
                                     st.pos1 -= adjustment;
                                     st.len1 += adjustment;
-                                    cout << "[After eq Assignment 20] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    //cout << "[After eq Assignment 20] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 if (st.strand2 != 0)
                                 {
                                     st.pos2 += adjustment;
                                     st.len2 -= adjustment;
-                                    cout << "[After eq Assignment 21] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    //cout << "[After eq Assignment 21] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 else
                                 {
                                     st.len2 -= adjustment;
-                                    cout << "[After eq Assignment 22] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    //cout << "[After eq Assignment 22] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                             }
                                 sprna.push_back(st);
@@ -4540,8 +4540,8 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                             delete[] seq1;
                             delete[] seq2;
 
-                            cout << "(1)Seq1 Str: " << seq1Str << endl;
-                            cout << "(1)Seq2 Str: " << seq2Str << endl;
+                            // cout << "(1)Seq1 Str: " << seq1Str << endl;
+                            // cout << "(1)Seq2 Str: " << seq2Str << endl;
                             if (st.strand1 == 1)
                             {
                                 getRevCompSeq(seq1Str);
@@ -4551,8 +4551,8 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                 getRevCompSeq(seq2Str);
                             }
 
-                            cout << "(2)Seq1 Str: " << seq1Str << endl;
-                            cout << "(2)Seq2 Str: " << seq2Str << endl;
+                            // cout << "(2)Seq1 Str: " << seq1Str << endl;
+                            // cout << "(2)Seq2 Str: " << seq2Str << endl;
                             /*changing += -= diff0 tp diff1 to adjust st1 to exonic position*/
                             if (seq1Str == seq2Str)
                             {
@@ -4562,24 +4562,24 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                     if (st.strand1 == 0)
                                     {
                                         st.len1 += adjustment;
-                                         cout << "[After Assignment 15] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                        // cout << "[After Assignment 15] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     else
                                     {
                                         st.pos1 -= adjustment;
                                         st.len1 += adjustment;//was -= hasAbi
-                                         cout << "[After Assignment 16] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                        // cout << "[After Assignment 16] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     if (st.strand2 == 0)
                                     {
                                         st.pos2 += adjustment;
                                         st.len2 -= adjustment;
-                                         cout << "[After Assignment 17] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                       //  cout << "[After Assignment 17] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     else
                                     {
                                         st.len2 -= adjustment;
-                                         cout << "[After Assignment 18] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                         //cout << "[After Assignment 18] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                 }
                                 else
@@ -4587,24 +4587,24 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                     if (st.strand1 != 0)
                                     {
                                         st.len1 += adjustment;
-                                         cout << "[After Assignment 19] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                        // cout << "[After Assignment 19] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     else
                                     {
                                         st.pos1 -= adjustment;
                                         st.len1 += adjustment;
-                                         cout << "[After Assignment 20] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                         //cout << "[After Assignment 20] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     if (st.strand2 != 0)
                                     {
                                         st.pos2 += adjustment;
                                         st.len2 -= adjustment;
-                                         cout << "[After Assignment 21] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                         //cout << "[After Assignment 21] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                     else
                                     {
                                         st.len2 -= adjustment;
-                                         cout << "[After Assignment 22] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                        // cout << "[After Assignment 22] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                     }
                                 }
                             }
@@ -4752,18 +4752,18 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                 int mismatch1 = countMismatches(seqRead, seq1Str);
                                 int mismatch2 = countMismatches(seqRead, seq2Str);
 
-                                cout << "Seq Read: " << seqRead << endl;
-                                cout << "(3)Seq1 Str: " << seq1Str << endl;
-                                cout << "(3)Seq2 Str: " << seq2Str << endl;
+                                // cout << "Seq Read: " << seqRead << endl;
+                                // cout << "(3)Seq1 Str: " << seq1Str << endl;
+                                // cout << "(3)Seq2 Str: " << seq2Str << endl;
 
-                                cout << "Mismatch 1: " << mismatch1 << " " << "Mismatch2: " << mismatch2 << endl;
+                                // cout << "Mismatch 1: " << mismatch1 << " " << "Mismatch2: " << mismatch2 << endl;
 
-                                cout << "St.seq: ";
-                                for(int i=0; i < seq.size(); i++){                  
-                                    cout << st.seq[i];
-                                }
+                                // cout << "St.seq: ";
+                                // for(int i=0; i < seq.size(); i++){                  
+                                //     cout << st.seq[i];
+                                // }
                                 
-                                cout << "st.len1 = " << st.len1 << "st.len2= " << st.len2 << "diff0 = " << diff0 <<  endl;
+                                // cout << "st.len1 = " << st.len1 << "st.len2= " << st.len2 << "diff0 = " << diff0 <<  endl;
 
                                 if (mismatch1 < 0 || mismatch2 < 0)
                                 {
@@ -4889,7 +4889,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                             st.len2 -= diff1;
                                         }
                                     }
-                                     cout << "[After Assignment 23] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    // cout << "[After Assignment 23] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 else if (mismatch2 < mismatch1)
                                 {
@@ -4980,7 +4980,7 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                             st.len2 -= diff2;
                                         }
                                     }
-                                     cout << "[After Assignment 24] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    // cout << "[After Assignment 24] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                                 else
                                 {
@@ -5017,13 +5017,13 @@ bool Rna::matchParials(Reference &ref, Gene &g, int gid1, int gid2, const string
                                             st.pos2 = st.pos2 + diff0;
                                         }
                                     }
-                                     cout << "[After Assignment 25] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
+                                    // cout << "[After Assignment 25] st.len1 = " << st.len1 << ", st.len2 = " << st.len2 << endl;
                                 }
                             }
                         }
                         // cout << st.pos1 + st.len1  - 1 << " " << st.pos2 + st.len2 - 1 << endl;
-                         cout << "FInal st.len1 = " << st.len1 << "Final st.len2 = " << st.len2 << endl;
-                         cout << " Final st.pos1 = " << st.pos1 << " Final st.pos2 = " << st.pos2 << endl;
+                        //  cout << "FInal st.len1 = " << st.len1 << "Final st.len2 = " << st.len2 << endl;
+                        //  cout << " Final st.pos1 = " << st.pos1 << " Final st.pos2 = " << st.pos2 << endl;
                         sprna.push_back(st);
                         rnafg->addSpanning(gid1, gid2, sprna.size() - 1);
                         added = true;
@@ -6729,12 +6729,12 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
                 return;
             }
             string seq = getSeqFromBam(b);
-            cout << "Seq from BAM: " ;
-                for (int i=0; i< seq.size(); i++)
-                {
-                    cout << seq[i];
-                }
-            cout << "strand1: " << strand1 << "gId1: " << g.getName2(gId1) << endl;
+            // cout << "Seq from BAM: " ;
+            //     for (int i=0; i< seq.size(); i++)
+            //     {
+            //         cout << seq[i];
+            //     }
+            // cout << "strand1: " << strand1 << "gId1: " << g.getName2(gId1) << endl;
             split_rna_t st;
             if (!strand1) {
                 getRevCompSeq(seq);
@@ -6756,7 +6756,7 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
             }
             int anchorStrd = 1 - st.strand1;
             if (st.spId == 1) {
-                cout << "st.spId is 1" << endl;
+                //cout << "st.spId is 1" << endl;
                 vector<map_emt_t2> mets2, metsM2;
                 int isSmall1;
                 if (al.runBWTSplitMap2(g, gId1, st.seq, anchorStrd, mets2, metsM2, mf2, isSmall1, 1) == 1) {
@@ -6808,29 +6808,29 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
                 }
             } else {
                 vector<map_emt_t2> mets, metsM; // partial map
-                cout << "Seq: " ;
-                for (int i=0; i< st.seq.size(); i++)
-                {
-                    cout << st.seq[i];
-                }
-                 cout << "[1] gStrand1: " << gStrand1
-                        << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2 
-                            << "Anchor strand: " << anchorStrd<< endl;
+                //cout << "Seq: " ;
+                // for (int i=0; i< st.seq.size(); i++)
+                // {
+                //     cout << st.seq[i];
+                // }
+                //  cout << "[1] gStrand1: " << gStrand1
+                //         << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2 
+                //             << "Anchor strand: " << anchorStrd<< endl;
                 int isSmall1;
                 if (al.runBWTSplitMap(g, gId1, st.seq, anchorStrd, mets, metsM, mf2, isSmall1, 1) == 1) {
-                    cout << "Debug1" << endl;
+                    // cout << "Debug1" << endl;
                     if (mets.size() > 5 || isSmall1 == 1) {
                         return;
                     }
                     vector<map_emt_t2> mets3, metsM3; // partial map
                     int isSmall2;
 
-                     cout << "[2] gStrand1: " << gStrand1 
-                        << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2 
-                            << "Anchor strand: " << anchorStrd << endl;
+                    //  cout << "[2] gStrand1: " << gStrand1 
+                    //     << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2 
+                    //         << "Anchor strand: " << anchorStrd << endl;
 
                     if (al.runBWTSplitMap2(g, gId1, st.seq, anchorStrd, mets3, metsM3, mf2, isSmall2, 2) == 1) {
-                        cout << "Debug2" << endl;
+                        //cout << "Debug2" << endl;
                         if (checkSame(st.seq.size(), mets, metsM, mets3, metsM3) == 1 || isSmall2 == 1) {
                             return;
                         }
@@ -6839,29 +6839,29 @@ void Rna::processSpReads(Reference &ref, Gene &g, MyBamWrap &mbw, TidHandler &th
                         int imgStrand;
                         int gId2 = neis[t];
                         int gStrand2 = g.getStrand(gId2);
-                        cout << "strand2: " << strand2 << "gId2: " << g.getName2(gId2) << endl;
+                        //cout << "strand2: " << strand2 << "gId2: " << g.getName2(gId2) << endl;
                     
                         if (gStrand1 == gStrand2) {
                             imgStrand = anchorStrd;
                         } else {
                             imgStrand = 1 - anchorStrd;
                         }
-                        cout << "[3] gStrand1: " << gStrand1 << ", gStrand2: " << gStrand2
-                        << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2 
-                            << "Anchor strand: " << anchorStrd
-                             << ", imgStrand: " << imgStrand << endl;
+                        //cout << "[3] gStrand1: " << gStrand1 << ", gStrand2: " << gStrand2
+                        // << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2 
+                        //     << "Anchor strand: " << anchorStrd
+                        //      << ", imgStrand: " << imgStrand << endl;
 
                         vector<map_emt_t2> mets2, metsM2; // partial map
                         int isSmall1;
                         if (al.runBWTSplitMap2(g, gId2, st.seq, imgStrand, mets2, metsM2, mf2, isSmall1, 1) == 1) {
-                            cout << "Debug3" << endl;
+                            //cout << "Debug3" << endl;
                             if (mets2.size() > 5 || isSmall1 == 1) {
                                 continue;
                             }
-                            cout << "[4] ggStrand1: " << gStrand1 << ", gStrand2: " << gStrand2 
-                            << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2
-                            << "Anchor strand: " << anchorStrd
-                             << ", imgStrand: " << imgStrand << endl;
+                            //cout << "[4] ggStrand1: " << gStrand1 << ", gStrand2: " << gStrand2 
+                            // << "st.strand1: " << st.strand1 << "st.strand2: " << st.strand2
+                            // << "Anchor strand: " << anchorStrd
+                            //  << ", imgStrand: " << imgStrand << endl;
                             const char *seq = getCStringFromVector(st.seq);
                             matchParials(ref, g, gId1, gId2, seq, st.name, st.reversed, mets, metsM, mets2, metsM2, count, mf2);
                             delete[] seq;

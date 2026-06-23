@@ -228,9 +228,9 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
     for (int i = 0; i < rt.types.size(); i++) {
         outFile << "Splicing " << i + 1 << " : ";
 
-        cout << "primeOKs[i] ? : " << rt.primeOKs[i] << endl;
-        cout << "5p is : " << rt.nm5p << endl;
-        cout << "3p is : " << rt.nm3p << endl;
+        // cout << "primeOKs[i] ? : " << rt.primeOKs[i] << endl;
+        // cout << "5p is : " << rt.nm5p << endl;
+        // cout << "3p is : " << rt.nm3p << endl;
 
         if (rt.primeOKs[i] == 1) {
             outFile << rt.nm5p << ">>" << rt.nm3p;
@@ -249,11 +249,11 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
             outFile << "reversed: "<< rt.sprnas[j].reversed << endl;
             outFile << "Spt_rnas_t pos1: " << rt.sprnas[j].pos1 << "Len1: " << rt.sprnas[j].len1 << "bkLeft1: "<< rt.sprnas[j].bkLeft1 << "geneID1: " << rt.sprnas[j].geneId1 << endl;
             outFile << "Spt_rnas_t pos2: " << rt.sprnas[j].pos2 << "Len2: " << rt.sprnas[j].len2 << "bkLeft2: "<< rt.sprnas[j].bkLeft2 << "geneID2: " << rt.sprnas[j].geneId2 << endl;
-            cout << "primeOKs[i] ? : " << rt.primeOKs[i] << endl;
-            cout << "5p is : " << rt.nm5p << endl;
-            cout << "3p is : " << rt.nm3p << endl;
-            cout << "TID1: " << rt.sprnas[j].tid1 << endl;
-            cout << "TID2: " << rt.sprnas[j].tid2 << endl;
+            // cout << "primeOKs[i] ? : " << rt.primeOKs[i] << endl;
+            // cout << "5p is : " << rt.nm5p << endl;
+            // cout << "3p is : " << rt.nm3p << endl;
+            // cout << "TID1: " << rt.sprnas[j].tid1 << endl;
+            // cout << "TID2: " << rt.sprnas[j].tid2 << endl;
 
             outFile << rt.sprnas[j].name << "\t";
             if (rt.sprnas[j].strand1 == 0)
@@ -953,7 +953,6 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
         string name;
         int exonNum;
 
-        cout << "Before 1st getBest Exon" << endl;
         g.getBestExon(st.geneId1, p1, st.bkLeft1, is5p, tid, strand, pos1, pos2, name, exonNum);
 
         int is5p_2;
@@ -964,7 +963,6 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
         string name_2;
         int exonNum_2;
 
-        cout << "Before 2nd getBest Exon" << endl;
         g.getBestExon(st.geneId2, p2, st.bkLeft2, is5p_2, tid_2, strand_2, pos1_2, pos2_2, name_2, exonNum_2);
 
         if (is5p == 1 && is5p_2 == 0) {
@@ -990,7 +988,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
             outFile << endl;
 
             ////for bk
-            cout<<"in exon 1"<<endl;
+            //cout<<"in exon 1"<<endl;
             bkvec[index].tid1 = tid;
             bkvec[index].tid2 = tid_2;
             bkvec[index].isExon = 1;
@@ -1085,7 +1083,6 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
         index++;
     }
-    cout << "Before BK non canonical: " << endl;
     /////// for bk non canonical
     // index=0;
     for (int i = 0; i < results.size(); i++) {
@@ -1127,15 +1124,15 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
             ////for bk
 
-            cout<<"in non cano 1"<<endl;
+            //cout<<"in non cano 1"<<endl;
             bkvec[index].tid1 = tid;
             bkvec[index].tid2 = tid_2;
             bkvec[index].isExon = 0;
             bkvec[index].swp = 0;
 
-            cout<<"tid,tid2,isExon"<<tid<<","<<tid_2<<","<<0<<endl;
+            //cout<<"tid,tid2,isExon"<<tid<<","<<tid_2<<","<<0<<endl;
 
-            cout<<"strand="<<strand<<endl;
+            //cout<<"strand="<<strand<<endl;
 
             if (strand == 0) {
                 // cout<<"if1"<<endl;
@@ -1168,7 +1165,7 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
             ////for bk
 
-            cout<<"in exon non-cano 2"<<endl;
+            //cout<<"in exon non-cano 2"<<endl;
             bkvec[index].tid1 = tid_2;
             bkvec[index].tid2 = tid;
             bkvec[index].isExon = 0;
@@ -1211,9 +1208,9 @@ int Result::printExons(const char *filename, Gene &g, Reference &ref, int isRunn
 
     // cout<<"call bk"<<endl;
     BreakPoint bkobj;
-    cout << "Before getBreakPoints: " << endl;
+
     bkobj.getBreakPoints(bkvec, bkfile, bkfileBEDPE, bkfileVCF, refname, ref, sample_name);
-    cout << "After getBreakPoints: " << endl;
+
     // cout<<"after bk"<<endl;
 
     return 0;

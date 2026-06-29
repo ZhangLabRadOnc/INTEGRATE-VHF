@@ -191,8 +191,6 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
     outFile << "Encompassing RNA: " << rt.enrnas.size() << endl;
     for (int i = 0; i < rt.enrnas.size(); i++) {
         encompass_rna_t et = rt.enrnas[i];
-        outFile << "SIze of enSeq1: " << et.seq1.size() << endl;
-        outFile << "SIze of enSeq2: " << et.seq2.size() << endl;
         
         outFile << et.name << "\t";
         if (et.strand1 == 0)
@@ -246,9 +244,9 @@ int Result::printOneResult(int index, ofstream &outFile, Reference &ref, int isR
 
         for (int j = start; j < start + rt.numOfsps[i]; j++) {
 
-            outFile << "reversed: "<< rt.sprnas[j].reversed << endl;
-            outFile << "Spt_rnas_t pos1: " << rt.sprnas[j].pos1 << "Len1: " << rt.sprnas[j].len1 << "bkLeft1: "<< rt.sprnas[j].bkLeft1 << "geneID1: " << rt.sprnas[j].geneId1 << endl;
-            outFile << "Spt_rnas_t pos2: " << rt.sprnas[j].pos2 << "Len2: " << rt.sprnas[j].len2 << "bkLeft2: "<< rt.sprnas[j].bkLeft2 << "geneID2: " << rt.sprnas[j].geneId2 << endl;
+            // outFile << "reversed: "<< rt.sprnas[j].reversed << endl;
+            // outFile << "Spt_rnas_t pos1: " << rt.sprnas[j].pos1 << "Len1: " << rt.sprnas[j].len1 << "bkLeft1: "<< rt.sprnas[j].bkLeft1 << "geneID1: " << rt.sprnas[j].geneId1 << endl;
+            // outFile << "Spt_rnas_t pos2: " << rt.sprnas[j].pos2 << "Len2: " << rt.sprnas[j].len2 << "bkLeft2: "<< rt.sprnas[j].bkLeft2 << "geneID2: " << rt.sprnas[j].geneId2 << endl;
             // cout << "primeOKs[i] ? : " << rt.primeOKs[i] << endl;
             // cout << "5p is : " << rt.nm5p << endl;
             // cout << "3p is : " << rt.nm3p << endl;

@@ -101,6 +101,13 @@ integratevhf mkbwt (options) -virusIndex virus_index.txt reference.fasta
 ```
 integratevhf mkbwt (options) -virusType:{virus name} virus_annot.gff reference.fasta
 ```
+#### Options
+
+| Flag | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `-mb` | `int` | `100` | Sequences in the reference FASTA shorter than this value are not included in the evaluation of repetitive reads. |
+| `-dir` | `string` | `./bwts` | Directory to store the BWTs. |
+
 # Running INTEGRATE-VHF
 
 1. Using a **VirusIndex** file
@@ -129,7 +136,28 @@ integratevhf fusion (options) -virusType:{X} virus_annot.gff reference.fasta hum
 ```
 integratevhf fusion (options) -virusType:{X} virus_annot.gff reference.fasta human_annot.txt directory_to_bwt accepted_hits.bam unmapped.bam dna.normal.bam
 ```
+#### Options
 
+| Flag | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `-cfn` | `int` | `3` | Cutoff of spanning RNA-Seq reads for fusions with non-canonical exonic boundaries. |
+| `-normcfn` | `float` | `0.1` | Normalized cutoff of spanning RNA-Seq reads for fusions with non-canonical exonic boundaries. |
+| `-rt` | `float` | `0.0` | Normal DNA / tumor DNA ratio. If the ratio is less than this value, DNA reads from the normal DNA dataset supporting fusion candidates are ignored. |
+| `-minIntra` | `int` | `400000` | If only RNA reads are present, a chimera with two adjacent genes in order is annotated as `intra_chromosomal` rather than `read_through` if the distance between the two genes is longer than this value. |
+| `-minW` | `float` | `2.0` | Minimum weight for the encompassing RNA reads on an edge. |
+| `-mb` | `int` | `100` | See subcommand `mkbwt`. This value can be larger than the one used by `mkbwt`. |
+| `-minDel` | `int` | `5000` | Minimum size of a deletion that can cause a fusion. |
+| `-reads` | `string` | `reads.txt` | File to store all the reads. |
+| `-sum` | `string` | `summary.tsv` | File to store summary. |
+| `-ex` | `string` | `exons.tsv` | File to store exons for fusions with canonical exonic boundaries. |
+| `-bk` | `string` | `breakpoints.tsv` | File to store breakpoints. |
+| `-vcf` | `string` | `bk_sv.vcf` | File to store breakpoints in VCF format. |
+| `-bedpe` | `string` | `fusions.bedpe` | File to store all fusions in SMC-RNA BEDPE format. |
+| `-bacc` | `int` | `1` | Max difference between spanning reads and annotation to decide canonical. |
+| `-largeNum` | `int` | `6` | If a gene shows greater than or equal to this number, remove it from results. |
+| `-sample` | `string` | `sample` | Sample name. |
+| `-virusIndex` | `string` | `—` | Virus index file name. |
+| `-virusType` | `string` | **Required** | Virus type name. |
 
 ## Output
 Upon a successful run, INTEGRATE-VHF outputs the following files:

@@ -219,7 +219,7 @@ void usageFusion() {
     cout << "options: -cfn      integer : Cutoff of spanning RNA-Seq reads for fusions with non-canonical" << endl;
     cout << "                             exonic boundaries.                                                         default: 3" << endl;
     cout << "         -normcfn  float   : Normalized cutoff of spanning RNA-Seq reads for fusions with non-canonical" << endl;
-    cout << "                             exonic boundaries.                                                         default: 0.0"<< endl;
+    cout << "                             exonic boundaries.                                                         default: 0.1"<< endl;
     cout << "         -rt       float   : Normal dna / tumor dna ratio. If the ratio is less than" << endl;
     cout << "                             this value, then dna reads from the normal dna data set " << endl;
     cout << "                             supporting a fusion candidates are ignored.                                default: 0.0" << endl;
@@ -729,7 +729,7 @@ int RunCode::runFindFusions(int argc, const char *argv[]) {
     int opStart = 2;
 
     opt.cfn = 3;
-    opt.normcfn = 0.0;
+    opt.normcfn = 0.1;
     opt.rt = 0.0;
     opt.minIntra = 400000;
     opt.minW = 2.0;
